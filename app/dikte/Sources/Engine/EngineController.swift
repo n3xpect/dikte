@@ -336,6 +336,11 @@ final class EngineController {
     }
 
     /// `GET /terms/default` → `{"terms": [Term]}` (a bare array is accepted too).
+    /// POST /retranscribe — the last dictation's audio again, in `language` ("tr" | "en").
+    func retranscribe(dictationId: String, language: String) async throws -> DictationResult {
+        throw EngineAPIError(error: "not_implemented", message: "")
+    }
+
     func defaultTerms() async throws -> [Term] {
         struct Wrapper: Decodable { var terms: [Term] }
         let data = try await request("GET", "/terms/default")

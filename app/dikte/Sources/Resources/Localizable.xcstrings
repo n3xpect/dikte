@@ -1,0 +1,16 @@
+{
+  "sourceLanguage" : "tr",
+  "strings" : {
+    "Dinliyorum…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Listening…"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

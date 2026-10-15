@@ -13,6 +13,12 @@ struct AppSettings: Codable, Equatable, Sendable {
     var historyLimit: Int = 0
     var minFreeDiskGB: Int = 10
     var selectedModel: String = "large-v3"
+    /// App UI language. Fresh installs: macOS language (tr, else en); chosen in onboarding.
+    var uiLanguage: AppLanguage = .systemDefault
+    /// Dictation language: auto (tr vs en detected) | tr | en.
+    var dictationLanguage: DictationLanguage = .auto
+    /// Fresh installs show the welcome flow until this is set.
+    var onboardingCompleted: Bool = false
 
     /// Catalog entries dropped in later versions; a saved selection falls back to the default.
     static let removedModels: Set<String> = ["qwen3-1.7b"]
@@ -33,6 +39,11 @@ struct AppSettings: Codable, Equatable, Sendable {
         minFreeDiskGB = try c.decodeIfPresent(Int.self, forKey: .minFreeDiskGB) ?? d.minFreeDiskGB
         selectedModel = try c.decodeIfPresent(String.self, forKey: .selectedModel) ?? d.selectedModel
         if Self.removedModels.contains(selectedModel) { selectedModel = d.selectedModel }
+        // Files written before 0.2.0 lack these keys: keep the old behaviour (Turkish UI and
+        // dictation, no welcome flow) instead of the fresh-install defaults.
+        uiLanguage = try c.decodeIfPresent(AppLanguage.self, forKey: .uiLanguage) ?? .tr
+        dictationLanguage = try c.decodeIfPresent(DictationLanguage.self, forKey: .dictationLanguage) ?? .tr
+        onboardingCompleted = try c.decodeIfPresent(Bool.self, forKey: .onboardingCompleted) ?? true
     }
 
     var engineConfig: EngineConfig {
@@ -41,7 +52,8 @@ struct AppSettings: Codable, Equatable, Sendable {
                      minFreeBytes: Int64(minFreeDiskGB) * 1_073_741_824,
                      silenceS: silenceSeconds,
                      maxDurationS: maxDurationSeconds,
-                     language: "tr")
+                     language: dictationLanguage.rawValue,
+                     uiLanguage: uiLanguage.rawValue)
     }
 }
 
@@ -57,4 +69,10 @@ struct HistoryEntry: Codable, Identifiable, Equatable, Sendable {
     var model: String
     var audioSeconds: Double
     var transcribeSeconds: Double
+    /// "tr" | "en"; nil for entries written before 0.2.0 (Turkish).
+    var language: String? = nil
+}
+
+enum DictationLanguage: String, Codable, CaseIterable, Sendable {
+    case auto, tr, en
 }

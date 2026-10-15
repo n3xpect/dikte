@@ -17,7 +17,9 @@ final class AppState {
     /// Called once at launch.
     func bootstrap() {
         history.limit = { [unowned self] in settings.settings.historyLimit }
+        Localizer.shared.language = settings.settings.uiLanguage
         settings.onChange = { [unowned self] s in
+            Localizer.shared.language = s.uiLanguage
             engine.pushConfig(s.engineConfig)
         }
         terms.onChange = { [unowned self] t in

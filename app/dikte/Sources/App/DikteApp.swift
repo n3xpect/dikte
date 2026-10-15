@@ -19,7 +19,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         state.bootstrap()
         StatusItemController.shared.install(state: state)
         Hotkeys.install(dictation: state.dictation)
-        if ProcessInfo.processInfo.arguments.contains("--show-main") {
+        if !state.settings.settings.onboardingCompleted {
+            OnboardingWindowController.shared.show()
+        } else if ProcessInfo.processInfo.arguments.contains("--show-main") {
             MainWindowController.shared.show()
         }
     }

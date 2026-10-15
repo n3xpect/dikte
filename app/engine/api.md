@@ -103,13 +103,14 @@ Common: 401 `unauthorized`, 400 `invalid_json`, 404 `unknown_model` (bad `{id}`)
   "min_free_bytes": 10737418240,
   "silence_s": 3.0,
   "max_duration_s": 120,
-  "language": "tr",
+  "language": "auto",                 // "auto" (Turkish or English, detected) | "tr" | "en"
+  "ui_language": "tr",                // "tr" | "en": language of every `message` the engine sends
   "terms": [ { "term": "branch", "accept": ["branch"], "fix": ["brenç"] } ]
 }
 ```
 
 Config defaults (until the app sends its own): `selected_model "large-v3"`, `idle_unload_s 300`,
-`min_free_bytes 10 GiB`, `silence_s 3.0`, `max_duration_s 120`, `language "tr"`,
+`min_free_bytes 10 GiB`, `silence_s 3.0`, `max_duration_s 120`, `language "tr"`, `ui_language "tr"`,
 `terms` = `GET /terms/default`.
 
 Disk rule (download): `disk_free - (size - downloaded) >= min_free`, re-checked every ~200 MB while
@@ -145,7 +146,7 @@ Server → client (text JSON):
 | `{"type":"speech_start"}` | VAD detected speech |
 | `{"type":"end","reason":"silence"\|"finish"\|"max_duration"\|"no_speech"\|"cancel"}` | recording ended; stop sending audio |
 | `{"type":"transcribing"}` | transcription started (after model ready) |
-| `{"type":"result","raw_text":"…","text":"…","fixes":[["brenç","branch"]],"audio_s":5.2,"transcribe_s":0.8,"model":"large-v3"}` | done; `text` = raw_text after term fixes. Server closes the socket after this |
+| `{"type":"result","raw_text":"…","text":"…","fixes":[["brenç","branch"]],"audio_s":5.2,"transcribe_s":0.8,"model":"large-v3","language":"tr","dictation_id":"7f3c…"}` | done; `text` = raw_text after term fixes (fixes are applied to Turkish results only). `language` = language used (`tr`/`en`). `dictation_id` identifies the audio for `POST /retranscribe`. Server closes the socket after this |
 | `{"type":"error","code":"…","message":"…"}` | `model_not_downloaded`, `insufficient_ram`, `no_model_selected`, `load_failed`, `busy` (another dictation is running; sent right on connect), `bad_request` (first message is not `start`), `internal`. Server closes the socket after an error |
 
 `no_speech`: nothing detected within 15 s → no transcription, socket closes. `finish` before any
@@ -154,3 +155,21 @@ a disconnect after `end` (while waiting for the model / transcribing) closes the
 result. If the model fails to load while recording, `error` is sent at once and the socket closes.
 One dictation at a time. VAD: Silero, speech ≥ 0.5, silence < 0.35, end after `silence_s` of silence
 following speech; audio is trimmed with 300 ms pre-roll / 200 ms post-roll before transcription.
+
+## Languages (v2)
+
+- `language: "auto"` → Whisper's language probabilities are computed once per dictation and only
+  `tr` vs `en` are compared (no other language can be chosen). `"tr"` / `"en"` force the language.
+- The term prompt is language-specific (same term list, Turkish or English lead-in sentence).
+- Term `fix` replacements are applied only to Turkish results (they are Turkish spellings).
+- `ui_language` selects the language of all human-readable `message` fields (errors, paused
+  download reasons). Error `code`s are unchanged.
+
+## `POST /retranscribe`
+
+Body `{"dictation_id": "…", "language": "tr" | "en"}` → 200 with the same object as the `/dictate`
+`result` message (minus `type`), transcribed again from the kept audio in the given language.
+The engine keeps the audio of the **last** dictation only, for 10 minutes. Errors:
+404 `dictation_expired` (unknown/expired id), 409 `model_not_loaded` is never returned — the model is
+loaded if needed (same rules/errors as `/models/{id}/load`), 409 `busy` while a dictation is running.
+Resets the idle-unload timer.

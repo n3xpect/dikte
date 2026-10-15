@@ -66,7 +66,10 @@ struct EngineConfig: Codable, Equatable, Sendable {
     var minFreeBytes: Int64?
     var silenceS: Double?
     var maxDurationS: Double?
+    /// "auto" (Turkish or English, detected) | "tr" | "en"
     var language: String?
+    /// "tr" | "en" — language of engine `message` texts.
+    var uiLanguage: String?
     var terms: [Term]?
 }
 
@@ -88,9 +91,13 @@ struct DictationResult: Equatable, Sendable {
     var audioSeconds: Double
     var transcribeSeconds: Double
     var model: String
+    /// Language actually used: "tr" | "en".
+    var language: String = "tr"
+    /// Engine id of the kept audio, for `EngineController.retranscribe`.
+    var dictationId: String? = nil
 
     static func == (a: Self, b: Self) -> Bool {
-        a.rawText == b.rawText && a.text == b.text && a.model == b.model
+        a.rawText == b.rawText && a.text == b.text && a.model == b.model && a.language == b.language
             && a.fixes.map { [$0.wrong, $0.right] } == b.fixes.map { [$0.wrong, $0.right] }
     }
 }
