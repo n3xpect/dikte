@@ -14,7 +14,8 @@ from aiohttp import WSMsgType, web
 
 from . import VERSION
 from .engine import Engine, EngineError
-from .terms import apply_fixes, default_terms_json
+from .messages import Msg, render
+from .terms import default_terms_json
 from .vad import SR, Endpointer
 
 log = logging.getLogger("dikte.server")
@@ -35,7 +36,7 @@ def make_app(engine: Engine, token: str) -> web.Application:
         auth = request.headers.get("Authorization", "")
         given = auth[7:] if auth.startswith("Bearer ") else request.query.get("token", "")
         if not hmac.compare_digest(given.encode(), token.encode()):
-            return _json({"error": "unauthorized", "message": "Yetkisiz istek."}, 401)
+            return _json({"error": "unauthorized", "message": render("unauthorized")}, 401)
         try:
             return await handler(request)
         except EngineError as e:
@@ -49,6 +50,7 @@ def make_app(engine: Engine, token: str) -> web.Application:
     r.add_put("/config", put_config)
     r.add_get("/terms/default", terms_default)
     r.add_post("/unload", unload)
+    r.add_post("/retranscribe", retranscribe)
     r.add_post("/models/custom", add_custom)
     r.add_delete("/models/custom/{id:.+}", remove_custom)  # before the generic DELETE
     r.add_post("/models/{id:.+}/download", download)
@@ -64,7 +66,7 @@ async def _body(request: web.Request) -> Any:
     try:
         return await request.json()
     except (json.JSONDecodeError, UnicodeDecodeError):
-        raise EngineError(400, "invalid_json", "Geçersiz JSON.")
+        raise EngineError(400, "invalid_json")
 
 
 async def health(request: web.Request) -> web.Response:
@@ -88,6 +90,10 @@ async def terms_default(request: web.Request) -> web.Response:
 async def unload(request: web.Request) -> web.Response:
     await request.app[ENGINE].unload()
     return _json({"ok": True})
+
+
+async def retranscribe(request: web.Request) -> web.Response:
+    return _json(await request.app[ENGINE].retranscribe(await _body(request)))
 
 
 async def add_custom(request: web.Request) -> web.Response:
@@ -145,8 +151,7 @@ async def dictate(request: web.Request) -> web.WebSocketResponse:
     ws = web.WebSocketResponse(max_msg_size=16 * 1024 * 1024)
     await ws.prepare(request)
     if engine.dictating:
-        await _send(ws, {"type": "error", "code": "busy",
-                         "message": "Başka bir dikte sürüyor."})
+        await _ws_error(ws, EngineError(409, "busy"))
         await ws.close()
         return ws
     engine.dictating = True
@@ -154,7 +159,7 @@ async def dictate(request: web.Request) -> web.WebSocketResponse:
         await Dictation(engine, ws).run()
     except Exception as e:
         log.exception("dictation failed")
-        await _send(ws, {"type": "error", "code": "internal", "message": f"Motor hatası: {e}"})
+        await _ws_error(ws, EngineError(500, "internal", Msg("internal", error=e)))
     finally:
         engine.dictating = False
         engine.touch_idle()
@@ -170,6 +175,10 @@ async def _send(ws: web.WebSocketResponse, msg: dict) -> None:
             pass
 
 
+async def _ws_error(ws: web.WebSocketResponse, e: EngineError) -> None:
+    await _send(ws, {"type": "error", "code": e.code, "message": e.message})
+
+
 class Dictation:
     def __init__(self, engine: Engine, ws: web.WebSocketResponse):
         self.engine = engine
@@ -179,7 +188,7 @@ class Dictation:
         self.recording = True
 
     async def error(self, e: EngineError) -> None:
-        await _send(self.ws, {"type": "error", "code": e.code, "message": e.message})
+        await _ws_error(self.ws, e)
 
     async def run(self) -> None:
         engine, ws = self.engine, self.ws
@@ -188,19 +197,19 @@ class Dictation:
         except TimeoutError:
             return
         if msg.type != WSMsgType.TEXT or _type(msg.data) != "start":
-            await self.error(EngineError(400, "bad_request", "İlk mesaj start olmalı."))
+            await self.error(EngineError(400, "bad_request", Msg("start_expected")))
             return
 
         cfg = engine.config
         model_id = cfg.selected_model
         if model_id is None:
-            await self.error(EngineError(409, "no_model_selected", "Model seçilmedi."))
+            await self.error(EngineError(409, "no_model_selected"))
             return
         try:
             load_task = engine.start_load(model_id)
         except EngineError as e:
             code = "model_not_downloaded" if e.code == "not_downloaded" else e.code
-            await self.error(EngineError(e.status, code, e.message))
+            await self.error(EngineError(e.status, code, e.msg))
             return
         ready = load_task.done()
         await _send(ws, {"type": "model", "state": "ready" if ready else "loading"})
@@ -230,19 +239,14 @@ class Dictation:
                 await self.error(e)
                 return
             await _send(ws, {"type": "transcribing"})
-            terms, prompt = engine.terms, engine.prompt
-            tr = await self.loop.run_in_executor(engine.ml, lambda: backend.transcribe(
-                audio, language=cfg.language, prompt=prompt))
+            result = await engine.transcribe(backend, audio, cfg.language)
             if aborted.done():
                 return
             aborted.cancel()
-            text, fixes = apply_fixes(tr.text, terms)
-            log.info("dictation: %.1fs audio, %.2fs transcribe, %.2fs end->result",
-                     len(audio) / SR, tr.seconds, time.perf_counter() - t_end)
-            await _send(ws, {"type": "result", "raw_text": tr.text, "text": text,
-                             "fixes": [list(f) for f in fixes],
-                             "audio_s": round(len(audio) / SR, 3),
-                             "transcribe_s": round(tr.seconds, 3), "model": backend.spec.id})
+            log.info("dictation: %.1fs audio, %s, %.2fs transcribe, %.2fs end->result",
+                     len(audio) / SR, result["language"], result["transcribe_s"],
+                     time.perf_counter() - t_end)
+            await _send(ws, {"type": "result", **result, "dictation_id": engine.keep(audio)})
         finally:
             watcher.cancel()
 

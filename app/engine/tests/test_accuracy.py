@@ -1,7 +1,8 @@
 """Accuracy regression: stream the user's recordings (model-test/recordings) through /dictate
 with large-v3 + default terms and score against the sentences they read
 (model-test/test_sentences.yaml; the id is the file name suffix, e.g. `…_dev02.wav`).
-Prior MLX bench: WER ~7.6–7.9%, terms 74/77. Run: uv run python tests/test_accuracy.py"""
+Prior MLX bench: WER ~7.6–7.9%, terms 74/77. With language auto every take must be detected as tr.
+Run: uv run python tests/test_accuracy.py [auto|tr]   (config language, default auto)"""
 
 import asyncio
 import statistics as st
@@ -29,7 +30,7 @@ def references() -> dict[str, tuple[str, str]]:
     return out
 
 
-async def main() -> int:
+async def main(language: str) -> int:
     refs = references()
     terms = T.load_default_terms()
     eng = EngineProc(make_data_dir())
@@ -38,7 +39,8 @@ async def main() -> int:
     try:
         async with Events(eng) as ev:
             _, d = await eng.req("GET", "/terms/default")
-            await eng.req("PUT", "/config", {"selected_model": "large-v3", "terms": d["terms"]})
+            await eng.req("PUT", "/config", {"selected_model": "large-v3", "terms": d["terms"],
+                                             "language": language})
             mark = ev.mark()
             await eng.req("POST", "/models/large-v3/load")
             await ev.wait_for(lambda s: model_of(s, "large-v3")["state"] == "loaded", 120,
@@ -53,10 +55,11 @@ async def main() -> int:
                 wer, cer = T.wer_cer(res["text"], ref)
                 hits, total, missed = T.term_hits(res["text"], ref, terms)
                 rows.append({"id": sid, "wer": wer, "cer": cer, "hits": hits, "total": total,
+                             "language": res["language"],
                              "transcribe_s": res["transcribe_s"],
                              "latency_s": r["t_result"] - r["t_end"], "end": end})
                 flag = "" if wer == 0 else f"  <- {res['text']!r} | missed {missed}"
-                print(f"[{i:2}/{len(refs)}] {sid:6} {end:8} WER {wer:5.1%} terms {hits}/{total}"
+                print(f"[{i:2}/{len(refs)}] {sid:6} {end:8} {res['language']} WER {wer:5.1%} terms {hits}/{total}"
                       f" {res['transcribe_s']:.2f}s{flag}", flush=True)
     finally:
         await eng.stop()
@@ -69,12 +72,13 @@ async def main() -> int:
     print(f"transcribe_s mean {st.mean(r['transcribe_s'] for r in rows):.2f} "
           f"max {max(r['transcribe_s'] for r in rows):.2f} | end->result mean "
           f"{st.mean(r['latency_s'] for r in rows):.2f} max {max(r['latency_s'] for r in rows):.2f}")
-    print(f"end reasons: {sorted({r['end'] for r in rows})}")
+    print(f"end reasons: {sorted({r['end'] for r in rows})}  language {language}: "
+          f"{sum(r['language'] == 'tr' for r in rows)}/{len(rows)} tr")
     ok = (len(rows) == len(refs) and wer <= MAX_WER and hits / total >= MIN_TERM_ACC
-          and all(r["end"] == "silence" for r in rows))
+          and all(r["end"] == "silence" and r["language"] == "tr" for r in rows))
     print("PASS" if ok else "FAIL")
     return 0 if ok else 1
 
 
 if __name__ == "__main__":
-    sys.exit(asyncio.run(main()))
+    sys.exit(asyncio.run(main(sys.argv[1] if len(sys.argv) > 1 else "auto")))

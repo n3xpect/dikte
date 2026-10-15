@@ -27,13 +27,16 @@ from common import (
 )
 
 import dikte_engine.terms as T
+from dikte_engine.messages import render
 
 TINY = "mlx-community/whisper-tiny-mlx"
 TINY_ID = "hf:" + TINY
 TINY_PATH = quote(TINY_ID, safe=":")  # hf:mlx-community%2Fwhisper-tiny-mlx
 REC = MODEL_TEST / "recordings" / "20261015-190001_dev03.wav"
+EN_REF = "Commit these changes and open a pull request against main."
 STEPS: list = []
 REPORT: dict = {}
+KEPT: dict = {}  # dictation_id of the last dictation (for retranscribe while unloaded)
 
 
 def step(fn):
@@ -85,8 +88,11 @@ async def models_and_config(eng: EngineProc, ev: Events):
     assert (await eng.req("PUT", "/config", {"silence_s": "x"}))[0] == 400
     assert (await eng.req("PUT", "/config", {"bogus": 1}))[0] == 400
     assert (await eng.req("PUT", "/config", {"terms": [{"accept": []}]}))[0] == 400
+    for bad in [{"language": "de"}, {"language": None}, {"ui_language": "auto"}]:
+        st, body = await eng.req("PUT", "/config", bad)
+        assert st == 400 and body["error"] == "invalid_config", (bad, body)
     cfg = {"selected_model": "large-v3", "terms": d["terms"], "silence_s": 3.0,
-           "max_duration_s": 120, "language": "tr", "idle_unload_s": 300,
+           "max_duration_s": 120, "language": "tr", "ui_language": "tr", "idle_unload_s": 300,
            "min_free_bytes": 10 * 1024**3}
     assert await eng.req("PUT", "/config", cfg) == (200, {"ok": True})
     snap = await ev.wait_for(lambda s: s["system"]["selected_model"] == "large-v3")
@@ -121,8 +127,10 @@ async def dictate_silence_end_realtime(eng: EngineProc, ev: Events):
     assert r["msgs"][0]["state"] == "ready"
     assert r["msgs"][2]["reason"] == "silence"
     res = r["result"]
-    assert res["model"] == "large-v3" and set(res) >= {"raw_text", "text", "fixes", "audio_s",
-                                                        "transcribe_s"}
+    assert res["model"] == "large-v3" and res["language"] == "tr", res
+    assert set(res) - {"t"} == {"type", "raw_text", "text", "fixes", "audio_s", "transcribe_s",
+                                "model", "language", "dictation_id"}, res
+    assert re.fullmatch(r"[0-9a-f]{16}", res["dictation_id"]), res
     wer, _ = T.wer_cer(res["text"], ref)
     hits, total, _ = T.term_hits(res["text"], ref, T.load_default_terms())
     assert wer <= 0.15 and hits == total, (res["text"], wer, hits, total)
@@ -179,8 +187,105 @@ async def dictate_cancel_no_speech_busy(eng: EngineProc, ev: Events):
     assert r["types"] == ["model", "end"], r["types"]
 
 
+def _pad(speech: np.ndarray) -> np.ndarray:
+    return np.concatenate([noise(0.3), speech, noise(3.5)])
+
+
+async def _retranscribe(eng: EngineProc, did: str, language: str) -> tuple[int, dict]:
+    return await eng.req("POST", "/retranscribe", {"dictation_id": did, "language": language},
+                         timeout=120)
+
+
+@step
+async def languages_and_retranscribe(eng: EngineProc, ev: Events):
+    tr_speech, en_speech = load_wav(REC), tts(EN_REF, "Samantha")
+    fields = {"raw_text", "text", "fixes", "audio_s", "transcribe_s", "model", "language",
+              "dictation_id"}
+
+    # auto: Turkish clip -> tr (with fixes), English clip -> en (no fixes)
+    assert await eng.req("PUT", "/config", {"language": "auto"}) == (200, {"ok": True})
+    r_tr = (await dictate(eng, _pad(tr_speech), speed=0))["result"]
+    assert r_tr["language"] == "tr", r_tr
+    r_en = (await dictate(eng, _pad(en_speech), speed=0))["result"]
+    assert r_en["language"] == "en" and r_en["fixes"] == [] and r_en["text"] == r_en["raw_text"]
+    assert T.wer_cer(r_en["text"], EN_REF)[0] <= 0.15, r_en
+    assert r_en["dictation_id"] != r_tr["dictation_id"]
+    REPORT["auto_en_text"] = r_en["text"]
+
+    # only the last dictation is kept; bad bodies
+    st, body = await _retranscribe(eng, r_tr["dictation_id"], "en")
+    assert st == 404 and body["error"] == "dictation_expired", body
+    assert body["message"] == render("dictation_expired", "tr"), body
+    assert (await _retranscribe(eng, "nope", "tr"))[0] == 404
+    for bad in [{"dictation_id": r_en["dictation_id"]}, {"dictation_id": r_en["dictation_id"],
+                "language": "auto"}, {"dictation_id": 1, "language": "tr"}, ["x"]]:
+        st, body = await eng.req("POST", "/retranscribe", bad)
+        assert st == 400 and body["error"] == "bad_request", (bad, body)
+
+    # en -> tr -> en with the same id; retranscribing in the original language is identical
+    st, as_tr = await _retranscribe(eng, r_en["dictation_id"], "tr")
+    assert st == 200 and set(as_tr) == fields and as_tr["language"] == "tr", as_tr
+    assert as_tr["dictation_id"] == r_en["dictation_id"] and as_tr["audio_s"] == r_en["audio_s"]
+    st, as_en = await _retranscribe(eng, r_en["dictation_id"], "en")
+    assert st == 200 and as_en["language"] == "en" and as_en["text"] == r_en["text"], as_en
+    REPORT["en_retranscribed_as_tr"] = as_tr["text"]
+
+    # forced en
+    assert await eng.req("PUT", "/config", {"language": "en"}) == (200, {"ok": True})
+    r = (await dictate(eng, _pad(en_speech), speed=0))["result"]
+    assert r["language"] == "en" and T.wer_cer(r["text"], EN_REF)[0] <= 0.15, r
+
+    # forced tr, then tr -> en -> tr
+    assert await eng.req("PUT", "/config", {"language": "tr"}) == (200, {"ok": True})
+    r = (await dictate(eng, _pad(tr_speech), speed=0))["result"]
+    assert r["language"] == "tr" and T.wer_cer(r["text"], r_tr["text"])[0] <= 0.15, (r, r_tr)
+    st, as_en = await _retranscribe(eng, r["dictation_id"], "en")
+    assert st == 200 and as_en["language"] == "en" and as_en["fixes"] == [], as_en
+    assert as_en["text"] == as_en["raw_text"]
+    st, as_tr = await _retranscribe(eng, r["dictation_id"], "tr")
+    assert st == 200 and as_tr["text"] == r["text"] and as_tr["fixes"] == r["fixes"], as_tr
+    REPORT["tr_retranscribed_as_en"] = as_en["text"]
+    KEPT["id"] = r["dictation_id"]
+
+    # busy while a dictation runs
+    first = asyncio.create_task(dictate(eng, _pad(en_speech), speed=1.0))
+    await asyncio.sleep(0.5)
+    st, body = await _retranscribe(eng, r["dictation_id"], "en")
+    assert st == 409 and body["error"] == "busy", body
+    KEPT["id"] = (await first)["result"]["dictation_id"]
+
+    # ui_language: HTTP and WS messages follow it
+    assert await eng.req("PUT", "/config", {"ui_language": "en"}) == (200, {"ok": True})
+    try:
+        st, body = await _retranscribe(eng, "nope", "en")
+        assert body["message"] == "The audio of this dictation is gone (older than 10 minutes, " \
+            "or a newer dictation was made).", body
+        st, body = await eng.req("PUT", "/config", {"language": "de"})
+        assert body["message"] == "Invalid setting: language must be one of auto, tr, en", body
+        st, body = await eng.req("POST", "/models/nope/load")
+        assert (st, body["message"]) == (404, "Unknown model: nope"), body
+        ws = await eng.http.ws_connect(eng.ws_url("/dictate"))
+        await ws.send_str(json.dumps({"type": "finish"}))
+        msg = json.loads((await ws.receive()).data)
+        await ws.close()
+        assert msg == {"type": "error", "code": "bad_request",
+                       "message": "The first message must be start."}, msg
+    finally:
+        assert await eng.req("PUT", "/config", {"ui_language": "tr"}) == (200, {"ok": True})
+    st, body = await eng.req("POST", "/models/nope/load")
+    assert body["message"] == "Bilinmeyen model: nope", body
+
+
 @step
 async def dictate_while_unloaded_and_idle_unload(eng: EngineProc, ev: Events):
+    mark = ev.mark()
+    assert await eng.req("POST", "/unload") == (200, {"ok": True})
+    await ev.wait_for(lambda s: model_of(s, "large-v3")["state"] == "on_disk", since=mark)
+
+    # retranscribe loads the selected model if needed
+    st, body = await _retranscribe(eng, KEPT["id"], "en")
+    assert st == 200 and body["language"] == "en", body
+    assert (await eng.models())["large-v3"]["state"] == "loaded"
     mark = ev.mark()
     assert await eng.req("POST", "/unload") == (200, {"ok": True})
     await ev.wait_for(lambda s: model_of(s, "large-v3")["state"] == "on_disk", since=mark)

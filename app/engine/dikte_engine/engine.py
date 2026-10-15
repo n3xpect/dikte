@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import secrets
 import time
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
@@ -12,29 +13,35 @@ from pathlib import Path
 from typing import Any
 
 import aiohttp
+import numpy as np
 import psutil
 
-from . import asr, catalog
+from . import asr, catalog, messages
+from .asr import LANGUAGES
 from .catalog import BUILTIN, ModelSpec, RepoFiles
+from .messages import UI_LANGUAGES, LocalizedError, Msg
 from .store import DiskGuard, Store
-from .terms import Term, build_whisper_prompt, default_terms_json, parse_terms
+from .terms import Term, apply_fixes, build_whisper_prompt, default_terms_json, parse_terms
 
 log = logging.getLogger("dikte.engine")
 GB = 1024**3
 RAM_FACTOR = 1.2
+KEEP_AUDIO_S = 600  # audio of the last dictation is kept this long for /retranscribe
 
 
-class EngineError(Exception):
-    def __init__(self, status: int, code: str, message: str, **details: Any):
-        super().__init__(message)
-        self.status, self.code, self.message, self.details = status, code, message, details
+class EngineError(LocalizedError):
+    """API error; the message defaults to the one keyed by `code`."""
+
+    def __init__(self, status: int, code: str, msg: Msg | None = None, **details: Any):
+        super().__init__(msg or Msg(code))
+        self.status, self.code, self.details = status, code, details
+
+    @property
+    def message(self) -> str:
+        return str(self.msg)
 
     def body(self) -> dict[str, Any]:
         return {"error": self.code, "message": self.message, **self.details}
-
-
-def _gb(n: float) -> str:
-    return f"{n / 1e9:.1f}".replace(".", ",") + " GB"
 
 
 @dataclass
@@ -45,13 +52,14 @@ class Config:
     silence_s: float = 3.0
     max_duration_s: float = 120
     language: str = "tr"
+    ui_language: str = "tr"
     terms_raw: list[dict] = field(default_factory=default_terms_json)
 
     def public(self) -> dict[str, Any]:
         return {"selected_model": self.selected_model, "idle_unload_s": self.idle_unload_s,
                 "min_free_bytes": self.min_free_bytes, "silence_s": self.silence_s,
                 "max_duration_s": self.max_duration_s, "language": self.language,
-                "terms": self.terms_raw}
+                "ui_language": self.ui_language, "terms": self.terms_raw}
 
 
 @dataclass
@@ -60,6 +68,14 @@ class Download:
     done: int  # bytes on disk for this repo
     task: asyncio.Task | None = None
     running: bool = True
+
+
+@dataclass
+class Kept:
+    """Trimmed audio of the last dictation (for /retranscribe)."""
+    id: str
+    audio: np.ndarray
+    expire: asyncio.TimerHandle
 
 
 def disk_rule_ok(free: int, remaining: int, min_free: int) -> bool:
@@ -72,6 +88,12 @@ def _num(body: dict, key: str, lo: float, hi: float) -> float:
     if isinstance(v, bool) or not isinstance(v, (int, float)) or not lo <= v <= hi:
         raise ValueError(f"{key} must be a number in [{lo}, {hi}]")
     return v
+
+
+def _choice(body: dict, key: str, allowed: tuple[str, ...]) -> str:
+    if body[key] not in allowed:
+        raise ValueError(f"{key} must be one of {', '.join(allowed)}")
+    return body[key]
 
 
 class Engine:
@@ -87,7 +109,7 @@ class Engine:
 
         self.config = Config()
         self.terms: list[Term] = parse_terms(self.config.terms_raw)
-        self.prompt = build_whisper_prompt(self.terms)
+        self.prompts = self._build_prompts()
 
         # MLX must stay on one thread; VAD gets its own so it never waits behind a transcription.
         self.ml = ThreadPoolExecutor(1, thread_name_prefix="mlx")
@@ -98,8 +120,10 @@ class Engine:
         self._load_tasks: dict[str, asyncio.Task[asr.Backend]] = {}
         self._model_lock = asyncio.Lock()
         self.downloads: dict[str, Download] = {}
-        self.errors: dict[str, str] = {}
+        self.errors: dict[str, Msg] = {}
         self.dictating = False
+        self.retranscribing = 0
+        self.kept: Kept | None = None
         self.idle_at: float | None = None
         self._idle_handle: asyncio.TimerHandle | None = None
 
@@ -152,18 +176,16 @@ class Engine:
         for s in self.specs():
             if s.id == model_id:
                 return s
-        raise EngineError(404, "unknown_model", f"Bilinmeyen model: {model_id}")
+        raise EngineError(404, "unknown_model", Msg("unknown_model", id=model_id))
 
     async def repo_files(self, spec: ModelSpec) -> RepoFiles:
         try:
             rf = await asyncio.get_running_loop().run_in_executor(
                 None, catalog.fetch_repo_files, spec.repo)
         except catalog.RepoNotFound:
-            raise EngineError(404, "repo_not_found", f"Hugging Face'te bulunamadı: {spec.repo}")
+            raise EngineError(404, "repo_not_found", Msg("repo_not_found", repo=spec.repo))
         except catalog.NetworkError as e:
-            raise EngineError(503, "network_error",
-                              "Hugging Face'e ulaşılamadı. İnternet bağlantını kontrol et.",
-                              detail=str(e))
+            raise EngineError(503, "network_error", detail=str(e))
         self.sizes.put(spec.repo, rf)
         self.notify()
         return rf
@@ -193,11 +215,13 @@ class Engine:
         progress = None
         if state == "downloading" and d is not None and d.total:
             progress = min(1.0, d.done / d.total)
+        error = self.errors.get(spec.id)
         return {"id": spec.id, "label": spec.label, "repo": spec.repo, "kind": spec.kind,
-                "custom": spec.custom, "recommended": spec.recommended, "note": spec.note,
+                "custom": spec.custom, "recommended": spec.recommended,
+                "note": messages.render(spec.note) if spec.note else "",
                 "size_bytes": size, "downloaded_bytes": downloaded,
                 "ram_bytes": self.ram_bytes(spec), "state": state, "progress": progress,
-                "error": self.errors.get(spec.id)}
+                "error": str(error) if error else None}
 
     def system_info(self) -> dict[str, Any]:
         vm = psutil.virtual_memory()
@@ -240,7 +264,8 @@ class Engine:
 
     def update_config(self, body: Any) -> None:
         if not isinstance(body, dict):
-            raise EngineError(400, "invalid_config", "Ayarlar bir JSON nesnesi olmalı.")
+            raise EngineError(400, "invalid_config",
+                              Msg("invalid_config", detail="expected a JSON object"))
         c = self.config
         new: dict[str, Any] = {}
         try:
@@ -261,25 +286,80 @@ class Engine:
             if "max_duration_s" in body:
                 new["max_duration_s"] = _num(body, "max_duration_s", 1, 3600)
             if "language" in body:
-                if not isinstance(body["language"], str) or not body["language"].strip():
-                    raise ValueError("language must be a non-empty string")
-                new["language"] = body["language"].strip()
+                new["language"] = _choice(body, "language", ("auto", *LANGUAGES))
+            if "ui_language" in body:
+                new["ui_language"] = _choice(body, "ui_language", UI_LANGUAGES)
             if "terms" in body:
                 terms = parse_terms(body["terms"])
                 new["terms_raw"] = [{"term": t.term, "accept": t.accept, "fix": t.fix}
                                     for t in terms]
         except (ValueError, TypeError) as e:
-            raise EngineError(400, "invalid_config", f"Geçersiz ayar: {e}")
+            raise EngineError(400, "invalid_config", Msg("invalid_config", detail=str(e)))
         except EngineError as e:
-            raise EngineError(400, "invalid_config", e.message)
+            raise EngineError(400, "invalid_config", e.msg)
         for k, v in new.items():
             setattr(c, k, v)
+        if "ui_language" in new:
+            messages.set_language(c.ui_language)
         if "terms_raw" in new:
             self.terms = parse_terms(c.terms_raw)
-            self.prompt = build_whisper_prompt(self.terms)
+            self.prompts = self._build_prompts()
         if "idle_unload_s" in new:
             self.touch_idle()
         self.notify()
+
+    def _build_prompts(self) -> dict[str, str]:
+        return {lang: build_whisper_prompt(self.terms, lang) for lang in LANGUAGES}
+
+    # ------------------------------------------------------------------ transcription
+
+    async def transcribe(self, backend: asr.Backend, audio: np.ndarray,
+                         language: str) -> dict[str, Any]:
+        """Result fields of api.md (minus type / dictation_id). Fixes only for Turkish."""
+        terms, prompts = self.terms, self.prompts
+        tr = await asyncio.get_running_loop().run_in_executor(
+            self.ml, lambda: backend.transcribe(audio, language=language, prompts=prompts))
+        text, fixes = apply_fixes(tr.text, terms) if tr.language == "tr" else (tr.text, [])
+        return {"raw_text": tr.text, "text": text, "fixes": [list(f) for f in fixes],
+                "audio_s": round(len(audio) / asr.SR, 3), "transcribe_s": round(tr.seconds, 3),
+                "model": backend.spec.id, "language": tr.language}
+
+    def keep(self, audio: np.ndarray) -> str:
+        """Keep the last dictation's audio for KEEP_AUDIO_S; returns its dictation_id."""
+        if self.kept is not None:
+            self.kept.expire.cancel()
+        did = secrets.token_hex(8)
+        expire = asyncio.get_running_loop().call_later(KEEP_AUDIO_S, self._drop_kept, did)
+        self.kept = Kept(did, audio, expire)
+        return did
+
+    def _drop_kept(self, did: str) -> None:
+        if self.kept is not None and self.kept.id == did:
+            self.kept = None
+
+    async def retranscribe(self, body: Any) -> dict[str, Any]:
+        if (not isinstance(body, dict) or not isinstance(body.get("dictation_id"), str)
+                or body.get("language") not in LANGUAGES):
+            raise EngineError(400, "bad_request", Msg(
+                "bad_request", detail='expected {"dictation_id": "…", "language": "tr" | "en"}'))
+        if self.dictating:
+            raise EngineError(409, "busy")
+        kept = self.kept
+        if kept is None or kept.id != body["dictation_id"]:
+            raise EngineError(404, "dictation_expired")
+        model_id = self.config.selected_model
+        if model_id is None:
+            raise EngineError(409, "no_model_selected")
+        self.retranscribing += 1
+        try:
+            backend = await self.start_load(model_id)
+            result = await self.transcribe(backend, kept.audio, body["language"])
+        finally:
+            self.retranscribing -= 1
+            self.touch_idle()
+        log.info("retranscribe %s as %s: %.2fs", kept.id, result["language"],
+                 result["transcribe_s"])
+        return {**result, "dictation_id": kept.id}
 
     # ------------------------------------------------------------------ load / unload
 
@@ -294,16 +374,16 @@ class Engine:
         if model_id in self._load_tasks:
             return self._load_tasks[model_id]
         if model_id in self.downloads or self.store.local_path(spec) is None:
-            raise EngineError(409, "not_downloaded", f"{spec.label} indirilmemiş.")
+            raise EngineError(409, "not_downloaded", Msg("not_downloaded", label=spec.label))
         needed = self.ram_bytes(spec) or 0
         available = psutil.virtual_memory().available
         if self.backend is not None:  # it is unloaded first
             available += self.ram_bytes(self.backend.spec) or 0
         if available < needed:
             raise EngineError(507, "insufficient_ram",
-                              f"Yeterli bellek yok: {spec.label} için {_gb(needed)} gerekli, "
-                              f"kullanılabilir {_gb(available)}. Bazı uygulamaları kapatıp "
-                              f"tekrar dene.", needed_bytes=needed, available_bytes=available)
+                              Msg("insufficient_ram", label=spec.label, needed_gb=needed,
+                                  available_gb=available),
+                              needed_bytes=needed, available_bytes=available)
         task = asyncio.create_task(self._load(spec))
         self._load_tasks[model_id] = task
         task.add_done_callback(lambda t: self._load_tasks.pop(model_id, None))
@@ -325,16 +405,16 @@ class Engine:
                     await loop.run_in_executor(self.ml, asr.unload, old)
                 path = self.store.local_path(spec)
                 if path is None:
-                    raise EngineError(409, "not_downloaded", f"{spec.label} indirilmemiş.")
-                self.backend = await loop.run_in_executor(
-                    self.ml, asr.load, spec, path, self.config.language)
+                    raise EngineError(409, "not_downloaded", Msg("not_downloaded",
+                                                                 label=spec.label))
+                self.backend = await loop.run_in_executor(self.ml, asr.load, spec, path)
                 return self.backend
             except EngineError as e:
-                self.errors[spec.id] = e.message
+                self.errors[spec.id] = e.msg
                 raise
             except Exception as e:
                 log.exception("load failed: %s", spec.id)
-                self.errors[spec.id] = f"Model yüklenemedi: {e}"
+                self.errors[spec.id] = Msg("load_failed", error=e)
                 raise EngineError(500, "load_failed", self.errors[spec.id]) from e
             finally:
                 self.loading_id = None
@@ -363,7 +443,7 @@ class Engine:
 
     def _idle_fire(self) -> None:
         self._idle_handle = None
-        if self.dictating or self._model_lock.locked():
+        if self.dictating or self.retranscribing or self._model_lock.locked():
             self.touch_idle()
             return
         log.info("idle unload")
@@ -375,26 +455,25 @@ class Engine:
         return sum(max(0, d.total - d.done) for k, d in self.downloads.items()
                    if d.running and k != exclude)
 
-    def _disk_message(self) -> str:
-        return (f"Diskte yeterli boş alan yok: indirme sonrası en az "
-                f"{_gb(self.config.min_free_bytes)} boş kalmalı.")
-
     async def start_download(self, model_id: str) -> None:
         spec = self.spec(model_id)
         state = self.model_state(spec)
         if state == "downloading":
-            raise EngineError(409, "already_downloading", f"{spec.label} zaten iniyor.")
+            raise EngineError(409, "already_downloading",
+                              Msg("already_downloading", label=spec.label))
         if state in ("on_disk", "loaded", "loading"):
-            raise EngineError(409, "already_downloaded", f"{spec.label} zaten indirilmiş.")
+            raise EngineError(409, "already_downloaded", Msg("already_downloaded", label=spec.label))
         rf = await self.repo_files(spec)
         if model_id in self.downloads and self.downloads[model_id].running:
-            raise EngineError(409, "already_downloading", f"{spec.label} zaten iniyor.")
+            raise EngineError(409, "already_downloading",
+                              Msg("already_downloading", label=spec.label))
         done = self.store.downloaded_bytes(spec.repo)
         needed = max(0, rf.total - done)
         free = self.store.disk_free()
         if not disk_rule_ok(free, needed + self._remaining(exclude=model_id),
                             self.config.min_free_bytes):
-            raise EngineError(507, "insufficient_disk", self._disk_message(),
+            raise EngineError(507, "insufficient_disk",
+                              Msg("insufficient_disk", min_free_gb=self.config.min_free_bytes),
                               needed_bytes=needed, free_bytes=free,
                               min_free_bytes=self.config.min_free_bytes)
         d = Download(total=rf.total, done=done)
@@ -411,7 +490,7 @@ class Engine:
         def guard() -> None:
             if not disk_rule_ok(self.store.disk_free(), self._remaining(),
                                 self.config.min_free_bytes):
-                raise DiskGuard(self._disk_message() + " İndirme duraklatıldı.")
+                raise DiskGuard()
 
         log.info("download start: %s (%d/%d bytes on disk)", spec.repo, d.done, d.total)
         assert self.http is not None
@@ -421,13 +500,14 @@ class Engine:
         except asyncio.CancelledError:
             d.running = False
             log.info("download paused: %s", spec.repo)
-        except DiskGuard as e:
+        except DiskGuard:
             d.running = False
-            self.errors[spec.id] = str(e)
+            self.errors[spec.id] = Msg("download_paused_disk",
+                                       min_free_gb=self.config.min_free_bytes)
             log.warning("download stopped by disk guard: %s", spec.repo)
         except Exception as e:
             d.running = False
-            self.errors[spec.id] = f"İndirme başarısız: {e}"
+            self.errors[spec.id] = Msg("download_failed", error=e)
             log.warning("download failed: %s: %s", spec.repo, e)
         finally:
             if d.running is False:
@@ -438,14 +518,14 @@ class Engine:
         spec = self.spec(model_id)
         d = self.downloads.get(model_id)
         if d is None or not d.running or d.task is None:
-            raise EngineError(409, "not_downloading", f"{spec.label} indirilmiyor.")
+            raise EngineError(409, "not_downloading", Msg("not_downloading", label=spec.label))
         d.task.cancel()
         await asyncio.gather(d.task, return_exceptions=True)
 
     async def delete_model(self, model_id: str) -> None:
         spec = self.spec(model_id)
         if self.model_state(spec) in ("loaded", "loading") or model_id in self._load_tasks:
-            raise EngineError(409, "model_loaded", f"{spec.label} bellekte; önce boşalt.")
+            raise EngineError(409, "model_loaded", Msg("model_loaded", label=spec.label))
         d = self.downloads.pop(model_id, None)
         if d is not None and d.task is not None:
             d.task.cancel()
@@ -460,24 +540,22 @@ class Engine:
     async def add_custom(self, repo: Any) -> tuple[int, dict[str, Any]]:
         repo = str(repo or "").strip().removeprefix("https://huggingface.co/").strip("/")
         if not catalog.valid_repo(repo):
-            raise EngineError(422, "invalid_repo",
-                              "Geçersiz depo adı. Biçim: kurulus/model-adi")
+            raise EngineError(422, "invalid_repo")
         for s in self.specs():
             if s.repo.lower() == repo.lower():
                 if s.custom:
                     return 200, self.model_info(s)
-                raise EngineError(409, "already_exists", f"{s.label} zaten listede.", id=s.id)
+                raise EngineError(409, "already_exists", Msg("already_exists", label=s.label),
+                                  id=s.id)
         probe = ModelSpec(catalog.custom_id(repo), repo.split("/")[-1], repo, "", custom=True)
         rf = await self.repo_files(probe)
         try:
             kind = await asyncio.get_running_loop().run_in_executor(
                 None, catalog.detect_kind, repo, rf)
         except catalog.UnsupportedModel as e:
-            raise EngineError(422, "unsupported_model",
-                              "Bu model desteklenmiyor. MLX Whisper modeli olmalı (config.json + weights.npz/safetensors).",
-                              detail=str(e))
+            raise EngineError(422, "unsupported_model", detail=str(e))
         except catalog.NetworkError as e:
-            raise EngineError(503, "network_error", "Hugging Face'e ulaşılamadı.", detail=str(e))
+            raise EngineError(503, "network_error", detail=str(e))
         spec = ModelSpec(probe.id, probe.label, repo, kind, custom=True)
         self.custom.append(spec)
         catalog.save_custom(self.custom_path, self.custom)
@@ -488,7 +566,7 @@ class Engine:
     async def remove_custom(self, model_id: str) -> None:
         spec = self.spec(model_id)
         if not spec.custom:
-            raise EngineError(400, "not_custom", f"{spec.label} yerleşik bir model; kaldırılamaz.")
+            raise EngineError(400, "not_custom", Msg("not_custom", label=spec.label))
         await self.delete_model(model_id)
         self.custom = [s for s in self.custom if s.id != model_id]
         catalog.save_custom(self.custom_path, self.custom)

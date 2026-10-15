@@ -28,7 +28,10 @@ _APOS_CLASS = "[" + re.escape(APOSTROPHES) + "]"
 _ATTACHED_SUFFIX = r"[aeıiuüldtnysmkcçğ][^\W\d_]*"
 _ATTACHED_MIN_LEN = 4
 _PROMPT_TOKEN_BUDGET = 150
-_PROMPT_HEAD = "Bugün yazılım projesinde şu konular üzerinde çalışacağız: "
+_PROMPT_HEADS = {
+    "tr": "Bugün yazılım projesinde şu konular üzerinde çalışacağız: ",
+    "en": "Today we'll work on these software topics: ",
+}
 
 
 @dataclass
@@ -75,15 +78,17 @@ def _estimate_tokens(text: str) -> int:
     return int(len(text) / 3.0) + 1
 
 
-def build_whisper_prompt(terms: list[Term]) -> str:
-    """Natural punctuated Turkish sentence listing the canonical terms (first N that fit)."""
+def build_whisper_prompt(terms: list[Term], language: str = "tr") -> str:
+    """Natural punctuated sentence (Turkish or English lead-in) listing the canonical terms
+    (first N that fit)."""
+    head = _PROMPT_HEADS[language]
     names: list[str] = []
     for t in terms:
-        candidate = _PROMPT_HEAD + ", ".join(names + [t.term]) + "."
+        candidate = head + ", ".join(names + [t.term]) + "."
         if _estimate_tokens(candidate) > _PROMPT_TOKEN_BUDGET:
             break
         names.append(t.term)
-    return _PROMPT_HEAD + ", ".join(names) + "." if names else ""
+    return head + ", ".join(names) + "." if names else ""
 
 
 def tr_lower(s: str) -> str:

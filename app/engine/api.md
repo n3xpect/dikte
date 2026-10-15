@@ -33,13 +33,13 @@ The app owns UI, microphone capture, and the JSON files (settings/history/terms)
   "kind": "mlx-whisper",              // only "mlx-whisper" (Qwen3-ASR removed in 0.1.1)
   "custom": false,
   "recommended": true,
-  "note": "WER 7,9% · terim 96% · ~0,8 sn",   // short Turkish note, may be ""
+  "note": "WER 7,9% · terim 96% · ~0,8 sn",   // short note in ui_language, may be ""
   "size_bytes": 3084000000,           // total download size (from HF; null if unknown yet)
   "downloaded_bytes": 3084000000,     // bytes already on disk
   "ram_bytes": 3700000000,            // estimated RAM when loaded
   "state": "loaded",                  // see below
   "progress": null,                   // 0..1 while downloading, else null
-  "error": null                       // last error message (Turkish), else null
+  "error": null                       // last error message (in ui_language), else null
 }
 ```
 
@@ -75,7 +75,7 @@ background at startup; a snapshot follows).
 
 ## HTTP
 
-All bodies JSON. Errors: `{"error": "<code>", "message": "<Turkish text>", ...details}`.
+All bodies JSON. Errors: `{"error": "<code>", "message": "<text in ui_language>", ...details}`.
 Common: 401 `unauthorized`, 400 `invalid_json`, 404 `unknown_model` (bad `{id}`),
 503 `network_error` (an operation that needs Hugging Face could not reach it).
 
@@ -83,13 +83,14 @@ Common: 401 `unauthorized`, 400 `invalid_json`, 404 `unknown_model` (bad `{id}`)
 |----------------------------------|---------------|
 | `GET /health`                    | `{"status":"ok","version":"1"}` |
 | `GET /models`                    | `{"models":[ModelInfo], "system":SystemInfo}` |
-| `PUT /config`                    | partial `Config` (below) → `{"ok":true}`; applies immediately. 400 `invalid_config` (unknown field, wrong type/range, unknown `selected_model`); nothing is applied then |
+| `PUT /config`                    | partial `Config` (below) → `{"ok":true}`; applies immediately. 400 `invalid_config` (unknown field, wrong type/range/value, unknown `selected_model`); nothing is applied then |
 | `GET /terms/default`             | `{"terms":[{"term","accept","fix"}]}` — built-in default term list (the app seeds `terms.json` from it) |
 | `POST /models/{id}/download`     | 202 `{"ok":true}` (also resumes `paused`); **507** `insufficient_disk` with `needed_bytes`, `free_bytes`, `min_free_bytes`; 409 `already_downloading` / `already_downloaded` |
 | `POST /models/{id}/cancel`       | stop a running download → `{"ok":true}`, state `paused` (partial files kept); 409 `not_downloading` |
 | `DELETE /models/{id}`            | delete files (also stops a running download and discards partial files). 409 `model_loaded` if loaded/loading — unload first |
 | `POST /models/{id}/load`         | 202 (also if already loaded/loading); **507** `insufficient_ram` with `needed_bytes`, `available_bytes`; 409 `not_downloaded`. Unloads any other model first. A failure during the load shows up as `ModelInfo.error` |
 | `POST /unload`                   | unload whatever is loaded → `{"ok":true}` |
+| `POST /retranscribe`             | see [below](#post-retranscribe) |
 | `POST /models/custom`            | `{"repo":"org/name"}` (a `https://huggingface.co/org/name` URL is accepted too) → validates on HF (exists, kind detectable) → 201 `ModelInfo`; 200 `ModelInfo` if it is already a custom model; 409 `already_exists` (+`id`) if it is a built-in model; 422 `invalid_repo` (bad format) / `unsupported_model`; 404 `repo_not_found` |
 | `DELETE /models/custom/{id}`     | remove a custom entry (and its files) → `{"ok":true}`; 400 `not_custom`; 409 `model_loaded`. If it was `selected_model`, that becomes `null` |
 
@@ -114,7 +115,7 @@ Config defaults (until the app sends its own): `selected_model "large-v3"`, `idl
 `terms` = `GET /terms/default`.
 
 Disk rule (download): `disk_free - (size - downloaded) >= min_free`, re-checked every ~200 MB while
-downloading; if violated the download stops → `paused`, `error` = Turkish message. Bytes still to
+downloading; if violated the download stops → `paused`, `error` = message (in ui_language). Bytes still to
 come from other running downloads count as part of `size - downloaded`.
 RAM rule (load): `ram_available >= ram_bytes` (ram_bytes ≈ 1.2 × weights), else 507. When another
 model is loaded, its `ram_bytes` counts as available (it is unloaded first).
@@ -146,8 +147,8 @@ Server → client (text JSON):
 | `{"type":"speech_start"}` | VAD detected speech |
 | `{"type":"end","reason":"silence"\|"finish"\|"max_duration"\|"no_speech"\|"cancel"}` | recording ended; stop sending audio |
 | `{"type":"transcribing"}` | transcription started (after model ready) |
-| `{"type":"result","raw_text":"…","text":"…","fixes":[["brenç","branch"]],"audio_s":5.2,"transcribe_s":0.8,"model":"large-v3","language":"tr","dictation_id":"7f3c…"}` | done; `text` = raw_text after term fixes (fixes are applied to Turkish results only). `language` = language used (`tr`/`en`). `dictation_id` identifies the audio for `POST /retranscribe`. Server closes the socket after this |
-| `{"type":"error","code":"…","message":"…"}` | `model_not_downloaded`, `insufficient_ram`, `no_model_selected`, `load_failed`, `busy` (another dictation is running; sent right on connect), `bad_request` (first message is not `start`), `internal`. Server closes the socket after an error |
+| `{"type":"result","raw_text":"…","text":"…","fixes":[["brenç","branch"]],"audio_s":5.2,"transcribe_s":0.8,"model":"large-v3","language":"tr","dictation_id":"7f3c…"}` | done; `text` = raw_text after term fixes (fixes are applied to Turkish results only). `language` = language used (`tr`/`en`). `dictation_id` (random, 16 hex chars) identifies the audio for `POST /retranscribe`. Server closes the socket after this |
+| `{"type":"error","code":"…","message":"…"}` | `model_not_downloaded`, `insufficient_ram`, `no_model_selected`, `load_failed`, `busy` (another dictation is running; sent right on connect), `bad_request` (first message is not `start`), `internal`. `message` is in ui_language. Server closes the socket after an error |
 
 `no_speech`: nothing detected within 15 s → no transcription, socket closes. `finish` before any
 speech was detected also ends with reason `no_speech`. `cancel` → no transcription. A `cancel` or
@@ -158,18 +159,28 @@ following speech; audio is trimmed with 300 ms pre-roll / 200 ms post-roll befor
 
 ## Languages (v2)
 
-- `language: "auto"` → Whisper's language probabilities are computed once per dictation and only
-  `tr` vs `en` are compared (no other language can be chosen). `"tr"` / `"en"` force the language.
+- `language: "auto"` → Whisper's language probabilities are computed once per dictation, on the
+  first 30 s of audio, and only `tr` vs `en` are compared (no other language can be chosen). The
+  encoder output of that window is reused for the transcription (auto costs ~30–60 ms over a
+  forced language). `"tr"` / `"en"` force the language. Forcing a language on speech in the other
+  one usually gives a translation (Whisper behaviour), which is what `/retranscribe` relies on.
 - The term prompt is language-specific (same term list, Turkish or English lead-in sentence).
-- Term `fix` replacements are applied only to Turkish results (they are Turkish spellings).
-- `ui_language` selects the language of all human-readable `message` fields (errors, paused
-  download reasons). Error `code`s are unchanged.
+- Term `fix` replacements are applied only to Turkish results (they are Turkish spellings);
+  `fixes` is `[]` for `en`.
+- `ui_language` selects the language of all human-readable texts: every `message` (HTTP and WS
+  errors), `ModelInfo.error` and `ModelInfo.note`. Error `code`s are unchanged. Stored errors
+  (`ModelInfo.error`) switch language too when `ui_language` changes (a snapshot follows).
+  Texts live in `dikte_engine/messages.py` (key → {tr, en}); technical `detail` fields stay English.
 
 ## `POST /retranscribe`
 
 Body `{"dictation_id": "…", "language": "tr" | "en"}` → 200 with the same object as the `/dictate`
-`result` message (minus `type`), transcribed again from the kept audio in the given language.
-The engine keeps the audio of the **last** dictation only, for 10 minutes. Errors:
-404 `dictation_expired` (unknown/expired id), 409 `model_not_loaded` is never returned — the model is
-loaded if needed (same rules/errors as `/models/{id}/load`), 409 `busy` while a dictation is running.
-Resets the idle-unload timer.
+`result` message (minus `type`, same `dictation_id`), transcribed again from the kept audio in the
+given language with the **selected** model and the current terms.
+The engine keeps the trimmed audio of the **last** dictation that produced a `result` only, for 10
+minutes from that result (retranscribing does not extend it; a cancelled dictation does not replace
+it). Errors: 400 `bad_request` (body not as above), 404 `dictation_expired` (unknown/expired/replaced
+id), 409 `busy` while a dictation is running, 409 `no_model_selected`. `model_not_loaded` is never
+returned — the selected model is loaded if needed (same rules/errors as `/models/{id}/load`:
+409 `not_downloaded`, 507 `insufficient_ram`, 500 `load_failed`); the request waits for the load.
+Resets the idle-unload timer (the model is not idle-unloaded while it runs).

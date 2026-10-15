@@ -1,0 +1,63 @@
+# Synthetic language test set (spoken with macOS `say`, see tests/test_english.py).
+#   sentences: English dictation (dev = developer, gen = everyday); every term is in default_terms.json
+#   short:     very short utterances in both languages (language detection on little audio)
+
+sentences:
+  - id: endev01
+    text: "First, create a new branch in git for the login feature."
+  - id: endev02
+    text: "Commit these changes and open a pull request against main."
+  - id: endev03
+    text: "We need to deploy the backend to staging before the review."
+  - id: endev04
+    text: "The PostgreSQL database is running out of connections in production."
+  - id: endev05
+    text: "The frontend opens a WebSocket to the server and waits for events."
+  - id: endev06
+    text: "Let's move the Redis cache into its own container on Kubernetes."
+  - id: endev07
+    text: "Merge the pull request once the pipeline passes."
+  - id: endev08
+    text: "This endpoint returns JSON, but the client cannot parse it."
+  - id: endev09
+    text: "Please refactor the session handling before we add more tests."
+  - id: endev10
+    text: "The bug only shows up in production, so check the logs first."
+  - id: endev11
+    text: "Build a new Docker image and push it to the registry."
+  - id: endev12
+    text: "Our REST API times out after thirty seconds, so raise the timeout."
+  - id: endev13
+    text: "Write the web app in Go and keep the HTTP framework simple."
+  - id: endev14
+    text: "The socket closes when the client is idle for too long."
+  - id: endev15
+    text: "Rebase your branch on main and resolve the conflicts in the repo."
+  - id: engen01
+    text: "I'm going to the grocery store, do you need anything?"
+  - id: engen02
+    text: "The meeting has been moved to Thursday afternoon."
+  - id: engen03
+    text: "Thanks for your help yesterday, it made a big difference."
+  - id: engen04
+    text: "Can you send me the photos from the weekend trip?"
+  - id: engen05
+    text: "It's raining again, so I'll work from home today."
+
+short:
+  - {lang: en, text: "Okay."}
+  - {lang: en, text: "Sounds good."}
+  - {lang: en, text: "Merge it."}
+  - {lang: en, text: "Ship it."}
+  - {lang: en, text: "Thank you."}
+  - {lang: en, text: "Not yet."}
+  - {lang: en, text: "Run the tests."}
+  - {lang: en, text: "Deploy to staging."}
+  - {lang: tr, text: "Tamam."}
+  - {lang: tr, text: "Deploy et."}
+  - {lang: tr, text: "Evet, gönder."}
+  - {lang: tr, text: "Teşekkürler."}
+  - {lang: tr, text: "Henüz değil."}
+  - {lang: tr, text: "Merge et."}
+  - {lang: tr, text: "Olur, bakarım."}
+  - {lang: tr, text: "Testleri çalıştır."}

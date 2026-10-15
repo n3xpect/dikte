@@ -40,11 +40,11 @@ def load_wav(path: str | Path) -> np.ndarray:
         return x.reshape(-1, w.getnchannels()).mean(axis=1).astype(np.float32)
 
 
-def tts(text: str) -> np.ndarray:
-    """Turkish speech via macOS `say -v Yelda` + ffmpeg (16 kHz mono)."""
-    name = f"tts_{abs(hash(text))}"
+def tts(text: str, voice: str = "Yelda") -> np.ndarray:
+    """Speech via macOS `say -v <voice>` (default Turkish Yelda) + ffmpeg (16 kHz mono)."""
+    name = f"tts_{abs(hash((text, voice)))}"
     aiff, wav = TMP / f"{name}.aiff", TMP / f"{name}.wav"
-    subprocess.run(["say", "-v", "Yelda", "-o", str(aiff), text], check=True)
+    subprocess.run(["say", "-v", voice, "-o", str(aiff), text], check=True)
     subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-i", str(aiff), "-ar", str(SR),
                     "-ac", "1", "-sample_fmt", "s16", str(wav)], check=True)
     return load_wav(wav)

@@ -21,16 +21,16 @@ class ModelSpec:
     kind: str  # WHISPER (the only supported kind)
     custom: bool = False
     recommended: bool = False
-    note: str = ""
+    note: str = ""  # messages.py key ("" = none)
     est_weights_bytes: int | None = None  # used for ram_bytes until HF sizes are known
 
 
 BUILTIN: list[ModelSpec] = [
     ModelSpec("large-v3", "Whisper large-v3", "mlx-community/whisper-large-v3-mlx", WHISPER,
-              recommended=True, note="WER 7,9% · terim 96% · ~0,8 sn",
+              recommended=True, note="note_large_v3",
               est_weights_bytes=3_083_520_416),
     ModelSpec("turbo", "Whisper large-v3 turbo", "mlx-community/whisper-large-v3-turbo", WHISPER,
-              note="WER 8,3% · ~0,5 sn", est_weights_bytes=1_613_977_612),
+              note="note_turbo", est_weights_bytes=1_613_977_612),
 ]
 
 
@@ -122,7 +122,7 @@ def detect_kind(repo: str, rf: RepoFiles) -> str:
     except Exception as e:
         raise NetworkError(str(e)) from e
     if not isinstance(config, dict):
-        raise UnsupportedModel("config.json okunamadı")
+        raise UnsupportedModel("config.json is not valid JSON")
     if ("n_mels" in config or "n_audio_state" in config) and (
             names & {"weights.npz", "weights.safetensors"}):
         return WHISPER

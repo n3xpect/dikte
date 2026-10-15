@@ -20,6 +20,7 @@ from urllib.parse import quote
 import aiohttp
 
 from .catalog import WHISPER, ModelSpec, RepoFile, RepoFiles
+from .messages import LocalizedError, Msg
 
 log = logging.getLogger("dikte.store")
 
@@ -152,11 +153,12 @@ class Store:
                                     since_guard = 0
                                     guard()
                 if _size(part) != f.size:
-                    raise OSError(f"{f.path}: boyut uyuşmuyor ({_size(part)} != {f.size})")
+                    raise LocalizedError(Msg("size_mismatch", file=f.path, got=_size(part),
+                                             want=f.size))
                 if f.lfs and not await asyncio.get_running_loop().run_in_executor(
                         None, _sha256_matches, part, f):
                     part.unlink(missing_ok=True)
-                    raise OSError(f"{f.path}: SHA-256 doğrulaması başarısız")
+                    raise LocalizedError(Msg("checksum_failed", file=f.path))
                 part.replace(blob)
             link.parent.mkdir(parents=True, exist_ok=True)
             if link.is_symlink() or link.exists():
