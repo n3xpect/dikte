@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
-# dist/dikte.app → dist/dikte-<version>.dmg (drag-and-drop installer: app + Applications link).
+# Signed dikte.app → dist/dikte-<version>.dmg (drag-and-drop installer: app + Applications link).
+# dist/ contains only the DMG.
 #
-#   app/make-dmg.sh
+#   app/make-dmg.sh [path/to/dikte.app]   # default: app/dikte/build/package/dikte.app
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 DIST="$ROOT/dist"
-APP="$DIST/dikte.app"
+APP="${1:-$ROOT/app/dikte/build/package/dikte.app}"
 IDENTITY="Dikte Local Signing"
 
 [[ -d "$APP" ]] || { echo "Önce paketle: app/package.sh ($APP yok)"; exit 1; }
@@ -24,7 +25,9 @@ ditto "$APP" "$STAGE/dikte.app"
 ln -s /Applications "$STAGE/Uygulamalar"
 
 log "DMG oluşturuluyor (sıkıştırma birkaç dakika sürebilir)"
-rm -f "$DMG"
+mkdir -p "$DIST"
+# Keep dist/ to the installer only: drop older DMGs and anything else.
+find "$DIST" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
 hdiutil create -volname "Dikte $VERSION" -srcfolder "$STAGE" -fs APFS \
   -format ULFO -ov "$DMG" -quiet
 

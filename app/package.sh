@@ -11,7 +11,6 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 APP_SRC="$ROOT/app/dikte"
 ENGINE_SRC="$ROOT/app/engine"
 BUILD="$ROOT/app/dikte/build/package"
-DIST="$ROOT/dist"
 PY_VERSION="$(cat "$ENGINE_SRC/.python-version" 2>/dev/null || echo 3.12)"
 IDENTITY="Dikte Local Signing"
 SIGN=1
@@ -84,10 +83,7 @@ EOF
   codesign --verify --deep --strict "$BUILD/dikte.app" && log "İmza doğrulandı"
 fi
 
-log "dist/dikte.app yazılıyor"
-mkdir -p "$DIST"
-rm -rf "$DIST/dikte.app"
-ditto "$BUILD/dikte.app" "$DIST/dikte.app"
-du -sh "$DIST/dikte.app"
+du -sh "$BUILD/dikte.app"
 
-"$ROOT/app/make-dmg.sh"
+# dist/ holds only the installer DMG; the signed app stays in the build folder.
+"$ROOT/app/make-dmg.sh" "$BUILD/dikte.app"
