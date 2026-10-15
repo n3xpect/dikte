@@ -106,6 +106,9 @@ final class EngineController {
         var env = ProcessInfo.processInfo.environment
         env["DIKTE_TOKEN"] = token
         env["PYTHONUNBUFFERED"] = "1"
+        // Never write .pyc into the (signed) app bundle — that breaks its code signature.
+        // The package ships precompiled bytecode instead (app/package.sh).
+        env["PYTHONDONTWRITEBYTECODE"] = "1"
         p.environment = env
 
         let inPipe = Pipe(), outPipe = Pipe(), errPipe = Pipe()

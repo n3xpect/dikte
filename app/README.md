@@ -5,13 +5,15 @@ Yerel Türkçe dikte uygulaması: Swift arayüz (`dikte/`) + uygulamanın içine
 ## Paketleme
 
 ```bash
-app/package.sh          # → dist/dikte.app (Release, gömülü Python, yerel imza)
+app/package.sh          # → dist/dikte.app + dist/dikte-<sürüm>.dmg (Release, gömülü Python, yerel imza)
+app/make-dmg.sh         # sadece DMG'yi mevcut dist/dikte.app'ten yeniden üret
 ```
 
 İlk çalıştırmada login anahtar zincirine `Dikte Local Signing` adlı bir imza sertifikası eklenir (her derlemede mikrofon izni tekrar sorulmasın diye). Kaldırmak için:
 `security delete-identity -c "Dikte Local Signing" ~/Library/Keychains/login.keychain-db`
 
-Kurulum: `dist/dikte.app`'i istediğin yere (örn. /Applications) kendin sürükle.
+Kurulum: `dist/dikte-<sürüm>.dmg`'yi aç, `dikte.app`'i Uygulamalar'a sürükle.
+`dist/dikte.app`'i doğrudan çalıştırma; denemek için önce bir kopyasını al (imzalı paket değişmemeli).
 
 ## Geliştirme
 

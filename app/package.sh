@@ -17,7 +17,8 @@ IDENTITY="Dikte Local Signing"
 SIGN=1
 [[ "${1:-}" == "--no-sign" ]] && SIGN=0
 
-log() { printf '\033[1m▸ %s\033[0m\n' "$*"; }
+START=$SECONDS
+log() { printf '\033[1m▸ [%3ds] %s\033[0m\n' "$((SECONDS - START))" "$*"; }
 
 log "Swift uygulaması derleniyor (Release)"
 (cd "$APP_SRC" && xcodegen generate --quiet)
@@ -42,7 +43,7 @@ PY="$RES/python/bin/python3"
 log "Motor bağımlılıkları kuruluyor"
 REQ="$BUILD/requirements.txt"
 uv export --project "$ENGINE_SRC" --frozen --no-dev --no-emit-project --no-hashes -q > "$REQ"
-uv pip install --python "$PY" --break-system-packages --no-cache -r "$REQ" -q
+uv pip install --python "$PY" --break-system-packages --link-mode copy -r "$REQ" -q
 # PEP 668 marker would block later pip use; harmless to remove inside our private copy.
 find "$RES/python/lib" -maxdepth 2 -name EXTERNALLY-MANAGED -delete
 rm -rf "$RES/python/share" "$RES/python/include"
@@ -50,6 +51,11 @@ find "$RES/python" -name "__pycache__" -type d -prune -exec rm -rf {} +
 
 log "Motor kodu kopyalanıyor"
 rsync -a --exclude "__pycache__" "$ENGINE_SRC/dikte_engine" "$RES/"
+
+# The app runs Python with PYTHONDONTWRITEBYTECODE=1 (writing .pyc would break the signature),
+# so ship the bytecode precompiled. --invalidation-mode unchecked-hash: valid regardless of mtimes.
+log "Python bytecode önceden derleniyor"
+"$PY" -m compileall -q -j 0 --invalidation-mode unchecked-hash "$RES/python/lib" "$RES/dikte_engine" >/dev/null || true
 
 if [[ $SIGN == 1 ]]; then
   # no -v: a self-signed identity is "not trusted" but still signs fine
@@ -83,4 +89,5 @@ mkdir -p "$DIST"
 rm -rf "$DIST/dikte.app"
 ditto "$BUILD/dikte.app" "$DIST/dikte.app"
 du -sh "$DIST/dikte.app"
-log "Hazır: $DIST/dikte.app (kurulum: kendin /Applications'a sürükle)"
+
+"$ROOT/app/make-dmg.sh"
