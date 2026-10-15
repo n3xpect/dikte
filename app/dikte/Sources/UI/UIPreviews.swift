@@ -1,5 +1,6 @@
 #if DEBUG
 import AppKit
+import AVFoundation
 import SwiftUI
 
 // Fake data, #Previews and a PNG renderer for the main window and menu bar icon.
@@ -275,6 +276,15 @@ enum UIPreviewRenderer {
                "delivery-settings", 720, 600, dir)
         render(PreviewData.deliverySection(PreviewData.deliverySettings(), trusted: false),
                "delivery-settings-dark", 720, 600, dir, dark: true)
+        var shiftEnter = PreviewData.deliverySettings()
+        shiftEnter.sendKey = .shiftEnter
+        render(PreviewData.deliverySection(shiftEnter, trusted: true), "delivery-settings-shift-enter", 720, 640, dir)
+        renderFitting(PermissionAlertView(model: .preview(AppPermission.allCases)), "permissions-both", dir)
+        renderFitting(PermissionAlertView(model: .preview([.accessibility])), "permissions-accessibility", dir)
+        renderFitting(PermissionAlertView(model: .preview(AppPermission.allCases, granted: [.accessibility])),
+                      "permissions-one-granted", dir)
+        renderFitting(PermissionAlertView(model: .preview(AppPermission.allCases)), "permissions-both-dark", dir,
+                      dark: true)
         render(PreviewData.window(.terms), "terms", w, 760, dir)
         render(PreviewData.window(.terms), "terms-dark", w, 760, dir, dark: true)
         render(PreviewData.window(.history), "history", w, 660, dir)
@@ -366,6 +376,27 @@ enum UIPreviewRenderer {
         check(!DiskCheck.known(needed: 5 * PreviewData.gib, free: 14 * PreviewData.gib, minFree: 10 * PreviewData.gib)
               .allowsDownload, "disk: below min free blocked")
         check(TermDraft.list(" a, b ,, a,c ") == ["a", "b", "c"], "terms: comma list")
+        // Launch permission check.
+        let plain = AppSettings()
+        var withApp = AppSettings()
+        withApp.deliveryDefaultApp = "com.tinyspeck.slackmacgap"
+        var withFavorite = AppSettings()
+        withFavorite.deliveryFavorites = ["com.apple.Notes"]
+        func missing(_ mic: AVAuthorizationStatus, _ trusted: Bool, _ s: AppSettings) -> [AppPermission] {
+            PermissionCheck.missing(microphone: mic, accessibilityTrusted: trusted, settings: s)
+        }
+        check(missing(.authorized, false, plain).isEmpty, "permissions: clipboard only → none")
+        check(missing(.notDetermined, false, plain).isEmpty, "permissions: mic not asked yet → none")
+        check(missing(.denied, true, plain) == [.microphone], "permissions: mic denied")
+        check(missing(.restricted, true, plain) == [.microphone], "permissions: mic restricted")
+        check(missing(.authorized, false, withApp) == [.accessibility], "permissions: default app, no AX")
+        check(missing(.authorized, false, withFavorite) == [.accessibility], "permissions: favourite, no AX")
+        check(missing(.authorized, true, withApp).isEmpty, "permissions: AX granted")
+        check(missing(.denied, false, withApp) == [.microphone, .accessibility], "permissions: both")
+        check(PermissionAlertModel.preview([.microphone, .accessibility], granted: [.microphone]).allGranted == false,
+              "permissions: one granted")
+        check(PermissionAlertModel.preview([.accessibility], granted: [.accessibility]).allGranted,
+              "permissions: all granted")
         return failures
     }
 
@@ -375,6 +406,12 @@ enum UIPreviewRenderer {
         defer { window.orderOut(nil) }
         settle(hosting)
         snapshot(hosting, window, dir.appendingPathComponent(name + ".png"))
+    }
+
+    /// At the view's own size.
+    private static func renderFitting<V: View>(_ view: V, _ name: String, _ dir: URL, dark: Bool = false) {
+        let size = NSHostingView(rootView: view).fittingSize
+        render(view, name, size.width.rounded(.up), size.height.rounded(.up), dir, dark: dark)
     }
 
     private static func host<V: View>(_ view: V, _ width: CGFloat, _ height: CGFloat,

@@ -356,8 +356,8 @@ private struct VisualEffectBackground: NSViewRepresentable {
 // MARK: - Text area
 
 /// Plain-text NSTextView that sizes to its content (scrolls past `maxHeight`), takes focus with the
-/// cursor at the end when it appears, and keeps Enter = newline. Shift+Enter / ⌘1–9 / Esc are intercepted
-/// by `DictationPanelController` before they reach it.
+/// cursor at the end when it appears. The send key (↩ or ⇧↩) / ⌘1–9 / Esc are intercepted by
+/// `DictationPanelController` before they reach it.
 struct DictationTextView: NSViewRepresentable {
     @Binding var text: String
     /// Off while the text is being replaced (re-transcription).
@@ -470,6 +470,7 @@ private final class FocusingTextView: NSTextView {
 #Preview("Dil değişimi onayı") { DictationPanelView(controller: .preview(.confirmSwitch)).padding() }
 #Preview("Dil hatası") { DictationPanelView(controller: .preview(.languageError)).padding() }
 #Preview("Aktar: uygulama") { DictationPanelView(controller: .preview(.deliveryApp)).padding() }
+#Preview("Aktar: ⇧↩ gönderir") { DictationPanelView(controller: .preview(.deliveryShiftEnter)).padding() }
 #Preview("Aktar: hepsi") { DictationPanelView(controller: .preview(.deliveryExpanded)).padding() }
 #Preview("Aktar: klavyeyle seçili") { DictationPanelView(controller: .preview(.deliverySelected)).padding() }
 #Preview("Aktar: ipucu yok") { DictationPanelView(controller: .preview(.deliveryTipDismissed)).padding() }

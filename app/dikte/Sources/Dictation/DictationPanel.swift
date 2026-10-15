@@ -37,7 +37,7 @@ final class DictationPanel: NSPanel {
     override var canBecomeMain: Bool { false }
 }
 
-/// Shows/positions the panel and routes Enter / Shift+Enter / ⌘1–9 / ⌘C / Esc / ⌘L to the controller.
+/// Shows/positions the panel and routes ↩ / ⇧↩ / ⌘1–9 / ⌘C / Esc / ⌘L to the controller.
 final class DictationPanelController {
     /// Distance between the panel's bottom edge and the bottom of the visible frame (Dock).
     static let bottomMargin: CGFloat = 80
@@ -110,7 +110,7 @@ final class DictationPanelController {
         keyMonitor = nil
     }
 
-    private enum Key {
+    enum Key {
         static let returnKey: UInt16 = 36
         static let keypadEnter: UInt16 = 76
         static let escape: UInt16 = 53
@@ -127,65 +127,60 @@ final class DictationPanelController {
 
     /// Returns true when the event was consumed.
     private func handleKeyDown(_ event: NSEvent) -> Bool {
-        let isReturn = event.keyCode == Key.returnKey || event.keyCode == Key.keypadEnter
-        let isEscape = event.keyCode == Key.escape
         let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
         switch controller.phase {
         case .idle:
             return false
         case .editing:
-            if let tv = panel.firstResponder as? NSTextView, tv.hasMarkedText() { return false }
-            if !controller.suggestions.isEmpty {
-                if isEscape { controller.dismissSuggestions(); return true }
-                return false
-            }
-            let command = flags.contains(.command)
-            if command, event.charactersIgnoringModifiers?.lowercased() == "l" {
-                controller.switchLanguage()
-                return true
-            }
-            if controller.retranscribing {
-                // Text is read-only meanwhile; Esc stops, ⌘C/⌘A still work, the rest is swallowed.
-                if isEscape { controller.escapePressed() }
-                else if command { _ = editingCommand(event, shift: flags.contains(.shift)) }
-                return true
-            }
-            if controller.confirmingLanguageSwitch, isReturn, !flags.contains(.shift) {
-                controller.switchLanguage()
-                return true
-            }
-            // ↑/↓ list navigation: ↓ on the text's last line enters the AKTAR list; there ↑/↓ move,
-            // ↩ delivers, Esc (or typing) hands the keys back to the text.
-            let bare = flags.intersection([.command, .option, .control, .shift]).isEmpty
-            if controller.listSelection != nil {
-                if bare && event.keyCode == Key.down { controller.moveListSelection(by: 1); return true }
-                if bare && event.keyCode == Key.up { controller.moveListSelection(by: -1); return true }
-                if isEscape { controller.leaveList(); return true }
-                if isReturn && bare { controller.activateListSelection(); return true }
-                if !command && !isReturn { controller.leaveList(); return false }
-            } else if bare, event.keyCode == Key.down, let tv = panel.firstResponder as? NSTextView,
-                      Self.caretOnLastLine(tv), controller.enterList() {
-                return true
-            }
-            if isEscape { controller.escapePressed(); return true }
-            if isReturn && flags.contains(.shift) { controller.deliverToDefault(); return true }
-            if command, !flags.contains(.shift), let n = Self.shortcutNumber(keyCode: event.keyCode) {
-                controller.deliver(shortcut: n)
-                return true
-            }
-            if command, !flags.contains(.shift), event.charactersIgnoringModifiers?.lowercased() == "c",
-               let tv = panel.firstResponder as? NSTextView, tv.selectedRange().length == 0 {
-                controller.copyOnly()
-                return true
-            }
-            if command, editingCommand(event, shift: flags.contains(.shift)) { return true }
-            return false
+            let tv = panel.firstResponder as? NSTextView
+            let bareDown = event.keyCode == Key.down && flags.intersection(PanelKeyAction.modifiers).isEmpty
+            let context = PanelKeyAction.Context(
+                sendKey: controller.sendKey,
+                hasMarkedText: tv?.hasMarkedText() ?? false,
+                suggestionsShown: !controller.suggestions.isEmpty,
+                retranscribing: controller.retranscribing,
+                confirmingLanguageSwitch: controller.confirmingLanguageSwitch,
+                listSelected: controller.listSelection != nil,
+                listAvailable: controller.navigableRowCount > 0,
+                // Layout work only for the one key that needs it.
+                caretOnLastLine: bareDown && tv.map(Self.caretOnLastLine) == true,
+                hasTextSelection: (tv?.selectedRange().length ?? 0) > 0,
+                secondsSinceEditing: controller.secondsSinceEditingBegan)
+            let action = PanelKeyAction.editing(keyCode: event.keyCode, flags: flags,
+                                                characters: event.charactersIgnoringModifiers?.lowercased() ?? "",
+                                                context: context)
+            return perform(action, event: event, textView: tv, shift: flags.contains(.shift))
         case .listening, .transcribing, .failed:
-            if isEscape { controller.escapePressed() }
-            else if isReturn { controller.enterPressed() }
+            if event.keyCode == Key.escape { controller.escapePressed() }
+            else if PanelKeyAction.isReturn(event.keyCode) { controller.enterPressed() }
             // Swallow everything else: nothing in these phases takes typing (no beeps).
             return true
         }
+    }
+
+    /// Runs a decided action; true = the event was consumed.
+    private func perform(_ action: PanelKeyAction, event: NSEvent, textView: NSTextView?, shift: Bool) -> Bool {
+        switch action {
+        case .pass: return false
+        case .ignore: break
+        case .deliverDefault: controller.deliverToDefault()
+        case .newline: textView?.insertNewline(nil)
+        case .deliverShortcut(let n): controller.deliver(shortcut: n)
+        case .copyOnly: controller.copyOnly()
+        case .switchLanguage: controller.switchLanguage()
+        case .dismissSuggestions: controller.dismissSuggestions()
+        case .escape: controller.escapePressed()
+        case .enterList: controller.enterList()
+        case .moveList(let delta): controller.moveListSelection(by: delta)
+        case .activateList: controller.activateListSelection()
+        case .leaveList: controller.leaveList()
+        case .leaveListAndPass:
+            controller.leaveList()
+            return false
+        case .editingCommand(let swallowOthers):
+            return editingCommand(event, shift: shift) || swallowOthers
+        }
+        return true
     }
 
     /// True when ↓ would leave the text: no selection and the caret is on the last visual line
@@ -218,5 +213,103 @@ final class DictationPanelController {
         default: return false
         }
         return NSApp.sendAction(Selector(action), to: nil, from: panel)
+    }
+}
+
+/// What a key press in the editing phase does. Pure, so the mapping is checked in
+/// `DictationSelfCheck` for both send keys.
+enum PanelKeyAction: Equatable {
+    /// Not ours: the text view gets the key.
+    case pass
+    /// Consumed, nothing happens.
+    case ignore
+    case deliverDefault
+    /// New line typed into the text (⇧↩ when ↩ sends).
+    case newline
+    case deliverShortcut(Int)
+    case copyOnly
+    case switchLanguage
+    case dismissSuggestions
+    case escape
+    case enterList
+    case moveList(Int)
+    case activateList
+    case leaveList
+    /// Typing while a row is selected: back to the text, which gets the key.
+    case leaveListAndPass
+    /// ⌘C/V/X/A/Z through the responder chain; any other ⌘ key passes unless `swallowOthers`.
+    case editingCommand(swallowOthers: Bool)
+
+    /// The send key right after the result appeared (or was replaced) is ignored: the press that
+    /// ended the recording with ↩ shouldn't be followed by an accidental send.
+    static let sendGuard: TimeInterval = 0.3
+    static let modifiers: NSEvent.ModifierFlags = [.command, .option, .control, .shift]
+
+    struct Context {
+        var sendKey: SendKey
+        var hasMarkedText = false
+        var suggestionsShown = false
+        var retranscribing = false
+        var confirmingLanguageSwitch = false
+        /// A row of the AKTAR list is selected with ↑/↓.
+        var listSelected = false
+        /// There are rows to reach with ↓.
+        var listAvailable = false
+        var caretOnLastLine = false
+        var hasTextSelection = false
+        var secondsSinceEditing: TimeInterval = .infinity
+    }
+
+    static func isReturn(_ keyCode: UInt16) -> Bool {
+        keyCode == DictationPanelController.Key.returnKey || keyCode == DictationPanelController.Key.keypadEnter
+    }
+
+    /// `characters` = `charactersIgnoringModifiers`, lowercased.
+    static func editing(keyCode: UInt16, flags: NSEvent.ModifierFlags, characters: String,
+                        context c: Context) -> PanelKeyAction {
+        typealias Key = DictationPanelController.Key
+        let isReturn = isReturn(keyCode)
+        let isEscape = keyCode == Key.escape
+        let command = flags.contains(.command)
+        let shift = flags.contains(.shift)
+        let bare = flags.intersection(modifiers).isEmpty
+        let shiftOnly = flags.intersection(modifiers) == .shift
+
+        if c.hasMarkedText { return .pass }   // IME composition owns ↩ / Esc
+        if c.suggestionsShown { return isEscape ? .dismissSuggestions : .pass }
+        if command, characters == "l" { return .switchLanguage }
+        if c.retranscribing {
+            // Text is read-only meanwhile; Esc stops, ⌘C/⌘A still work, the rest is swallowed.
+            if isEscape { return .escape }
+            return command ? .editingCommand(swallowOthers: true) : .ignore
+        }
+        if c.confirmingLanguageSwitch, isReturn, !shift { return .switchLanguage }
+        // ↑/↓ list navigation: ↓ on the text's last line enters the AKTAR list; there ↑/↓ move,
+        // ↩ delivers, ⇧↩ does nothing, Esc (or typing) hands the keys back to the text.
+        if c.listSelected {
+            if bare && keyCode == Key.down { return .moveList(1) }
+            if bare && keyCode == Key.up { return .moveList(-1) }
+            if isEscape { return .leaveList }
+            if isReturn && bare { return .activateList }
+            if isReturn && shift { return .ignore }
+            if !command && !isReturn { return .leaveListAndPass }
+        } else if bare, keyCode == Key.down, c.caretOnLastLine, c.listAvailable {
+            return .enterList
+        }
+        if isEscape { return .escape }
+        if isReturn {
+            let sends = c.sendKey == .enter ? bare : shiftOnly
+            let breaksLine = c.sendKey == .enter ? shiftOnly : bare
+            if sends { return c.secondsSinceEditing < sendGuard ? .ignore : .deliverDefault }
+            // ↩ is the text view's own newline; ⇧↩ isn't one everywhere, so type it ourselves.
+            if breaksLine { return c.sendKey == .enter ? .newline : .pass }
+            return .pass   // ⌥↩ / ⌃↩: whatever the text view does with them
+        }
+        if command, !shift, let n = DictationPanelController.shortcutNumber(keyCode: keyCode) {
+            return .deliverShortcut(n)
+        }
+        if command, !shift, characters == "c", !c.hasTextSelection { return .copyOnly }
+        if command { return .editingCommand(swallowOthers: false) }
+        return .pass
     }
 }

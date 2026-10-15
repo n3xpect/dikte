@@ -20,9 +20,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         StatusItemController.shared.install(state: state)
         Hotkeys.install(dictation: state.dictation)
         if !state.settings.settings.onboardingCompleted {
+            // The welcome flow asks for the permissions itself.
             OnboardingWindowController.shared.show()
-        } else if ProcessInfo.processInfo.arguments.contains("--show-main") {
-            MainWindowController.shared.show()
+        } else {
+            if ProcessInfo.processInfo.arguments.contains("--show-main") {
+                MainWindowController.shared.show()
+            }
+            PermissionCheck.runAtLaunch(state: state)
         }
     }
 

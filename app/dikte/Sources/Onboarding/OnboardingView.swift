@@ -19,7 +19,7 @@ struct OnboardingView: View {
                 switch flow.step {
                 case .language: OnboardingLanguageStep(flow: flow)
                 case .model: OnboardingModelStep(flow: flow)
-                case .microphone: OnboardingMicrophoneStep(flow: flow)
+                case .permissions: OnboardingPermissionsStep(flow: flow)
                 case .shortcut: OnboardingShortcutStep(flow: flow)
                 }
             }
@@ -34,8 +34,9 @@ struct OnboardingView: View {
         .frame(width: Self.size.width, height: Self.size.height)
         .navigationTitle(L("Dikte'ye hoş geldin"))
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
-            // Back from System Settings → pick up a changed microphone permission.
+            // Back from System Settings → pick up changed permissions.
             flow.backend.refreshMicPermission()
+            flow.backend.refreshAccessibility()
         }
     }
 
@@ -63,7 +64,7 @@ struct OnboardingView: View {
             case .ready, .downloading: break
             case .engine, .waitingForCatalog, .notDownloaded: return L("Şimdilik atla")
             }
-        case .microphone:
+        case .permissions:
             if flow.backend.micPermission == .notDetermined { return L("Şimdilik atla") }
         default:
             break
@@ -350,16 +351,16 @@ private struct OnboardingEngineStatus: View {
     }
 }
 
-// MARK: - 3. Microphone
+// MARK: - 3. Permissions
 
-private struct OnboardingMicrophoneStep: View {
+private struct OnboardingPermissionsStep: View {
     var flow: OnboardingFlow
 
     private var permission: MicPermission { flow.backend.micPermission }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            StepHeader(title: L("Mikrofon izni"),
+        VStack(alignment: .leading, spacing: 14) {
+            StepHeader(title: L("İzinler"),
                        subtitle: L("Dikte yalnızca kısayola bastığında dinler. Ses bu Mac'te işlenir, hiçbir yere gönderilmez."))
             OnboardingCard {
                 HStack(alignment: .top, spacing: 14) {
@@ -371,6 +372,7 @@ private struct OnboardingMicrophoneStep: View {
                     Spacer(minLength: 0)
                 }
             }
+            OnboardingAccessibilityCard(flow: flow)
             if permission != .granted {
                 Note(text: L("İzin vermeden de devam edebilirsin; dikte için mikrofon izni gerekecek."))
             }
@@ -416,6 +418,48 @@ private struct OnboardingMicrophoneStep: View {
     }
 }
 
+/// Accessibility: only needed to paste into an app, so it never blocks "Devam".
+private struct OnboardingAccessibilityCard: View {
+    var flow: OnboardingFlow
+
+    var body: some View {
+        let trusted = flow.backend.accessibilityTrusted
+        OnboardingCard {
+            HStack(alignment: .top, spacing: 14) {
+                Image(systemName: trusted ? "checkmark.circle.fill" : "accessibility")
+                    .font(.system(size: 28))
+                    .foregroundStyle(trusted ? Palette.loaded : Color.accentColor)
+                    .frame(width: 36)
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(alignment: .firstTextBaseline) {
+                        Text(L("Erişilebilirlik izni")).font(.headline)
+                        Spacer(minLength: 8)
+                        if trusted {
+                            Label(L("Verildi"), systemImage: "checkmark.circle.fill")
+                                .foregroundStyle(Palette.loadedText)
+                        } else {
+                            Label {
+                                Text(L("Verilmedi"))
+                            } icon: {
+                                Image(systemName: "circle.fill").imageScale(.small)
+                            }
+                            .foregroundStyle(Palette.loading)
+                        }
+                    }
+                    .font(.callout)
+                    Text(L("Metni bir uygulamaya yapıştırmak için gerekli; sadece panoyu kullanacaksan gerekmez."))
+                        .font(.callout).foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if !trusted {
+                        Button(L("İzin ver…"), systemImage: "accessibility", action: flow.backend.requestAccessibility)
+                            .padding(.top, 4)
+                    }
+                }
+            }
+        }
+    }
+}
+
 // MARK: - 4. Shortcut
 
 private struct OnboardingShortcutStep: View {
@@ -447,8 +491,12 @@ private struct OnboardingShortcutStep: View {
                         Text(L("Kaydı bitirir; metin düzenlenebilir hâlde gelir."))
                     }
                     GridRow {
-                        keys { Keycap(text: "⇧↩") }
+                        keys { Keycap(text: flow.backend.sendKey.symbol) }
                         Text(L("Metni panoya kopyalar ve paneli kapatır."))
+                    }
+                    GridRow {
+                        keys { Keycap(text: flow.backend.sendKey.newlineSymbol) }
+                        Text(L("Metne yeni satır ekler."))
                     }
                     GridRow {
                         keys { Keycap(text: "esc") }

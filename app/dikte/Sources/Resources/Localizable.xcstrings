@@ -551,6 +551,16 @@
         }
       }
     },
+    "Daha sonra": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Later"
+          }
+        }
+      }
+    },
     "Deneme diktesi yap": {
       "localizations": {
         "en": {
@@ -691,6 +701,26 @@
         }
       }
     },
+    "Dikte'nin bazı izinlere ihtiyacı var": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dikte needs some permissions"
+          }
+        }
+      }
+    },
+    "Dikte'nin bir izne ihtiyacı var": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dikte needs a permission"
+          }
+        }
+      }
+    },
     "Dikte'ye hoş geldin": {
       "localizations": {
         "en": {
@@ -811,6 +841,16 @@
         }
       }
     },
+    "Diğer tuş yeni satır açar.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The other key adds a new line."
+          }
+        }
+      }
+    },
     "Doğru sayılan yazım.": {
       "localizations": {
         "en": {
@@ -907,6 +947,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "English"
+          }
+        }
+      }
+    },
+    "Erişilebilirlik": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accessibility"
           }
         }
       }
@@ -1067,6 +1117,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Open Login Items"
+          }
+        }
+      }
+    },
+    "Göndermek için": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send with"
           }
         }
       }
@@ -1301,6 +1361,16 @@
         }
       }
     },
+    "Konuşmanı duymak için.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To hear you speak."
+          }
+        }
+      }
+    },
     "Konuşmanı her zaman Türkçe olarak yazıya çevirir.": {
       "localizations": {
         "en": {
@@ -1411,12 +1481,42 @@
         }
       }
     },
+    "Metne yeni satır ekler.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adds a new line to the text."
+          }
+        }
+      }
+    },
+    "Metni bir uygulamaya yapıştırmak için gerekli; sadece panoyu kullanacaksan gerekmez.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Needed to paste the text into an app; not needed if you only use the clipboard."
+          }
+        }
+      }
+    },
     "Metni panoya kopyalar ve paneli kapatır.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Copies the text to the clipboard and closes the panel."
+          }
+        }
+      }
+    },
+    "Metni seçtiğin uygulamaya yapıştırmak için.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To paste the text into the app you choose."
           }
         }
       }
@@ -1457,16 +1557,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "No microphone found."
-          }
-        }
-      }
-    },
-    "Mikrofon izni": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Microphone access"
           }
         }
       }
@@ -1911,22 +2001,22 @@
         }
       }
     },
+    "Panelde %@ metni varsayılan hedefe gönderir, ⌘1…⌘9 listedeki diğer uygulamalara. Metin panoya konur ve uygulamaya ⌘V ile yapıştırılır; aktarılamazsa metin panoda kalır.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In the panel, %@ sends the text to the default target and ⌘1…⌘9 to the other apps in the list. The text is put on the clipboard and pasted into the app with ⌘V; if delivery fails, the text stays on the clipboard."
+          }
+        }
+      }
+    },
     "Panelde gösterilecek diğer uygulama sayısı": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Other apps shown in the panel"
-          }
-        }
-      }
-    },
-    "Panelde ⇧↩ metni varsayılan hedefe gönderir, ⌘1…⌘9 listedeki diğer uygulamalara. Metin panoya konur ve uygulamaya ⌘V ile yapıştırılır; aktarılamazsa metin panoda kalır.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "In the panel, ⇧↩ sends the text to the default target and ⌘1…⌘9 to the other apps in the list. The text is put on the clipboard and pasted into the app with ⌘V; if delivery fails, the text stays on the clipboard."
           }
         }
       }
@@ -2107,6 +2197,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Unlimited"
+          }
+        }
+      }
+    },
+    "Tamam": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
           }
         }
       }
@@ -2891,6 +2991,16 @@
         }
       }
     },
+    "İzin verene kadar ilgili özellik çalışmaz. İstersen sonra Sistem Ayarları'ndan da verebilirsin.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The related feature won't work until you allow it. You can also do this later in System Settings."
+          }
+        }
+      }
+    },
     "İzin vermeden de devam edebilirsin; dikte için mikrofon izni gerekecek.": {
       "localizations": {
         "en": {
@@ -2907,6 +3017,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Allow…"
+          }
+        }
+      }
+    },
+    "İzinler": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Permissions"
           }
         }
       }

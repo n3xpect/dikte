@@ -137,7 +137,7 @@ private struct DeliveryRow: View {
     }
 
     private var chipText: String? {
-        if isDefault { return "⇧↩" }
+        if isDefault { return controller.sendKey.symbol }
         return entry.shortcut.map { "⌘\($0)" }
     }
 
@@ -246,21 +246,31 @@ private struct DeliveryTipNote: View {
 
 // MARK: - Hint row
 
-/// Key hints under the AKTAR list: "Enter yeni satır · ⇧↩ Slack · ⌘1–9 diğerleri · ⌘C kopyala · Esc kapat".
+/// Key hints under the AKTAR list, send key first:
+/// "↩ Slack · ⇧↩ yeni satır · ↓ liste · ⌘1–5 diğerleri · ⌘C kopyala · ⌘L dil · Esc kapat"
+/// (⇧↩ sends: "Enter yeni satır · ↓ liste · ⇧↩ Slack · …").
 enum DeliveryHint {
     struct Item: Equatable {
         var key: String
         var label: String
     }
 
-    /// `defaultName` nil = the default target is the clipboard (then ⌘C would only repeat ⇧↩).
+    /// `defaultName` nil = the default target is the clipboard (then ⌘C would only repeat the send key).
     /// `shortcuts` = highest ⌘ number shown in the list.
     /// `hasList`: there are rows to reach with ↓ from the text area.
     static func items(defaultName: String?, shortcuts: Int, canSwitchLanguage: Bool,
-                      hasList: Bool = false) -> [Item] {
-        var items = [Item(key: "Enter", label: L("yeni satır"))]
-        if hasList { items.append(Item(key: "↓", label: L("liste"))) }
-        items.append(Item(key: "⇧↩", label: defaultName ?? L("kopyala")))
+                      hasList: Bool = false, sendKey: SendKey = .enter) -> [Item] {
+        let send = Item(key: sendKey.symbol, label: defaultName ?? L("kopyala"))
+        var items: [Item]
+        switch sendKey {
+        case .enter:
+            items = [send, Item(key: sendKey.newlineSymbol, label: L("yeni satır"))]
+            if hasList { items.append(Item(key: "↓", label: L("liste"))) }
+        case .shiftEnter:
+            items = [Item(key: "Enter", label: L("yeni satır"))]
+            if hasList { items.append(Item(key: "↓", label: L("liste"))) }
+            items.append(send)
+        }
         if shortcuts == 1 {
             items.append(Item(key: "⌘1", label: L("diğerleri")))
         } else if shortcuts > 1 {

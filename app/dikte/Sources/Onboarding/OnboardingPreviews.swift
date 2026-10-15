@@ -23,11 +23,15 @@ final class PreviewOnboardingBackend: OnboardingBackend {
     var engineStatus: EngineStatus = .running(port: 1)
     var silenceSeconds: Double = 3
     var micPermission: MicPermission = .notDetermined
+    var accessibilityTrusted = false
+    var sendKey: SendKey = .enter
 
     init() {}
 
     func refreshMicPermission() {}
     func requestMicPermission() async { micPermission = .granted }
+    func refreshAccessibility() {}
+    func requestAccessibility() { accessibilityTrusted = true }
     func download() async throws {
         model?.state = .downloading
         model?.progress = 0
@@ -46,11 +50,13 @@ enum OnboardingPreviewScenario: String, CaseIterable {
     case modelPaused = "model-paused"
     case modelEngineStarting = "model-engine-starting"
     case modelEngineFailed = "model-engine-failed"
-    case micNotDetermined = "mic-not-determined"
-    case micGranted = "mic-granted"
-    case micDenied = "mic-denied"
+    case permissionsNotDetermined = "permissions-not-determined"
+    case permissionsMicGranted = "permissions-mic-granted"
+    case permissionsGranted = "permissions-granted"
+    case permissionsMicDenied = "permissions-mic-denied"
     case shortcutReady = "shortcut-ready"
     case shortcutNotReady = "shortcut-not-ready"
+    case shortcutShiftEnter = "shortcut-shift-enter"
 
     static let gib: Int64 = 1_073_741_824
 
@@ -102,13 +108,17 @@ enum OnboardingPreviewScenario: String, CaseIterable {
             b.engineStatus = .failed("Motor 60 saniye içinde hazır olmadı. Ayrıntılar: logs/engine.log")
             b.model = nil
             b.system = nil
-        case .micNotDetermined:
-            step = .microphone
-        case .micGranted:
-            step = .microphone
+        case .permissionsNotDetermined:
+            step = .permissions
+        case .permissionsMicGranted:
+            step = .permissions
             b.micPermission = .granted
-        case .micDenied:
-            step = .microphone
+        case .permissionsGranted:
+            step = .permissions
+            b.micPermission = .granted
+            b.accessibilityTrusted = true
+        case .permissionsMicDenied:
+            step = .permissions
             b.micPermission = .denied
         case .shortcutReady:
             step = .shortcut
@@ -118,6 +128,11 @@ enum OnboardingPreviewScenario: String, CaseIterable {
             step = .shortcut
             b.model = Self.fakeModel(.downloading, progress: 0.4)
             b.micPermission = .granted
+        case .shortcutShiftEnter:
+            step = .shortcut
+            b.model = Self.fakeModel(.onDisk)
+            b.micPermission = .granted
+            b.sendKey = .shiftEnter
         }
         return OnboardingFlow(backend: b, step: step)
     }
@@ -143,9 +158,10 @@ private struct ScenarioPreview: View {
 #Preview("2 Model — az disk") { ScenarioPreview(scenario: .modelInsufficientDisk, language: .tr) }
 #Preview("2 Model — motor yok") { ScenarioPreview(scenario: .modelEngineFailed, language: .tr) }
 #Preview("2 Model — disk (en)") { ScenarioPreview(scenario: .modelInsufficientDisk, language: .en) }
-#Preview("3 Mikrofon — sorulmadı") { ScenarioPreview(scenario: .micNotDetermined, language: .tr) }
-#Preview("3 Mikrofon — verildi") { ScenarioPreview(scenario: .micGranted, language: .tr) }
-#Preview("3 Mikrofon — reddedildi") { ScenarioPreview(scenario: .micDenied, language: .tr) }
+#Preview("3 İzinler — sorulmadı") { ScenarioPreview(scenario: .permissionsNotDetermined, language: .tr) }
+#Preview("3 İzinler — mikrofon verildi") { ScenarioPreview(scenario: .permissionsMicGranted, language: .tr) }
+#Preview("3 İzinler — hepsi verildi") { ScenarioPreview(scenario: .permissionsGranted, language: .tr) }
+#Preview("3 İzinler — mikrofon reddedildi") { ScenarioPreview(scenario: .permissionsMicDenied, language: .en) }
 #Preview("4 Kısayol — hazır") { ScenarioPreview(scenario: .shortcutReady, language: .tr) }
 #Preview("4 Kısayol — model iniyor") { ScenarioPreview(scenario: .shortcutNotReady, language: .en) }
 

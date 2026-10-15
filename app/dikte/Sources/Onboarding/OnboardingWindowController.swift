@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 
 // Welcome flow shown on fresh installs (`settings.onboardingCompleted == false`): 1) UI + dictation
-// language, 2) model download, 3) microphone permission, 4) shortcut intro + optional test
+// language, 2) model download, 3) permissions (microphone, Accessibility), 4) shortcut intro + optional test
 // dictation. Finishing — or closing the window at any step — sets `onboardingCompleted = true`;
 // everything can be changed later in Ayarlar.
 

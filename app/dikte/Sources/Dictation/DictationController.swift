@@ -4,7 +4,7 @@ import Observation
 
 // CONTRACT — implemented by agent "dictation".
 // Owns the ⌥Space flow: hotkey → floating panel → mic capture → /dictate → editable text →
-// AKTAR (Shift+Enter default target, ⌘1–9 / click other targets, ⌘C copy) (+ learning banner) /
+// AKTAR (send key ↩ or ⇧↩ default target, ⌘1–9 / click other targets, ⌘C copy) (+ learning banner) /
 // Esc close → history.
 
 enum DictationPhase: Equatable {
@@ -81,6 +81,8 @@ final class DictationController {
     @ObservationIgnored private var result: DictationResult?
     /// `text` as last filled in from a result; anything else counts as the user's edit.
     @ObservationIgnored private var shownText = ""
+    /// When `text` was last filled in from a result (start of `.editing`, re-transcription).
+    @ObservationIgnored private var editingBegan = Date.distantPast
     @ObservationIgnored private var retranscribeTask: Task<Void, Never>?
     /// Bumped on every start/teardown; callbacks from older recordings are ignored.
     @ObservationIgnored private var generation = 0
@@ -116,7 +118,7 @@ final class DictationController {
         }
     }
 
-    /// Enter while listening = finish. (In `.editing`, Enter inserts a newline — handled by the text view.)
+    /// Enter while listening = finish. (`.editing` keys are decided by `PanelKeyAction`.)
     func enterPressed() {
         switch phase {
         case .listening: finishRecording()
@@ -182,6 +184,12 @@ final class DictationController {
         listSelection = nil
     }
 
+    /// Key that sends to the default target (Ayarlar › Metin aktarımı).
+    var sendKey: SendKey { deliverySource.settings().sendKey }
+
+    /// Since the result was shown or replaced; the send key is ignored for a moment after it.
+    var secondsSinceEditingBegan: TimeInterval { Date().timeIntervalSince(editingBegan) }
+
     /// Key hints for the editing phase (default target name, ⌘ numbers actually shown).
     var editingHint: [DeliveryHint.Item] {
         if listSelection != nil { return DeliveryHint.listItems() }
@@ -190,7 +198,8 @@ final class DictationController {
         return DeliveryHint.items(defaultName: defaultRow?.app?.name,
                                   shortcuts: rows.compactMap(\.shortcut).max() ?? 0,
                                   canSwitchLanguage: canSwitchLanguage,
-                                  hasList: navigableRowCount > 0)
+                                  hasList: navigableRowCount > 0,
+                                  sendKey: sendKey)
     }
 
     func toggleFavorite(_ target: TargetApp) {
@@ -213,7 +222,7 @@ final class DictationController {
         }
     }
 
-    /// Shift+Enter: the default row (clipboard when the list is empty).
+    /// Send key: the default row (clipboard when the list is empty).
     func deliverToDefault() {
         deliver(to: shownDeliveryEntries.first { $0.role == .defaultTarget }?.app)
     }
@@ -375,6 +384,7 @@ final class DictationController {
     private func setResultText(_ t: String, language: String) {
         text = t
         shownText = t
+        editingBegan = Date()
         self.language = language
         canSwitchLanguage = result?.dictationId != nil
     }
@@ -697,6 +707,7 @@ final class DictationController {
         isNotice = false
         result = nil
         shownText = ""
+        editingBegan = .distantPast
         language = "tr"
         canSwitchLanguage = false
         retranscribing = false
@@ -743,8 +754,8 @@ struct DeliverySource {
 extension DictationController {
     enum PreviewState: String, CaseIterable {
         case listening, listeningModelLoading, transcribing, editing, editingEnglish, retranscribing,
-             confirmSwitch, languageError, deliveryApp, deliveryExpanded, deliveryTipDismissed,
-             deliverySelected, suggestions, suggestionsApp, failed, notice
+             confirmSwitch, languageError, deliveryApp, deliveryShiftEnter, deliveryExpanded,
+             deliveryTipDismissed, deliverySelected, suggestions, suggestionsApp, failed, notice
     }
 
     /// Controller frozen in a phase, for `#Preview` and snapshot rendering.
@@ -768,7 +779,7 @@ extension DictationController {
         case .transcribing:
             c.phase = .transcribing
         case .editing, .retranscribing, .confirmSwitch, .languageError,
-             .deliveryApp, .deliveryExpanded, .deliveryTipDismissed, .deliverySelected:
+             .deliveryApp, .deliveryShiftEnter, .deliveryExpanded, .deliveryTipDismissed, .deliverySelected:
             c.phase = .editing
             c.result = DictationResult(rawText: turkish, text: turkish, fixes: [], audioSeconds: 6.1,
                                        transcribeSeconds: 0.9, model: "large-v3", language: "tr",
@@ -780,8 +791,9 @@ extension DictationController {
                 c.text = turkish.replacingOccurrences(of: "açalım", with: "hemen açalım")
                 c.confirmingLanguageSwitch = true
             case .languageError: c.languageError = L("Kayıt artık yok")
-            case .deliveryApp, .deliveryExpanded, .deliveryTipDismissed, .deliverySelected:
+            case .deliveryApp, .deliveryShiftEnter, .deliveryExpanded, .deliveryTipDismissed, .deliverySelected:
                 fake.settings.deliveryDefaultApp = PreviewDelivery.slack
+                if state == .deliveryShiftEnter { fake.settings.sendKey = .shiftEnter }
                 fake.settings.deliveryFavorites = PreviewDelivery.favorites
                 fake.settings.deliveryOtherLimit = 3
                 c.showsAllDeliveryTargets = state == .deliveryExpanded

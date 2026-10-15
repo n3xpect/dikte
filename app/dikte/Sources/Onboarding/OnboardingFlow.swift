@@ -6,7 +6,7 @@ import Observation
 // snapshots run on fake data while the real window uses `AppState`.
 
 enum OnboardingStep: Int, CaseIterable, Identifiable {
-    case language, model, microphone, shortcut
+    case language, model, permissions, shortcut
 
     var id: Int { rawValue }
     var number: Int { rawValue + 1 }
@@ -17,7 +17,7 @@ enum OnboardingStep: Int, CaseIterable, Identifiable {
         switch self {
         case .language: L("Dil")
         case .model: L("Model")
-        case .microphone: L("Mikrofon")
+        case .permissions: L("İzinler")
         case .shortcut: L("Kısayol")
         }
     }
@@ -47,9 +47,16 @@ protocol OnboardingBackend: AnyObject {
     var engineStatus: EngineStatus { get }
     var silenceSeconds: Double { get }
     var micPermission: MicPermission { get }
+    /// Dikte may paste into other apps (AXIsProcessTrusted).
+    var accessibilityTrusted: Bool { get }
+    /// Panel key that sends the text (shown in the shortcut table).
+    var sendKey: SendKey { get }
 
     func refreshMicPermission()
     func requestMicPermission() async
+    func refreshAccessibility()
+    /// System prompt + Privacy › Accessibility; the status follows by polling.
+    func requestAccessibility()
     func download() async throws
     func restartEngine()
     func startTestDictation()
@@ -91,6 +98,8 @@ final class LiveOnboardingBackend: OnboardingBackend {
     var minFreeBytes: Int64 { system?.minFreeBytes ?? Int64(settings.minFreeDiskGB) * 1_073_741_824 }
     var engineStatus: EngineStatus { state.engine.status }
     var silenceSeconds: Double { settings.silenceSeconds }
+    var accessibilityTrusted: Bool { state.delivery.accessibilityTrusted }
+    var sendKey: SendKey { settings.sendKey }
 
     func refreshMicPermission() {
         let current = MicPermission.current
@@ -100,6 +109,14 @@ final class LiveOnboardingBackend: OnboardingBackend {
     func requestMicPermission() async {
         _ = await AVCaptureDevice.requestAccess(for: .audio)
         refreshMicPermission()
+    }
+
+    func refreshAccessibility() {
+        state.delivery.refreshTrust()
+    }
+
+    func requestAccessibility() {
+        state.delivery.requestAccessibility()
     }
 
     func download() async throws {

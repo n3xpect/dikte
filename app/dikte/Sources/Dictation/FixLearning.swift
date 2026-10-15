@@ -3,7 +3,7 @@ import Foundation
 import AppKit  // self-check builds an NSTextView
 #endif
 
-/// Learning step after Shift+Enter: finds words the user corrected in the text area that look like
+/// Learning step after delivery: finds words the user corrected in the text area that look like
 /// term fixes (e.g. «cage» → «cache»). Pure logic, no state.
 ///
 /// Turkish results: a replacement counts when it is spelled like a term (English/software look).
@@ -227,16 +227,44 @@ enum DictationSelfCheck {
             if got != want { failures.append("\(what): beklenen \(want), gelen \(got)") }
         }
         let keys = { (items: [DeliveryHint.Item]) in items.map(\.key) }
+        // ↩ sends (default).
         let app = DeliveryHint.items(defaultName: "Slack", shortcuts: 9, canSwitchLanguage: false)
-        expect(keys(app), ["Enter", "⇧↩", "⌘1–9", "⌘C", "Esc"], "ipucu (uygulama)")
-        expect(app[1].label, "Slack", "ipucu ⇧↩ adı")
+        expect(keys(app), ["↩", "⇧↩", "⌘1–9", "⌘C", "Esc"], "ipucu (uygulama)")
+        expect(app[0].label, "Slack", "ipucu ↩ adı")
+        expect(app[1].label, L("yeni satır"), "ipucu ⇧↩ yeni satır")
         let clip = DeliveryHint.items(defaultName: nil, shortcuts: 4, canSwitchLanguage: true)
-        expect(keys(clip), ["Enter", "⇧↩", "⌘1–4", "⌘L", "Esc"], "ipucu (pano)")
-        expect(clip[1].label, L("kopyala"), "ipucu ⇧↩ pano")
+        expect(keys(clip), ["↩", "⇧↩", "⌘1–4", "⌘L", "Esc"], "ipucu (pano)")
+        expect(clip[0].label, L("kopyala"), "ipucu ↩ pano")
         expect(keys(DeliveryHint.items(defaultName: nil, shortcuts: 0, canSwitchLanguage: false)),
-               ["Enter", "⇧↩", "Esc"], "ipucu (liste boş)")
+               ["↩", "⇧↩", "Esc"], "ipucu (liste boş)")
         expect(keys(DeliveryHint.items(defaultName: "Mail", shortcuts: 1, canSwitchLanguage: false)),
-               ["Enter", "⇧↩", "⌘1", "⌘C", "Esc"], "ipucu (tek kısayol)")
+               ["↩", "⇧↩", "⌘1", "⌘C", "Esc"], "ipucu (tek kısayol)")
+        expect(keys(DeliveryHint.items(defaultName: "Slack", shortcuts: 5, canSwitchLanguage: true, hasList: true)),
+               ["↩", "⇧↩", "↓", "⌘1–5", "⌘C", "⌘L", "Esc"], "ipucu (↩, liste)")
+        // ⇧↩ sends (the old order).
+        let shiftApp = DeliveryHint.items(defaultName: "Slack", shortcuts: 9, canSwitchLanguage: false,
+                                          sendKey: .shiftEnter)
+        expect(keys(shiftApp), ["Enter", "⇧↩", "⌘1–9", "⌘C", "Esc"], "ipucu ⇧↩ (uygulama)")
+        expect(shiftApp[1].label, "Slack", "ipucu ⇧↩ adı")
+        expect(keys(DeliveryHint.items(defaultName: nil, shortcuts: 4, canSwitchLanguage: true, sendKey: .shiftEnter)),
+               ["Enter", "⇧↩", "⌘1–4", "⌘L", "Esc"], "ipucu ⇧↩ (pano)")
+        expect(keys(DeliveryHint.items(defaultName: "Slack", shortcuts: 5, canSwitchLanguage: true, hasList: true,
+                                       sendKey: .shiftEnter)),
+               ["Enter", "↓", "⇧↩", "⌘1–5", "⌘C", "⌘L", "Esc"], "ipucu ⇧↩ (liste)")
+        expect(SendKey.enter.symbol, "↩", "gönderme tuşu ↩")
+        expect(SendKey.shiftEnter.symbol, "⇧↩", "gönderme tuşu ⇧↩")
+
+        // Settings: missing / unknown sendKey → Enter; round trip keeps the choice.
+        let decode = { (json: String) in try? JSONDecoder().decode(AppSettings.self, from: Data(json.utf8)) }
+        expect(decode("{}")?.sendKey, .enter, "sendKey yok → enter")
+        expect(decode(#"{"sendKey":"shiftEnter"}"#)?.sendKey, .shiftEnter, "sendKey shiftEnter")
+        expect(decode(#"{"sendKey":"tab"}"#)?.sendKey, .enter, "sendKey bilinmeyen → enter")
+        var shiftSettings = AppSettings()
+        shiftSettings.sendKey = .shiftEnter
+        expect((try? JSONEncoder().encode(shiftSettings)).flatMap { try? JSONDecoder().decode(AppSettings.self, from: $0) }?
+               .sendKey, .shiftEnter, "sendKey kaydet/oku")
+
+        failures += keyActionFailures()
         expect(String(DeliveryHint.attributed([.init(key: "⇧↩", label: "*Slack*")]).characters), "⇧↩ *Slack*",
                "ipucu: ad markdown sayılmaz")
 
@@ -260,7 +288,10 @@ enum DictationSelfCheck {
         expect(names(c.shownDeliveryEntries), ["Slack", "Mail", "Notes", "Calendar", "Finder", "Messages"], "liste")
         expect(c.hiddenDeliveryCount, 3, "+N")
         expect(c.shownDeliveryEntries.map { $0.shortcut ?? 0 }, [0, 1, 2, 3, 4, 5], "kısayollar")
-        expect(keys(c.editingHint), ["Enter", "↓", "⇧↩", "⌘1–5", "⌘C", "⌘L", "Esc"], "düzenleme ipucu")
+        expect(keys(c.editingHint), ["↩", "⇧↩", "↓", "⌘1–5", "⌘C", "⌘L", "Esc"], "düzenleme ipucu")
+        let shiftPanel = DictationController.preview(.deliveryShiftEnter)
+        expect(shiftPanel.sendKey, .shiftEnter, "önizleme ⇧↩")
+        expect(keys(shiftPanel.editingHint), ["Enter", "↓", "⇧↩", "⌘1–5", "⌘C", "⌘L", "Esc"], "düzenleme ipucu ⇧↩")
         // ↑/↓ navigation: 6 rows + "+3 more" = 7 slots.
         expect(c.navigableRowCount, 7, "↓ satır sayısı")
         expect(c.enterList(), true, "↓ listeye gir")
@@ -311,6 +342,71 @@ enum DictationSelfCheck {
         c.dismissDeliveryTip()
         expect(c.showsDeliveryTip, false, "ipucunu kapat")
         expect(DictationController.preview(.editing).shownDeliveryEntries.first?.app, nil, "pano varsayılanı")
+        return failures
+    }
+
+    /// `PanelKeyAction.editing` for both send keys: send / newline / double-Enter guard / list / rest.
+    private static func keyActionFailures() -> [String] {
+        var failures: [String] = []
+        typealias Key = DictationPanelController.Key
+        let ret = Key.returnKey, enter = Key.keypadEnter
+        func act(_ keyCode: UInt16, _ flags: NSEvent.ModifierFlags = [], _ chars: String = "",
+                 _ send: SendKey, _ change: (inout PanelKeyAction.Context) -> Void = { _ in }) -> PanelKeyAction {
+            var c = PanelKeyAction.Context(sendKey: send, listAvailable: true, secondsSinceEditing: 5)
+            change(&c)
+            return PanelKeyAction.editing(keyCode: keyCode, flags: flags, characters: chars, context: c)
+        }
+        func expect(_ got: PanelKeyAction, _ want: PanelKeyAction, _ what: String) {
+            if got != want { failures.append("tuş \(what): beklenen \(want), gelen \(got)") }
+        }
+
+        for send in SendKey.allCases {
+            let m = "[\(send.rawValue)]"
+            let sendFlags: NSEvent.ModifierFlags = send == .enter ? [] : .shift
+            let lineFlags: NSEvent.ModifierFlags = send == .enter ? .shift : []
+            expect(act(ret, sendFlags, "", send), .deliverDefault, "\(m) gönder")
+            expect(act(enter, sendFlags, "", send), .deliverDefault, "\(m) keypad gönder")
+            expect(act(ret, lineFlags, "", send), send == .enter ? .newline : .pass, "\(m) yeni satır")
+            expect(act(ret, [.shift, .capsLock], "", send), send == .enter ? .newline : .deliverDefault,
+                   "\(m) caps lock sayılmaz")
+            expect(act(ret, .option, "", send), .pass, "\(m) ⌥↩ metne")
+            // Double-Enter guard: only the send key, only right after the result appeared.
+            expect(act(ret, sendFlags, "", send) { $0.secondsSinceEditing = 0.1 }, .ignore, "\(m) çift Enter")
+            expect(act(ret, sendFlags, "", send) { $0.secondsSinceEditing = 0.31 }, .deliverDefault, "\(m) 0,3 sn sonra")
+            expect(act(ret, lineFlags, "", send) { $0.secondsSinceEditing = 0.1 }, send == .enter ? .newline : .pass,
+                   "\(m) çift Enter yeni satırı engellemez")
+            // List mode: ↩ delivers the row, ⇧↩ does nothing, the guard doesn't apply.
+            let list: (inout PanelKeyAction.Context) -> Void = { $0.listSelected = true; $0.secondsSinceEditing = 0 }
+            expect(act(ret, [], "", send, list), .activateList, "\(m) liste ↩")
+            expect(act(ret, .shift, "", send, list), .ignore, "\(m) liste ⇧↩")
+            expect(act(Key.down, [], "", send, list), .moveList(1), "\(m) liste ↓")
+            expect(act(Key.up, [], "", send, list), .moveList(-1), "\(m) liste ↑")
+            expect(act(Key.escape, [], "", send, list), .leaveList, "\(m) liste Esc")
+            expect(act(0, [], "a", send, list), .leaveListAndPass, "\(m) liste yazı")
+            expect(act(19, .command, "2", send, list), .deliverShortcut(2), "\(m) liste ⌘2")
+            // Entering the list.
+            expect(act(Key.down, [], "", send) { $0.caretOnLastLine = true }, .enterList, "\(m) ↓ listeye")
+            expect(act(Key.down, [], "", send), .pass, "\(m) ↓ metinde")
+            expect(act(Key.down, [], "", send) { $0.caretOnLastLine = true; $0.listAvailable = false }, .pass,
+                   "\(m) ↓ liste yok")
+            // Unchanged keys.
+            expect(act(Key.escape, [], "", send), .escape, "\(m) Esc")
+            expect(act(18, .command, "1", send), .deliverShortcut(1), "\(m) ⌘1")
+            expect(act(8, .command, "c", send), .copyOnly, "\(m) ⌘C")
+            expect(act(8, .command, "c", send) { $0.hasTextSelection = true }, .editingCommand(swallowOthers: false),
+                   "\(m) ⌘C seçimle")
+            expect(act(37, .command, "l", send), .switchLanguage, "\(m) ⌘L")
+            expect(act(0, [], "a", send), .pass, "\(m) yazı")
+            // Language-switch confirmation: ↩ confirms.
+            expect(act(ret, [], "", send) { $0.confirmingLanguageSwitch = true }, .switchLanguage, "\(m) onay ↩")
+            // IME, suggestions banner, re-transcription.
+            expect(act(ret, sendFlags, "", send) { $0.hasMarkedText = true }, .pass, "\(m) IME")
+            expect(act(ret, sendFlags, "", send) { $0.suggestionsShown = true }, .pass, "\(m) öneriler ↩")
+            expect(act(Key.escape, [], "", send) { $0.suggestionsShown = true }, .dismissSuggestions, "\(m) öneriler Esc")
+            expect(act(ret, sendFlags, "", send) { $0.retranscribing = true }, .ignore, "\(m) yeniden çevirirken")
+            expect(act(8, .command, "c", send) { $0.retranscribing = true }, .editingCommand(swallowOthers: true),
+                   "\(m) yeniden çevirirken ⌘C")
+        }
         return failures
     }
 }

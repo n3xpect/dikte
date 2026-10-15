@@ -19,9 +19,11 @@ struct AppSettings: Codable, Equatable, Sendable {
     var dictationLanguage: DictationLanguage = .auto
     /// Fresh installs show the welcome flow until this is set.
     var onboardingCompleted: Bool = false
-    /// Default delivery target (Shift+Enter): nil = copy to the clipboard only, else an app
+    /// Default delivery target (the send key): nil = copy to the clipboard only, else an app
     /// bundle identifier the text is pasted into.
     var deliveryDefaultApp: String? = nil
+    /// Panel key that sends the text to the default target; the other one inserts a new line.
+    var sendKey: SendKey = .enter
     /// Favourite target apps (bundle identifiers); shown after the default, alphabetically.
     var deliveryFavorites: [String] = []
     /// Running, non-favourite apps listed in the panel before "+ N more".
@@ -56,6 +58,8 @@ struct AppSettings: Codable, Equatable, Sendable {
         dictationLanguage = try c.decodeIfPresent(DictationLanguage.self, forKey: .dictationLanguage) ?? .tr
         onboardingCompleted = try c.decodeIfPresent(Bool.self, forKey: .onboardingCompleted) ?? true
         deliveryDefaultApp = try c.decodeIfPresent(String.self, forKey: .deliveryDefaultApp)
+        // Missing (files before 0.3.x) or unknown → Enter sends, for existing installs too.
+        sendKey = (try? c.decodeIfPresent(SendKey.self, forKey: .sendKey)) ?? .enter
         deliveryFavorites = try c.decodeIfPresent([String].self, forKey: .deliveryFavorites) ?? []
         deliveryOtherLimit = try c.decodeIfPresent(Int.self, forKey: .deliveryOtherLimit) ?? d.deliveryOtherLimit
         restoreClipboardAfterPaste = try c.decodeIfPresent(Bool.self, forKey: .restoreClipboardAfterPaste)
@@ -96,6 +100,19 @@ struct HistoryEntry: Codable, Identifiable, Equatable, Sendable {
 enum Tip: String, CaseIterable, Sendable {
     /// Explanation under the panel's AKTAR list.
     case deliveryList
+}
+
+/// Which Return sends in the panel's editing phase: `.enter` = ↩ sends, ⇧↩ new line;
+/// `.shiftEnter` = ⇧↩ sends, ↩ new line.
+enum SendKey: String, Codable, CaseIterable, Sendable {
+    case enter, shiftEnter
+
+    /// Key label in the panel ("↩" / "⇧↩").
+    var symbol: String { self == .enter ? "↩" : "⇧↩" }
+    /// The other key, which inserts a new line.
+    var newlineSymbol: String { self == .enter ? "⇧↩" : "↩" }
+    /// Name in Settings (not translated: key names).
+    var name: String { self == .enter ? "Enter" : "Shift+Enter" }
 }
 
 enum DictationLanguage: String, Codable, CaseIterable, Sendable {

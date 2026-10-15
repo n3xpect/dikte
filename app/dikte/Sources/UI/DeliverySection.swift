@@ -40,7 +40,7 @@ struct DeliveryOptions {
     }
 }
 
-/// Ayarlar › Metin aktarımı: default target, favourites, panel list size, clipboard restore,
+/// Ayarlar › Metin aktarımı: default target, send key, favourites, panel list size, clipboard restore,
 /// Accessibility permission, dismissed tips.
 struct DeliverySection: View {
     @Binding var settings: AppSettings
@@ -53,6 +53,14 @@ struct DeliverySection: View {
     var body: some View {
         Section {
             defaultPicker
+            Picker(selection: $settings.sendKey) {
+                ForEach(SendKey.allCases, id: \.self) { key in
+                    Text(verbatim: key.name).tag(key)
+                }
+            } label: {
+                Text(L("Göndermek için"))
+                Text(L("Diğer tuş yeni satır açar."))
+            }
             favoritesRow
             LabeledContent(L("Panelde gösterilecek diğer uygulama sayısı")) {
                 Stepper(value: $settings.deliveryOtherLimit, in: 0...9) {
@@ -69,7 +77,8 @@ struct DeliverySection: View {
         } header: {
             Text(L("Metin aktarımı"))
         } footer: {
-            Text(L("Panelde ⇧↩ metni varsayılan hedefe gönderir, ⌘1…⌘9 listedeki diğer uygulamalara. Metin panoya konur ve uygulamaya ⌘V ile yapıştırılır; aktarılamazsa metin panoda kalır."))
+            Text(L("Panelde %@ metni varsayılan hedefe gönderir, ⌘1…⌘9 listedeki diğer uygulamalara. Metin panoya konur ve uygulamaya ⌘V ile yapıştırılır; aktarılamazsa metin panoda kalır.",
+                   settings.sendKey.symbol))
                 .font(.caption).foregroundStyle(.secondary)
         }
         .onAppear {

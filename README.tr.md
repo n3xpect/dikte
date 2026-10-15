@@ -2,7 +2,7 @@
 
 [English](README.md) · **Türkçe**
 
-Mac için yerel çalışan Türkçe ve İngilizce dikte uygulaması. **⌥ Space**'e bas, konuş; metin düzenlenebilir bir panelde çıkar, **Shift+Enter** ile panoya kopyalanır. Ses Mac'ten dışarı çıkmaz: konuşma, Apple Silicon üzerinde [MLX](https://github.com/ml-explore/mlx) ile çalışan **Whisper large-v3** modeliyle yazıya çevrilir.
+Mac için yerel çalışan Türkçe ve İngilizce dikte uygulaması. **⌥ Space**'e bas, konuş; metin düzenlenebilir bir panelde çıkar, **Enter** ile panoya kopyalanır ya da seçtiğin uygulamaya yapıştırılır. Ses Mac'ten dışarı çıkmaz: konuşma, Apple Silicon üzerinde [MLX](https://github.com/ml-explore/mlx) ile çalışan **Whisper large-v3** modeliyle yazıya çevrilir.
 
 Konuşmanın dili her diktede otomatik algılanır (Türkçe ya da İngilizce); yanlış algılanırsa paneldeki **TR/EN** düğmesiyle (⌘L) aynı kayıt diğer dilde yeniden çevrilir. Arayüz de Türkçe ve İngilizce.
 
@@ -13,7 +13,7 @@ Türkçe cümle içindeki İngilizce yazılım terimleri (branch, commit, deploy
 1. [Releases](https://github.com/n3xpect/dikte/releases) sayfasından `dikte-<sürüm>.dmg`'yi indir.
 2. DMG'yi aç, `dikte.app`'i **Uygulamalar**'a sürükle.
 3. Uygulama Apple onaylı bir sertifikayla imzalı değil. "Geliştirici doğrulanamadı" uyarısı çıkarsa **Sistem Ayarları › Gizlilik ve Güvenlik › Yine de Aç**.
-4. İlk açılışta karşılama ekranı seni dört adımda hazırlar: arayüz ve dikte dili, **Whisper large-v3**'ün indirilmesi (~3 GB), mikrofon izni ve kısayol. Hepsi sonradan değiştirilebilir.
+4. İlk açılışta karşılama ekranı seni dört adımda hazırlar: arayüz ve dikte dili, **Whisper large-v3**'ün indirilmesi (~3 GB), izinler (mikrofon; uygulamalara yapıştırmak için Erişilebilirlik) ve kısayol. Hepsi sonradan değiştirilebilir.
 
 **Gereksinimler:** Apple Silicon Mac, macOS 15+, ~4 GB boş RAM, model indirildikten sonra en az 10 GB boş disk.
 
@@ -24,9 +24,12 @@ Türkçe cümle içindeki İngilizce yazılım terimleri (branch, commit, deploy
 | **⌥ Space** | Dikteyi başlat (kayıt sırasında tekrar basınca bitirir) |
 | 3 sn sessizlik / **Enter** | Kaydı bitir ve yazıya çevir |
 | **Esc** | Kayıt sırasında vazgeç; metin ekranında paneli kapat |
-| **Enter** (metin ekranında) | Yeni satır |
-| **Shift+Enter** | Metni panoya kopyala ve paneli kapat |
+| **Enter** (metin ekranında) | Metni varsayılan hedefe gönder (bir uygulama seçmediysen pano) ve paneli kapat |
+| **Shift+Enter** | Yeni satır |
+| **⌘1–9** / **↓** | Paneldeki listeden başka bir uygulamaya gönder / ok tuşlarıyla seç |
 | **⌘L** / TR-EN düğmesi | Aynı kaydı diğer dilde yeniden çevir |
+
+Yeni satır için Enter'ı mı tercih edersin? **Ayarlar › Metin aktarımı › Göndermek için** ile ikisini değiştirebilirsin: Shift+Enter gönderir, Enter yeni satır açar.
 
 Menü çubuğundaki simge durumu gösterir: yeşil nokta model bellekte, turuncu yükleniyor, kırmızı motor çalışmıyor. Ana ekranda şu sekmeler var:
 

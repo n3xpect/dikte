@@ -2,7 +2,7 @@
 
 **English** · [Türkçe](README.tr.md)
 
-A local dictation app for the Mac, in Turkish and English. Press **⌥ Space** and speak; the text appears in an editable panel and **Shift+Enter** copies it to the clipboard. Audio never leaves your Mac: speech is transcribed with **Whisper large-v3** running on Apple Silicon via [MLX](https://github.com/ml-explore/mlx).
+A local dictation app for the Mac, in Turkish and English. Press **⌥ Space** and speak; the text appears in an editable panel and **Enter** copies it to the clipboard — or pastes it into an app you pick. Audio never leaves your Mac: speech is transcribed with **Whisper large-v3** running on Apple Silicon via [MLX](https://github.com/ml-explore/mlx).
 
 The spoken language is detected on every dictation (Turkish or English); if it's detected wrongly, the **TR/EN** button in the panel (⌘L) transcribes the same recording again in the other language. The interface is available in English and Turkish.
 
@@ -13,7 +13,7 @@ It is tuned for English software terms inside Turkish sentences (branch, commit,
 1. Download `dikte-<version>.dmg` from [Releases](https://github.com/n3xpect/dikte/releases).
 2. Open the DMG and drag `dikte.app` into **Applications**.
 3. The app isn't signed with an Apple-issued certificate. If macOS says the developer can't be verified, go to **System Settings › Privacy & Security › Open Anyway**.
-4. On first launch a welcome flow sets things up in four steps: interface and dictation language, downloading **Whisper large-v3** (~3 GB), microphone access, and the shortcut. Everything can be changed later.
+4. On first launch a welcome flow sets things up in four steps: interface and dictation language, downloading **Whisper large-v3** (~3 GB), permissions (microphone; Accessibility for pasting into apps), and the shortcut. Everything can be changed later.
 
 **Requirements:** Apple Silicon Mac, macOS 15+, ~4 GB free RAM, at least 10 GB of free disk space left after the model download.
 
@@ -24,9 +24,12 @@ It is tuned for English software terms inside Turkish sentences (branch, commit,
 | **⌥ Space** | Start dictating (press again while recording to finish) |
 | 3 s of silence / **Enter** | Stop recording and transcribe |
 | **Esc** | Cancel while recording; close the panel when editing |
-| **Enter** (while editing) | New line |
-| **Shift+Enter** | Copy the text to the clipboard and close the panel |
+| **Enter** (while editing) | Send the text to the default target (clipboard unless you choose an app) and close the panel |
+| **Shift+Enter** | New line |
+| **⌘1–9** / **↓** | Send to another app in the panel's list / pick one with the arrow keys |
 | **⌘L** / TR-EN button | Transcribe the same recording in the other language |
+
+Prefer Enter for new lines? **Settings › Text delivery › Send with** swaps the two: Shift+Enter sends, Enter adds a new line.
 
 The menu bar icon shows the state: green dot = model in memory, orange = loading, red = engine not running. The main window has these tabs:
 

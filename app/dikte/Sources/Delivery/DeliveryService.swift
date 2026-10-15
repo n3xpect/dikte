@@ -22,7 +22,7 @@ struct DeliveryEntry: Identifiable, Equatable, Sendable {
     var app: TargetApp?
     var role: Role
     var isFavorite: Bool
-    /// ⌘1…⌘9 for non-default rows in display order (nil beyond 9); the default row uses ⇧↩.
+    /// ⌘1…⌘9 for non-default rows in display order (nil beyond 9); the default row uses the send key.
     var shortcut: Int?
     var id: String { app?.bundleID ?? "clipboard" }
 }
