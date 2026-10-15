@@ -1,0 +1,14 @@
+[project]
+name = "model-test"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "huggingface-hub>=2.2.0",
+    "jiwer>=4.0.0",
+    "mlx-audio[stt]>=0.5.9",
+    "mlx-whisper>=0.4.3",
+    "numpy>=2.5.4",
+    "pyyaml>=6.0.3",
+    "silero-vad>=6.2.3",
+    "sounddevice>=0.5.6",
+]

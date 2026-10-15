@@ -1,0 +1,77 @@
+# Script modunda sesli okunacak cümleler.
+#   id:   benzersiz kimlik (dev = yazılım diktesi, gen = günlük Türkçe, mix = sayı/tarih/özel isim)
+#   text: referans metin (WER ve terim skorlaması buna göre yapılır)
+# Cümlelerde geçen her İngilizce terim terms.yaml içinde olmalı.
+
+sentences:
+  # --- Yazılım diktesi -------------------------------------------------------
+  - id: dev01
+    text: "Öncelikle git üzerinde yeni bir branch açmanı istiyorum."
+  - id: dev02
+    text: "Ardından Go ile session tutabilen bir web app hazırlayacağız, database bağlantısı olacak ve socket ile çalışacak."
+  - id: dev03
+    text: "Bu değişiklikleri commit'leyip main branch'e merge edelim."
+  - id: dev04
+    text: "Pull request'i açtım, review için takım arkadaşlarını da ekledim."
+  - id: dev05
+    text: "Staging ortamına deploy ettim ama log'larda bir hata görünüyor."
+  - id: dev06
+    text: "Backend tarafında yeni bir endpoint yazmamız gerekiyor, frontend bu API'yi çağıracak."
+  - id: dev07
+    text: "Docker image'ı güncelledikten sonra Kubernetes üzerinde tekrar deploy etmemiz lazım."
+  - id: dev08
+    text: "Redis cache'ini temizlemeden testleri tekrar çalıştırma lütfen."
+  - id: dev09
+    text: "PR'ı onaylamadan önce kodu biraz refactor etmek istiyorum."
+  - id: dev10
+    text: "Bu bug sadece production'da çıkıyor, staging'de hiç görmedik."
+  - id: dev11
+    text: "Server tarafı JSON dönüyor ama client bunu doğru parse edemiyor."
+  - id: dev12
+    text: "HTTP yerine WebSocket kullanırsak gerçek zamanlı bildirimleri çok daha kolay gönderebiliriz."
+  - id: dev13
+    text: "Yeni feature için ayrı bir branch açalım, review'dan geçince main'e merge ederiz."
+  - id: dev14
+    text: "REST API'nin dokümantasyonunu güncelledim, endpoint isimlerini de değiştirdim."
+  - id: dev15
+    text: "Hangi framework'ü kullanacağımıza henüz karar vermedik, Go tarafında standart kütüphane yeterli olabilir."
+  - id: dev16
+    text: "Sabah toplantısında konuştuğumuz gibi, önce repo'yu klonla ve yeni bir feature branch'i aç. Sonra backend'deki session yönetimini Redis'e taşı, PostgreSQL bağlantı ayarlarını da ortam değişkenlerinden okuyacak şekilde düzenle. İşin bitince commit'le, push et ve bana bir pull request gönder."
+  - id: dev17
+    text: "Docker container'ı yeniden başlat."
+  - id: dev18
+    text: "Yük testi sonuçlarına baktım, database sorguları çok yavaş. Sanırım bazı indeksler eksik ve cache doğru çalışmıyor. Önce log'ları inceleyelim, ardından PostgreSQL tarafında sorguları iyileştirip tekrar deploy edelim."
+  - id: dev19
+    text: "Frontend'deki WebSocket bağlantısı sürekli kopuyor, server tarafında timeout ayarına bakar mısın?"
+  - id: dev20
+    text: "Pipeline kırmızıya döndü, son commit'te bir test patlamış."
+
+  # --- Günlük Türkçe ---------------------------------------------------------
+  - id: gen01
+    text: "Merhaba, yarın sabah biraz geç geleceğim, toplantıyı on buçuğa alabilir miyiz?"
+  - id: gen02
+    text: "Akşam yemeğinde ne yiyeceğimize henüz karar vermedik, sen ne düşünüyorsun?"
+  - id: gen03
+    text: "Sayın Yılmaz, ekteki belgeleri incelemenizi rica ederim. İyi çalışmalar dilerim."
+  - id: gen04
+    text: "Çocukları okuldan ben alırım, sen işten çıkınca doğrudan eve gel."
+  - id: gen05
+    text: "Hava çok güzel, öğleden sonra sahilde yürüyüşe çıkalım mı?"
+  - id: gen06
+    text: "Geçen hafta İzmir'deki ailemi ziyaret ettim. Annem her zamanki gibi sofrayı çeşit çeşit yemeklerle donattı, babamla da bahçedeki ağaçları budadık. Dönüşte trafik çok yoğundu ama yine de güzel bir hafta sonu geçirdik."
+  - id: gen07
+    text: "Işıkları kapatmayı unutma."
+  - id: gen08
+    text: "Doğum günün kutlu olsun, nice mutlu ve sağlıklı yıllara!"
+
+  # --- Sayılar, tarihler, özel isimler ----------------------------------------
+  - id: mix01
+    text: "3 Kasım 2026'da saat 14:30'da toplantı var."
+  - id: mix02
+    text: "PostgreSQL 17 ve Redis 8 kullanacağız."
+  - id: mix03
+    text: "Ahmet Öztürk'e 1.250 lira gönderdim, açıklamaya fatura numarasını yazdım."
+  - id: mix04
+    text: "Go 1.23 sürümüne geçtikten sonra API yanıt süresi yüzde 40 azaldı."
+  - id: mix05
+    text: "Toplantı 15 Ocak Pazartesi günü İstanbul ofisinde, saat 09:00'da başlayacak."

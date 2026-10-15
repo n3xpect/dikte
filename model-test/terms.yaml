@@ -1,0 +1,153 @@
+# Terim kütüphanesi — Türkçe dikte içinde geçen İngilizce yazılım terimleri.
+#
+# Alanlar:
+#   term:   Doğru (kanonik) yazım. Çıktıda görmek istediğin hâli; büyük/küçük harf korunur.
+#   accept: Skorlamada "doğru" sayılan diğer yazımlar (büyük/küçük harf duyarsız).
+#           Kanonik yazım zaten otomatik olarak kabul edilir, tekrar yazmana gerek yok.
+#   fix:    Modelin ürettiği yanlış yazımlar; çıktıda otomatik olarak `term` ile değiştirilir.
+#           Tam kelime eşleşmesi, büyük/küçük harf duyarsız. Kesme işaretiyle eklenen ek
+#           korunur: "brenç'i" -> "branch'i". Bitişik ek ("brençi") BİLEREK düzeltilmez,
+#           çünkü "komit" + "e" = "komite" gibi gerçek Türkçe kelimeleri bozabilir.
+#           Birden fazla kelime olabilir ("veb app"). Uzun eşleşme önce uygulanır.
+#
+# Kurallar:
+#   - `fix` listesine ASLA gerçek bir Türkçe kelime koyma (ör. "keş", "imaj", "konteyner",
+#     "pars", "branş", "indeks" — bunlar normal metni bozar).
+#   - Whisper istemine (prompt) listedeki ilk terimler girer; önemli terimleri üste koy.
+#   - Kısa (≤3 harf) terimlerde skorlama yalnızca kesmeli eki tanır ("bug'ı", "log'lar"),
+#     çünkü "bug" + "ün" = "bugün", "git" + "mek" = "gitmek".
+#
+# "soket" kararı: Türkçede "soket" (elektrik soketi) yazımı var ama bu uygulama yazılım
+# diktesi için; çıktıda İngilizce "socket" istiyoruz. Bu yüzden "soket" `fix` içinde
+# (otomatik "socket" olur) ve `accept` içinde DEĞİL (ham çıktıda "soket" hata sayılır).
+
+terms:
+  - term: git
+    accept: []
+    fix: []
+  - term: branch
+    accept: []
+    fix: [brenç, brenc, brençh]
+  - term: commit
+    accept: []
+    fix: [komit, kommit, komitt]
+  - term: merge
+    accept: []
+    fix: [mörç, mörc, mörj]
+  - term: pull request
+    accept: [PR, pull-request, pullrequest]
+    fix: [pul rikuest, pul request, pull rikuest, pul rikvest, pulrikuest]
+  - term: deploy
+    accept: []
+    fix: [diploy, diploi, dipiloy]
+  - term: Go
+    accept: [golang]          # "go" Türkçe değil; ama "go" için fix YOK
+    fix: [goleng]
+  - term: session
+    accept: []
+    fix: [seşın, seşin, seşen]
+  - term: web app
+    accept: [webapp, web-app]
+    fix: [veb app, veb ap, web ap, vebap, veb epp]
+  - term: database
+    accept: [db]
+    fix: [databeys, deytabeys, datebeys, databeyz, deyta beys]
+  - term: PostgreSQL
+    accept: [postgres, postgre]
+    fix: [postgre sql, postgres sql, postgres kuel, postgreskuel, postgres küel, postgre es kü el]
+  - term: socket
+    accept: []
+    fix: [soket]
+  - term: WebSocket
+    accept: [web socket]
+    fix: [web soket, websoket, veb soket, vebsoket]
+  - term: API
+    accept: []
+    fix: [eypiay, eypiyay, ey pi ay, eypi ay]
+  - term: endpoint
+    accept: [end point, end-point]
+    fix: [endpoyint, endpoynt, endpoyınt, end poynt]
+  - term: backend
+    accept: [back-end, back end]
+    fix: [bekend, bekent, bek end, bakent]
+  - term: frontend
+    accept: [front-end, front end]
+    fix: [frontent, fırontend, fırontent]
+  - term: Docker
+    accept: []
+    fix: [doker, dokır, dakır]
+  - term: Kubernetes
+    accept: [k8s]
+    fix: [kubernetis, kübernetis, kubernetiz, kubırnetis, kubernets]
+  - term: Redis
+    accept: []
+    fix: [rediz, ridis, ridiz]
+  - term: repo
+    accept: [repository]
+    fix: [ripozitori, repozitori]
+  - term: main
+    accept: [master]
+    fix: [meyn]
+  - term: staging
+    accept: []
+    fix: [steycing, steyçing, steyjing, steyçin]
+  - term: production
+    accept: [prod]
+    fix: [prodakşın, prodaksın, prodakşin]
+  - term: feature
+    accept: []
+    fix: [fiçır, ficır, fiçer]
+  - term: review
+    accept: []
+    fix: [rivyu, riviyu, rivyü]
+  - term: test
+    accept: []
+    fix: []
+  - term: refactor
+    accept: []
+    fix: [rifaktör, refaktör, rifaktır, rifektır]
+  - term: bug
+    accept: []
+    fix: []
+  - term: log
+    accept: []
+    fix: []
+  - term: cache
+    accept: []
+    fix: [keyş, cage]         # "keş" gerçek Türkçe kelime, bilerek eklenmedi; "cage": turbo hatası
+  - term: JSON
+    accept: []
+    fix: [ceyson, ceysın, jeyson, ceysan]
+  - term: HTTP
+    accept: [https]
+    fix: [eyçtitipi, eyç ti ti pi]
+  - term: REST
+    accept: []
+    fix: []
+  - term: server
+    accept: []
+    fix: [sörvır, sörver, sörvir]
+  - term: client
+    accept: []
+    fix: [klayınt, klayent, klaynt]
+  - term: framework
+    accept: []
+    fix: [freymvörk, freymvork, freymwork, fireymvörk]
+  - term: push
+    accept: []
+    fix: [puş]
+  - term: container
+    accept: []
+    fix: [konteynır]          # "konteyner" gerçek Türkçe kelime, eklenmedi
+  - term: image
+    accept: []
+    fix: []                   # "imaj" gerçek Türkçe kelime
+  - term: parse
+    accept: []
+    fix: []                   # "pars" gerçek Türkçe kelime
+  - term: timeout
+    accept: [time out, time-out]
+    fix: [taymaut, taymavt, taym aut]
+  - term: pipeline
+    accept: []
+    fix: [payplayn, paypılayn, payp layn]
