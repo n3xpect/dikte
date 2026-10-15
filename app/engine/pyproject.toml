@@ -1,0 +1,26 @@
+[project]
+name = "dikte-engine"
+version = "0.1.0"
+description = "Dikte local Turkish dictation engine (MLX STT, VAD, terms) over HTTP/WebSocket"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "aiohttp>=3.12",
+    "huggingface-hub>=2.2.0,<3",  # store.py uses its shared-blob helpers
+    "mlx-audio[stt]>=0.5.9",
+    "mlx-whisper>=0.4.3",
+    "numpy>=2.0",
+    "psutil>=7.0",
+    "silero-vad>=6.2.3",
+]
+
+[dependency-groups]
+dev = [
+    "jiwer>=4.0.0",
+]
+
+[build-system]
+requires = ["uv_build>=0.13.1,<0.14.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-root = ""
