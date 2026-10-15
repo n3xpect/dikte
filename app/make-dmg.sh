@@ -28,8 +28,20 @@ log "DMG oluşturuluyor (sıkıştırma birkaç dakika sürebilir)"
 mkdir -p "$DIST"
 # Keep dist/ to the installer only: drop older DMGs and anything else.
 find "$DIST" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
-hdiutil create -volname "Dikte $VERSION" -srcfolder "$STAGE" -fs APFS \
-  -format ULFO -ov "$DMG" -quiet
+VOLNAME="Dikte $VERSION"
+RW="$STAGE.rw.dmg"
+hdiutil create -volname "$VOLNAME" -srcfolder "$STAGE" -fs APFS -format UDRW -ov "$RW" -quiet
+# Volume icon = the app icon (custom-icon flag on the volume root).
+ICNS="$APP/Contents/Resources/AppIcon.icns"
+if [[ -f "$ICNS" ]]; then
+  MNT="$(hdiutil attach "$RW" -nobrowse -noverify -noautoopen | tail -1 | awk -F'\t' '{print $NF}')"
+  cp "$ICNS" "$MNT/.VolumeIcon.icns"
+  SetFile -c icnC "$MNT/.VolumeIcon.icns"
+  SetFile -a C "$MNT"
+  hdiutil detach "$MNT" -quiet
+fi
+hdiutil convert "$RW" -format ULFO -o "$DMG" -ov -quiet
+rm -f "$RW"
 
 if security find-identity -p codesigning | grep -q "$IDENTITY"; then
   codesign --force --timestamp=none -s "$IDENTITY" "$DMG"

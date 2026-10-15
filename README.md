@@ -1,6 +1,8 @@
 # Dikte
 
-Mac için yerel çalışan Türkçe dikte uygulaması. **⌥ Space**'e bas, konuş; metin düzenlenebilir bir panelde çıkar, **Shift+Enter** ile panoya kopyalanır. Ses Mac'ten dışarı çıkmaz: konuşma, Apple Silicon üzerinde [MLX](https://github.com/ml-explore/mlx) ile çalışan **Whisper large-v3** modeliyle yazıya çevrilir.
+Mac için yerel çalışan Türkçe ve İngilizce dikte uygulaması. **⌥ Space**'e bas, konuş; metin düzenlenebilir bir panelde çıkar, **Shift+Enter** ile panoya kopyalanır. Ses Mac'ten dışarı çıkmaz: konuşma, Apple Silicon üzerinde [MLX](https://github.com/ml-explore/mlx) ile çalışan **Whisper large-v3** modeliyle yazıya çevrilir.
+
+Konuşmanın dili her diktede otomatik algılanır (Türkçe ya da İngilizce); yanlış algılanırsa paneldeki **TR/EN** düğmesiyle (⌘L) aynı kayıt diğer dilde yeniden çevrilir. Arayüz de Türkçe ve İngilizce.
 
 Türkçe cümle içindeki İngilizce yazılım terimleri (branch, commit, deploy, session, socket…) için özel olarak ayarlandı: düzenlenebilir bir **terim listesi** hem modele ipucu olarak verilir hem de yaygın yanlış yazımları otomatik düzeltir. Panelde bir terimi düzelttiğinde Dikte bunu terim listesine eklemeyi önerir.
 
@@ -9,8 +11,7 @@ Türkçe cümle içindeki İngilizce yazılım terimleri (branch, commit, deploy
 1. [Releases](https://github.com/n3xpect/dikte/releases) sayfasından `dikte-<sürüm>.dmg`'yi indir.
 2. DMG'yi aç, `dikte.app`'i **Uygulamalar**'a sürükle.
 3. İlk açılış: uygulama Apple onaylı bir sertifikayla imzalı değil. "Geliştirici doğrulanamadı" uyarısı çıkarsa **Sistem Ayarları › Gizlilik ve Güvenlik › Yine de Aç**.
-4. Menü çubuğundaki 🎙 simgesinden **Dikte'yi aç › Modeller** sekmesinde **Whisper large-v3**'ü indir (~3 GB).
-5. İlk ⌥ Space'te mikrofon iznini ver.
+4. İlk açılışta karşılama ekranı seni dört adımda hazırlar: arayüz ve dikte dili, **Whisper large-v3**'ün indirilmesi (~3 GB), mikrofon izni ve kısayol. Hepsi sonradan Ayarlar'dan değiştirilebilir.
 
 **Gereksinimler:** Apple Silicon Mac, macOS 15+, ~4 GB boş RAM, model indirildikten sonra en az 10 GB boş disk.
 
@@ -23,12 +24,13 @@ Türkçe cümle içindeki İngilizce yazılım terimleri (branch, commit, deploy
 | **Esc** | Kayıt sırasında vazgeç; metin ekranında paneli kapat |
 | **Enter** (metin ekranında) | Yeni satır |
 | **Shift+Enter** | Metni panoya kopyala ve paneli kapat |
+| **⌘L** / TR-EN düğmesi | Aynı kaydı diğer dilde yeniden çevir |
 
 Menü çubuğundaki simge durumu gösterir: yeşil nokta model bellekte, turuncu yükleniyor, kırmızı motor çalışmıyor. Ana ekranda üç sekme var:
 
-- **Ayarlar** — sessizlik süresi, mikrofon, kısayol, terim listesi, açılışta başlat, ses efektleri, modelin boşta kalma süresi (5 dk sonra bellekten boşaltılır), geçmiş sınırı, en az boş disk alanı.
+- **Ayarlar** — arayüz dili (Türkçe / English, anında değişir), dikte dili (Otomatik / Türkçe / English), sessizlik süresi, mikrofon, kısayol, terim listesi, açılışta başlat, ses efektleri, modelin boşta kalma süresi (5 dk sonra bellekten boşaltılır), geçmiş sınırı, en az boş disk alanı.
 - **Modeller** — Whisper large-v3 (önerilen), large-v3 turbo ve Hugging Face'ten elle eklenen MLX Whisper modelleri. Bellekteki model yeşil gösterilir. İndirme sonrası diskte 10 GB'tan az yer kalacaksa indirme başlamaz; RAM yetmiyorsa model yüklenmez.
-- **Geçmiş** — tüm dikteler (ham ve düzeltilmiş metin, aradaki fark), arama, kopyalama, silme.
+- **Geçmiş** — tüm dikteler (dili, ham ve düzeltilmiş metin, aradaki fark), arama, kopyalama, silme.
 
 ## Neden Whisper large-v3?
 
@@ -81,5 +83,5 @@ Testler, ortam değişkenleri ve paketleme ayrıntıları: [`app/README.md`](app
 
 ## Bilinen sınırlar
 
-- Yalnızca Türkçe dikte.
+- Dikte dilleri: Türkçe ve İngilizce (Whisper başka dilleri de destekliyor ama uygulamada açık değil).
 - Uygulama yerel bir sertifikayla imzalı (notarize edilmemiş); ilk açılışta Gatekeeper uyarısı verir.
