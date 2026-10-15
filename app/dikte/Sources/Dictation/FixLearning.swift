@@ -1,4 +1,7 @@
 import Foundation
+#if DEBUG
+import AppKit  // self-check builds an NSTextView
+#endif
 
 /// Learning step after Shift+Enter: finds words the user corrected in the text area that look like
 /// term fixes (e.g. «cage» → «cache»). Pure logic, no state.
@@ -257,7 +260,47 @@ enum DictationSelfCheck {
         expect(names(c.shownDeliveryEntries), ["Slack", "Mail", "Notes", "Calendar", "Finder", "Messages"], "liste")
         expect(c.hiddenDeliveryCount, 3, "+N")
         expect(c.shownDeliveryEntries.map { $0.shortcut ?? 0 }, [0, 1, 2, 3, 4, 5], "kısayollar")
-        expect(keys(c.editingHint), ["Enter", "⇧↩", "⌘1–5", "⌘C", "⌘L", "Esc"], "düzenleme ipucu")
+        expect(keys(c.editingHint), ["Enter", "↓", "⇧↩", "⌘1–5", "⌘C", "⌘L", "Esc"], "düzenleme ipucu")
+        // ↑/↓ navigation: 6 rows + "+3 more" = 7 slots.
+        expect(c.navigableRowCount, 7, "↓ satır sayısı")
+        expect(c.enterList(), true, "↓ listeye gir")
+        expect(c.listSelection, 0, "↓ ilk satır")
+        expect(keys(c.editingHint), ["↑↓", "↩", "Esc"], "liste ipucu")
+        c.moveListSelection(by: 10)
+        expect(c.listSelection, 6, "↓ son satırda durur")
+        c.moveListSelection(by: -1)
+        expect(c.listSelection, 5, "↑")
+        c.listSelection = 6
+        c.activateListSelection()
+        expect(c.showsAllDeliveryTargets, true, "↩ +N listeyi açar")
+        expect(c.listSelection, 6, "↩ +N sonrası seçim yerinde")
+        expect(c.navigableRowCount, 9, "açılmış liste satır sayısı")
+        c.listSelection = 0
+        c.moveListSelection(by: -1)
+        expect(c.listSelection, nil, "↑ ilk satırdan metne döner")
+        c.showsAllDeliveryTargets = false
+
+        // ↓ leaves the text only from the last visual line.
+        let tv = NSTextView(usingTextLayoutManager: false)
+        tv.frame = NSRect(x: 0, y: 0, width: 160, height: 200)
+        tv.textContainer?.widthTracksTextView = true
+        func caretLast(_ text: String, at loc: Int) -> Bool {
+            tv.string = text
+            tv.setSelectedRange(NSRange(location: loc, length: 0))
+            return DictationPanelController.caretOnLastLine(tv)
+        }
+        expect(caretLast("", at: 0), true, "boş metin")
+        expect(caretLast("kısa", at: 2), true, "tek satır")
+        expect(caretLast("bir\niki", at: 1), false, "iki satır, üstte")
+        expect(caretLast("bir\niki", at: 6), true, "iki satır, altta")
+        expect(caretLast("bir\n", at: 4), true, "sonda boş satır, imleç orada")
+        expect(caretLast("bir\n", at: 1), false, "sonda boş satır, imleç üstte")
+        let long = String(repeating: "uzun kelimeler ", count: 6)
+        expect(caretLast(long, at: 0), false, "kaydırılmış satır, başta")
+        expect(caretLast(long, at: (long as NSString).length), true, "kaydırılmış satır, sonda")
+        tv.string = "seçim"
+        tv.setSelectedRange(NSRange(location: 0, length: 3))
+        expect(DictationPanelController.caretOnLastLine(tv), false, "seçim varken")
         c.showsAllDeliveryTargets = true
         expect(c.shownDeliveryEntries.count, 9, "genişletilmiş liste")
         expect(c.hiddenDeliveryCount, 0, "genişletilmiş +N")

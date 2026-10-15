@@ -471,6 +471,7 @@ private final class FocusingTextView: NSTextView {
 #Preview("Dil hatası") { DictationPanelView(controller: .preview(.languageError)).padding() }
 #Preview("Aktar: uygulama") { DictationPanelView(controller: .preview(.deliveryApp)).padding() }
 #Preview("Aktar: hepsi") { DictationPanelView(controller: .preview(.deliveryExpanded)).padding() }
+#Preview("Aktar: klavyeyle seçili") { DictationPanelView(controller: .preview(.deliverySelected)).padding() }
 #Preview("Aktar: ipucu yok") { DictationPanelView(controller: .preview(.deliveryTipDismissed)).padding() }
 #Preview("Öneriler") { DictationPanelView(controller: .preview(.suggestions)).padding() }
 #Preview("Öneriler: uygulama") { DictationPanelView(controller: .preview(.suggestionsApp)).padding() }

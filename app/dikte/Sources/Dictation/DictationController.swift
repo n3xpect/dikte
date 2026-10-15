@@ -36,6 +36,9 @@ final class DictationController {
     private(set) var suggestions: [FixSuggestion] = []
     /// "+ N uygulama daha…" was clicked: the AKTAR list shows every target.
     var showsAllDeliveryTargets = false
+    /// Row selected with ↑/↓ in the AKTAR list (index into the shown rows, then "+ N more");
+    /// nil = the keys go to the text area.
+    var listSelection: Int?
     /// Where the suggestions banner's delivery goes (nil = clipboard).
     private(set) var pendingTarget: TargetApp?
 
@@ -143,13 +146,51 @@ final class DictationController {
         deliverySource.icon(target)
     }
 
+    /// Rows reachable with ↑/↓: the shown targets, then "+ N uygulama daha…" if any.
+    var navigableRowCount: Int {
+        shownDeliveryEntries.count + (hiddenDeliveryCount > 0 ? 1 : 0)
+    }
+
+    /// ↓ from the text area's last line: select the first row. False when the list is empty.
+    @discardableResult
+    func enterList() -> Bool {
+        guard navigableRowCount > 0 else { return false }
+        listSelection = 0
+        return true
+    }
+
+    /// ↑/↓ in the list; ↑ on the first row hands the keys back to the text area.
+    func moveListSelection(by delta: Int) {
+        guard let i = listSelection else { return }
+        let next = i + delta
+        listSelection = next < 0 ? nil : min(next, navigableRowCount - 1)
+    }
+
+    /// ↩ on the selected row: deliver there, or expand "+ N more" (selection stays on that slot,
+    /// which is now the first newly shown app).
+    func activateListSelection() {
+        guard let i = listSelection else { return }
+        let rows = shownDeliveryEntries
+        if i < rows.count {
+            deliver(rows[i])
+        } else {
+            showsAllDeliveryTargets = true
+        }
+    }
+
+    func leaveList() {
+        listSelection = nil
+    }
+
     /// Key hints for the editing phase (default target name, ⌘ numbers actually shown).
     var editingHint: [DeliveryHint.Item] {
+        if listSelection != nil { return DeliveryHint.listItems() }
         let rows = shownDeliveryEntries
         let defaultRow = rows.first { $0.role == .defaultTarget }
         return DeliveryHint.items(defaultName: defaultRow?.app?.name,
                                   shortcuts: rows.compactMap(\.shortcut).max() ?? 0,
-                                  canSwitchLanguage: canSwitchLanguage)
+                                  canSwitchLanguage: canSwitchLanguage,
+                                  hasList: navigableRowCount > 0)
     }
 
     func toggleFavorite(_ target: TargetApp) {
@@ -561,6 +602,7 @@ final class DictationController {
         }
         result = r
         setResultText(t, language: r.language)
+        listSelection = nil
         phase = .editing
         panel.show()
     }
@@ -647,6 +689,7 @@ final class DictationController {
         text = ""
         suggestions = []
         showsAllDeliveryTargets = false
+        listSelection = nil
         pendingTarget = nil
         deliveryPending = false
         failureHint = nil
@@ -701,7 +744,7 @@ extension DictationController {
     enum PreviewState: String, CaseIterable {
         case listening, listeningModelLoading, transcribing, editing, editingEnglish, retranscribing,
              confirmSwitch, languageError, deliveryApp, deliveryExpanded, deliveryTipDismissed,
-             suggestions, suggestionsApp, failed, notice
+             deliverySelected, suggestions, suggestionsApp, failed, notice
     }
 
     /// Controller frozen in a phase, for `#Preview` and snapshot rendering.
@@ -725,7 +768,7 @@ extension DictationController {
         case .transcribing:
             c.phase = .transcribing
         case .editing, .retranscribing, .confirmSwitch, .languageError,
-             .deliveryApp, .deliveryExpanded, .deliveryTipDismissed:
+             .deliveryApp, .deliveryExpanded, .deliveryTipDismissed, .deliverySelected:
             c.phase = .editing
             c.result = DictationResult(rawText: turkish, text: turkish, fixes: [], audioSeconds: 6.1,
                                        transcribeSeconds: 0.9, model: "large-v3", language: "tr",
@@ -737,12 +780,13 @@ extension DictationController {
                 c.text = turkish.replacingOccurrences(of: "açalım", with: "hemen açalım")
                 c.confirmingLanguageSwitch = true
             case .languageError: c.languageError = L("Kayıt artık yok")
-            case .deliveryApp, .deliveryExpanded, .deliveryTipDismissed:
+            case .deliveryApp, .deliveryExpanded, .deliveryTipDismissed, .deliverySelected:
                 fake.settings.deliveryDefaultApp = PreviewDelivery.slack
                 fake.settings.deliveryFavorites = PreviewDelivery.favorites
                 fake.settings.deliveryOtherLimit = 3
                 c.showsAllDeliveryTargets = state == .deliveryExpanded
                 if state == .deliveryTipDismissed { fake.settings.dismissedTips = [Tip.deliveryList.rawValue] }
+                if state == .deliverySelected { c.listSelection = 2 }
             default: break
             }
         case .editingEnglish:

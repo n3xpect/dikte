@@ -2451,6 +2451,16 @@
         }
       }
     },
+    "aktar": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "send"
+          }
+        }
+      }
+    },
     "bellekte · önce boşalt": {
       "localizations": {
         "en": {
@@ -2557,6 +2567,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "not copied"
+          }
+        }
+      }
+    },
+    "liste": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "list"
+          }
+        }
+      }
+    },
+    "metne dön": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "back to text"
+          }
+        }
+      }
+    },
+    "seç": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "select"
           }
         }
       }

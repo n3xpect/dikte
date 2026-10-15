@@ -29,18 +29,27 @@ struct DeliveryListView: View {
 
     @ViewBuilder private func rowList(_ rows: [DeliveryEntry], hidden: Int) -> some View {
         let stack = VStack(spacing: 0) {
-            ForEach(rows) { entry in
-                DeliveryRow(entry: entry, controller: controller)
+            ForEach(Array(rows.enumerated()), id: \.element.id) { i, entry in
+                DeliveryRow(entry: entry, controller: controller, selected: controller.listSelection == i)
+                    .id(i)
             }
             if hidden > 0 {
-                MoreRow(count: hidden) { controller.showsAllDeliveryTargets = true }
+                MoreRow(count: hidden, selected: controller.listSelection == rows.count) {
+                    controller.showsAllDeliveryTargets = true
+                }
+                .id(rows.count)
             }
         }
         let count = rows.count + (hidden > 0 ? 1 : 0)
         if count > Self.maxRows {
-            ScrollView(.vertical) { stack }
-                .scrollIndicators(.automatic)
-                .frame(height: CGFloat(Self.maxRows) * Self.rowHeight)
+            ScrollViewReader { proxy in
+                ScrollView(.vertical) { stack }
+                    .scrollIndicators(.automatic)
+                    .frame(height: CGFloat(Self.maxRows) * Self.rowHeight)
+                    .onChange(of: controller.listSelection) { _, i in
+                        if let i { proxy.scrollTo(i) }
+                    }
+            }
         } else {
             stack
         }
@@ -50,6 +59,8 @@ struct DeliveryListView: View {
 private struct DeliveryRow: View {
     let entry: DeliveryEntry
     let controller: DictationController
+    /// Keyboard selection (↑/↓): accent ring + stronger fill, distinct from the default's tint.
+    var selected = false
     @State private var hovering = false
 
     private var isDefault: Bool { entry.role == .defaultTarget }
@@ -106,6 +117,12 @@ private struct DeliveryRow: View {
             RoundedRectangle(cornerRadius: 7, style: .continuous)
                 .fill(background)
         }
+        .overlay {
+            if selected {
+                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .strokeBorder(Color.accentColor, lineWidth: 2)
+            }
+        }
         .onHover { hovering = $0 }
         .contextMenu {
             if let app = entry.app {
@@ -143,6 +160,7 @@ private struct DeliveryRow: View {
     }
 
     private var background: Color {
+        if selected { return Color.accentColor.opacity(0.22) }
         if isDefault { return Color.blue.opacity(hovering ? 0.2 : 0.12) }
         return hovering ? Color.primary.opacity(0.07) : .clear
     }
@@ -150,6 +168,7 @@ private struct DeliveryRow: View {
 
 private struct MoreRow: View {
     let count: Int
+    var selected = false
     let action: () -> Void
     @State private var hovering = false
 
@@ -171,7 +190,13 @@ private struct MoreRow: View {
             .frame(height: DeliveryListView.rowHeight)
             .background {
                 RoundedRectangle(cornerRadius: 7, style: .continuous)
-                    .fill(hovering ? Color.primary.opacity(0.07) : .clear)
+                    .fill(selected ? Color.accentColor.opacity(0.22) : hovering ? Color.primary.opacity(0.07) : .clear)
+            }
+            .overlay {
+                if selected {
+                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        .strokeBorder(Color.accentColor, lineWidth: 2)
+                }
             }
             .contentShape(.rect)
         }
@@ -230,9 +255,12 @@ enum DeliveryHint {
 
     /// `defaultName` nil = the default target is the clipboard (then ⌘C would only repeat ⇧↩).
     /// `shortcuts` = highest ⌘ number shown in the list.
-    static func items(defaultName: String?, shortcuts: Int, canSwitchLanguage: Bool) -> [Item] {
-        var items = [Item(key: "Enter", label: L("yeni satır")),
-                     Item(key: "⇧↩", label: defaultName ?? L("kopyala"))]
+    /// `hasList`: there are rows to reach with ↓ from the text area.
+    static func items(defaultName: String?, shortcuts: Int, canSwitchLanguage: Bool,
+                      hasList: Bool = false) -> [Item] {
+        var items = [Item(key: "Enter", label: L("yeni satır"))]
+        if hasList { items.append(Item(key: "↓", label: L("liste"))) }
+        items.append(Item(key: "⇧↩", label: defaultName ?? L("kopyala")))
         if shortcuts == 1 {
             items.append(Item(key: "⌘1", label: L("diğerleri")))
         } else if shortcuts > 1 {
@@ -242,6 +270,12 @@ enum DeliveryHint {
         if canSwitchLanguage { items.append(Item(key: "⌘L", label: L("dil"))) }
         items.append(Item(key: "Esc", label: L("kapat")))
         return items
+    }
+
+    /// While a row is selected with the arrow keys.
+    static func listItems() -> [Item] {
+        [Item(key: "↑↓", label: L("seç")), Item(key: "↩", label: L("aktar")),
+         Item(key: "Esc", label: L("metne dön"))]
     }
 
     /// Keys bold; labels (app names included) are plain text, never parsed as markdown.

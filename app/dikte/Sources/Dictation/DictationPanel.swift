@@ -114,6 +114,8 @@ final class DictationPanelController {
         static let returnKey: UInt16 = 36
         static let keypadEnter: UInt16 = 76
         static let escape: UInt16 = 53
+        static let down: UInt16 = 125
+        static let up: UInt16 = 126
         /// Top-row 1…9 (physical keys, so ⌘1–9 work on any layout).
         static let digits: [UInt16] = [18, 19, 20, 21, 23, 22, 26, 28, 25]
     }
@@ -152,6 +154,19 @@ final class DictationPanelController {
                 controller.switchLanguage()
                 return true
             }
+            // ↑/↓ list navigation: ↓ on the text's last line enters the AKTAR list; there ↑/↓ move,
+            // ↩ delivers, Esc (or typing) hands the keys back to the text.
+            let bare = flags.intersection([.command, .option, .control, .shift]).isEmpty
+            if controller.listSelection != nil {
+                if bare && event.keyCode == Key.down { controller.moveListSelection(by: 1); return true }
+                if bare && event.keyCode == Key.up { controller.moveListSelection(by: -1); return true }
+                if isEscape { controller.leaveList(); return true }
+                if isReturn && bare { controller.activateListSelection(); return true }
+                if !command && !isReturn { controller.leaveList(); return false }
+            } else if bare, event.keyCode == Key.down, let tv = panel.firstResponder as? NSTextView,
+                      Self.caretOnLastLine(tv), controller.enterList() {
+                return true
+            }
             if isEscape { controller.escapePressed(); return true }
             if isReturn && flags.contains(.shift) { controller.deliverToDefault(); return true }
             if command, !flags.contains(.shift), let n = Self.shortcutNumber(keyCode: event.keyCode) {
@@ -171,6 +186,24 @@ final class DictationPanelController {
             // Swallow everything else: nothing in these phases takes typing (no beeps).
             return true
         }
+    }
+
+    /// True when ↓ would leave the text: no selection and the caret is on the last visual line
+    /// (wrapped lines count; an empty line after a trailing newline is the last line).
+    static func caretOnLastLine(_ tv: NSTextView) -> Bool {
+        let sel = tv.selectedRange()
+        guard sel.length == 0 else { return false }
+        let length = (tv.string as NSString).length
+        guard length > 0, let lm = tv.layoutManager, let tc = tv.textContainer else { return true }
+        lm.ensureLayout(for: tc)
+        let hasEmptyLastLine = !lm.extraLineFragmentRect.isEmpty
+        if sel.location >= length { return true }
+        if hasEmptyLastLine { return false }
+        let caretLine = lm.lineFragmentRect(forGlyphAt: lm.glyphIndexForCharacter(at: sel.location),
+                                            effectiveRange: nil)
+        let lastLine = lm.lineFragmentRect(forGlyphAt: lm.glyphIndexForCharacter(at: length - 1),
+                                           effectiveRange: nil)
+        return caretLine.minY >= lastLine.minY - 0.5
     }
 
     /// ⌘C/V/X/A/Z work even when Dikte is not the active app (no main menu in play).
