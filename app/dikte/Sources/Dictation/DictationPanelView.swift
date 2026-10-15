@@ -103,16 +103,21 @@ private struct EditingContent: View {
                     .font(.callout)
                     .foregroundStyle(.orange)
             }
+            if !controller.shownDeliveryEntries.isEmpty {
+                DeliveryListView(controller: controller)
+            }
             if controller.confirmingLanguageSwitch {
                 ConfirmSwitchRow(controller: controller)
             } else {
                 HStack(alignment: .center, spacing: 8) {
                     if controller.retranscribing {
                         HintText(L("**Esc**: vazgeç"))
-                    } else if controller.canSwitchLanguage {
-                        HintText(L("**Shift+Enter**: kopyala · **Enter**: yeni satır · **⌘L**: dil · **Esc**: kapat"))
                     } else {
-                        HintText(L("**Shift+Enter**: kopyala · **Enter**: yeni satır · **Esc**: kapat"))
+                        Text(DeliveryHint.attributed(controller.editingHint))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(2)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                     Spacer(minLength: 8)
                     LanguageBadge(controller: controller)
@@ -201,9 +206,15 @@ private struct SuggestionsContent: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Label(L("Panoya kopyalandı"), systemImage: "checkmark.circle.fill")
-                .font(.headline)
-                .foregroundStyle(.green)
+            if let target = controller.pendingTarget {
+                Label(L("%@ uygulamasına aktarılacak", target.name), systemImage: "arrow.up.forward.app.fill")
+                    .font(.headline)
+                    .foregroundStyle(Color.accentColor)
+            } else {
+                Label(L("Panoya kopyalandı"), systemImage: "checkmark.circle.fill")
+                    .font(.headline)
+                    .foregroundStyle(.green)
+            }
             ForEach(controller.suggestions) { s in
                 HStack(spacing: 8) {
                     Text(L("«%@» → «%@» terimlere eklensin mi?", s.wrong, s.right))
@@ -216,7 +227,8 @@ private struct SuggestionsContent: View {
                 }
                 .controlSize(.small)
             }
-            HintText(L("**Esc**: hepsini geç"))
+            HintText(controller.pendingTarget == nil ? L("**Esc**: hepsini geç")
+                                                     : L("**Esc**: hepsini geç ve aktar"))
         }
     }
 }
@@ -344,7 +356,7 @@ private struct VisualEffectBackground: NSViewRepresentable {
 // MARK: - Text area
 
 /// Plain-text NSTextView that sizes to its content (scrolls past `maxHeight`), takes focus with the
-/// cursor at the end when it appears, and keeps Enter = newline. Shift+Enter / Esc are intercepted
+/// cursor at the end when it appears, and keeps Enter = newline. Shift+Enter / ⌘1–9 / Esc are intercepted
 /// by `DictationPanelController` before they reach it.
 struct DictationTextView: NSViewRepresentable {
     @Binding var text: String
@@ -457,7 +469,18 @@ private final class FocusingTextView: NSTextView {
 #Preview("Yeniden çevriliyor") { DictationPanelView(controller: .preview(.retranscribing)).padding() }
 #Preview("Dil değişimi onayı") { DictationPanelView(controller: .preview(.confirmSwitch)).padding() }
 #Preview("Dil hatası") { DictationPanelView(controller: .preview(.languageError)).padding() }
+#Preview("Aktar: uygulama") { DictationPanelView(controller: .preview(.deliveryApp)).padding() }
+#Preview("Aktar: hepsi") { DictationPanelView(controller: .preview(.deliveryExpanded)).padding() }
+#Preview("Aktar: ipucu yok") { DictationPanelView(controller: .preview(.deliveryTipDismissed)).padding() }
 #Preview("Öneriler") { DictationPanelView(controller: .preview(.suggestions)).padding() }
+#Preview("Öneriler: uygulama") { DictationPanelView(controller: .preview(.suggestionsApp)).padding() }
+#Preview("Toast") {
+    VStack {
+        DeliveryToastView(content: .failure(DeliveryError.pasteFailed, appName: "Slack"))
+        DeliveryToastView(content: .failure(DeliveryError.accessibilityDenied, appName: "Slack"))
+    }
+    .padding()
+}
 #Preview("Hata") { DictationPanelView(controller: .preview(.failed)).padding() }
 #Preview("Konuşma yok") { DictationPanelView(controller: .preview(.notice)).padding() }
 #endif

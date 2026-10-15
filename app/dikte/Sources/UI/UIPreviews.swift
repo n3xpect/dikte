@@ -117,11 +117,59 @@ enum PreviewData {
         return s
     }
 
+    /// Fake running apps (icons from real system apps where they exist).
+    static let runningApps: [TargetApp] = [
+        ("com.todesktop.cursor", "Cursor", "/Applications/Cursor.app"),
+        ("com.example.calisma", "Çalışma", "/Applications/Çalışma.app"),
+        ("com.apple.mail", "Mail", "/System/Applications/Mail.app"),
+        ("com.apple.Safari", "Safari", "/Applications/Safari.app"),
+        ("com.apple.Terminal", "Terminal", "/System/Applications/Utilities/Terminal.app"),
+        ("com.apple.dt.Xcode", "Xcode", "/Applications/Xcode.app"),
+        ("dev.zed.Zed", "Zed", "/Applications/Zed.app"),
+    ].map { TargetApp(bundleID: $0.0, name: $0.1, url: URL(fileURLWithPath: $0.2), isRunning: true) }
+
+    static let installedApps: [TargetApp] = [
+        TargetApp(bundleID: "com.apple.TextEdit", name: "TextEdit",
+                  url: URL(fileURLWithPath: "/System/Applications/TextEdit.app"), isRunning: false),
+        TargetApp(bundleID: "com.apple.Notes", name: "Notlar",
+                  url: URL(fileURLWithPath: "/System/Applications/Notes.app"), isRunning: false),
+    ]
+
+    static func deliveryOptions(trusted: Bool = false) -> DeliveryOptions {
+        DeliveryOptions(
+            runningApps: { runningApps },
+            resolve: { id in (runningApps + installedApps).first { $0.bundleID == id } },
+            icon: { app in
+                guard let url = app.url, FileManager.default.fileExists(atPath: url.path) else {
+                    return NSWorkspace.shared.icon(for: .applicationBundle)
+                }
+                return NSWorkspace.shared.icon(forFile: url.path)
+            },
+            accessibilityTrusted: { trusted },
+            refreshTrust: {}, requestAccessibility: {}, chooseApp: { nil })
+    }
+
+    /// Delivery settings in use: an app default, favourites (one closed, one uninstalled), tips dismissed.
+    static func deliverySettings(_ language: AppLanguage = Localizer.shared.language) -> AppSettings {
+        var s = settings(language)
+        s.deliveryDefaultApp = "com.todesktop.cursor"
+        s.deliveryFavorites = ["com.apple.Notes", "com.todesktop.cursor", "com.apple.TextEdit", "com.example.gone"]
+        s.deliveryOtherLimit = 3
+        s.dismissedTips = [Tip.deliveryList.rawValue]
+        return s
+    }
+
+    static func deliverySection(_ settings: AppSettings, trusted: Bool) -> some View {
+        Form { DeliverySection(settings: .constant(settings), options: deliveryOptions(trusted: trusted)) }
+            .formStyle(.grouped)
+    }
+
     static func settingsView(_ settings: Binding<AppSettings>) -> some View {
         SettingsView(settings: settings,
                      microphones: [Microphone(uid: "builtin", name: "MacBook Pro Mikrofonu"),
                                    Microphone(uid: "usb", name: "Shure MV7")],
                      launchAtLogin: launchAtLogin,
+                     delivery: deliveryOptions(),
                      engineStatus: .running(port: 1),
                      dataDir: URL(fileURLWithPath: NSHomeDirectory() + "/Library/Application Support/dikte"))
     }
@@ -165,6 +213,9 @@ enum PreviewData {
         .onAppear { Localizer.shared.language = .en }
         .onChange(of: settings.uiLanguage) { _, l in Localizer.shared.language = l }
 }
+#Preview("Ayarlar — Metin aktarımı") {
+    PreviewData.deliverySection(PreviewData.deliverySettings(), trusted: true).frame(width: 720, height: 640)
+}
 #Preview("Geçmiş — English") {
     PreviewData.window(.history).frame(width: 900, height: 660)
         .onAppear { Localizer.shared.language = .en }
@@ -196,7 +247,7 @@ enum UIPreviewRenderer {
         renderLiveSwitch(dir)
         renderStatusIcons(dir)
         print("UI previews written to \(dir.path)")
-        let failures = selfCheck()
+        let failures = selfCheck() + DeliverySelfCheck.run()
         print(failures.isEmpty ? "UI self-check: OK" : "UI self-check FAILED:\n" + failures.joined(separator: "\n"))
         let missing = PreviewStrings.missing.sorted()
         if !missing.isEmpty {
@@ -218,6 +269,12 @@ enum UIPreviewRenderer {
         render(PreviewData.window(.settings), "settings", w, 1300, dir)
         render(PreviewData.window(.settings), "settings-window", w, 660, dir)
         render(PreviewData.window(.settings), "settings-dark", w, 1300, dir, dark: true)
+        render(PreviewData.deliverySection(PreviewData.settings(), trusted: false),
+               "delivery-settings-default", 720, 560, dir)
+        render(PreviewData.deliverySection(PreviewData.deliverySettings(), trusted: true),
+               "delivery-settings", 720, 600, dir)
+        render(PreviewData.deliverySection(PreviewData.deliverySettings(), trusted: false),
+               "delivery-settings-dark", 720, 600, dir, dark: true)
         render(PreviewData.window(.terms), "terms", w, 760, dir)
         render(PreviewData.window(.terms), "terms-dark", w, 760, dir, dark: true)
         render(PreviewData.window(.history), "history", w, 660, dir)
@@ -423,16 +480,21 @@ private struct PreviewLiveWindow: View {
 
 /// Renderer-only English fallback: until the lead merges `i18n/*.json` into the String Catalog,
 /// the built `en.lproj` lacks most keys, so lookups that come back unchanged are answered from
-/// `app/dikte/i18n/ui.json` in the repo. Not used by the app itself.
+/// `app/dikte/i18n/ui.json` / `delivery.json` in the repo. Not used by the app itself.
 enum PreviewStrings {
     nonisolated static let en: [String: String] = {
-        let url = URL(fileURLWithPath: #filePath)
+        let dir = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-            .appendingPathComponent("i18n/ui.json")
-        guard let data = try? Data(contentsOf: url),
-              let dict = try? JSONSerialization.jsonObject(with: data) as? [String: String] else {
-            print("PreviewStrings: could not read \(url.path)")
-            return [:]
+            .appendingPathComponent("i18n")
+        var dict: [String: String] = [:]
+        for name in ["ui", "delivery"] {
+            let url = dir.appendingPathComponent(name + ".json")
+            guard let data = try? Data(contentsOf: url),
+                  let d = try? JSONSerialization.jsonObject(with: data) as? [String: String] else {
+                print("PreviewStrings: could not read \(url.path)")
+                continue
+            }
+            dict.merge(d) { a, _ in a }
         }
         return dict
     }()

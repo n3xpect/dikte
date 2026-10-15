@@ -3,7 +3,7 @@ import AppKit
 import SwiftUI
 
 /// Debug-only hook: launching with env `DIKTE_DICTATION_SNAPSHOTS=<dir>` runs `DictationSelfCheck`,
-/// renders every panel phase to `<dir>/<state>[-en][-dark].png` (Turkish and English UI) and quits.
+/// renders every panel phase and the delivery toasts to `<dir>/<state>[-en][-dark].png` (Turkish and English UI) and quits.
 enum DictationDebug {
     static func runIfRequested() {
         guard let dir = ProcessInfo.processInfo.environment["DIKTE_DICTATION_SNAPSHOTS"], !dir.isEmpty else { return }
@@ -18,7 +18,14 @@ enum DictationDebug {
                 Localizer.shared.language = language
                 for appearance in [NSAppearance.Name.aqua, .darkAqua] {
                     for state in DictationController.PreviewState.allCases {
-                        render(state, appearance: appearance, to: folder)
+                        render(DictationPanelView(controller: .preview(state)), name: state.rawValue,
+                               appearance: appearance, to: folder)
+                    }
+                    let toasts: [(String, DeliveryError)] = [("toastError", .activationTimeout),
+                                                             ("toastAccessibility", .accessibilityDenied)]
+                    for (name, error) in toasts {
+                        render(DeliveryToastView(content: .failure(error, appName: "Slack")).padding(20),
+                               name: name, appearance: appearance, to: folder)
                     }
                 }
             }
@@ -43,9 +50,8 @@ enum DictationDebug {
         }
     }
 
-    private static func render(_ state: DictationController.PreviewState, appearance: NSAppearance.Name, to folder: URL) {
-        let view = DictationPanelView(controller: .preview(state))
-            .environment(\.solidPanelBackground, true)
+    private static func render(_ content: some View, name: String, appearance: NSAppearance.Name, to folder: URL) {
+        let view = content.environment(\.solidPanelBackground, true)
         let host = NSHostingView(rootView: view)
         let window = NSWindow(contentRect: NSRect(x: -3000, y: -3000, width: DictationPanelView.width, height: 400),
                               styleMask: [.borderless], backing: .buffered, defer: false)
@@ -62,7 +68,7 @@ enum DictationDebug {
         guard let rep = host.bitmapImageRepForCachingDisplay(in: host.bounds) else { return }
         host.cacheDisplay(in: host.bounds, to: rep)
         let suffix = (Localizer.shared.language == .en ? "-en" : "") + (appearance == .darkAqua ? "-dark" : "")
-        let url = folder.appendingPathComponent("\(state.rawValue)\(suffix).png")
+        let url = folder.appendingPathComponent("\(name)\(suffix).png")
         try? rep.representation(using: .png, properties: [:])?.write(to: url)
         print("snapshot:", url.path, size)
         window.orderOut(nil)

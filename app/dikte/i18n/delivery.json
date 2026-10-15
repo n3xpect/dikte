@@ -1,0 +1,23 @@
+{
+  "Başka bir uygulama seç…": "Choose Another App…",
+  "Ekle…": "Add…",
+  "Erişilebilirlik izni": "Accessibility permission",
+  "Favori olmayan, çalışan uygulamalardan bu kadarı listede doğrudan görünür; gerisi katlanır.": "This many running, non-favorite apps are shown directly in the list; the rest are collapsed.",
+  "Favoriler": "Favorites",
+  "Favoriler panelde varsayılan hedeften hemen sonra listelenir; çalışmıyorlarsa açılırlar.": "Favorites are listed in the panel right after the default target; they are launched if they aren't running.",
+  "Favorilerden çıkar": "Remove from favorites",
+  "Metin aktarımı": "Text delivery",
+  "Panelde gösterilecek diğer uygulama sayısı": "Other apps shown in the panel",
+  "Panelde ⇧↩ metni varsayılan hedefe gönderir, ⌘1…⌘9 listedeki diğer uygulamalara. Metin panoya konur ve uygulamaya ⌘V ile yapıştırılır; aktarılamazsa metin panoda kalır.": "In the panel, ⇧↩ sends the text to the default target and ⌘1…⌘9 to the other apps in the list. The text is put on the clipboard and pasted into the app with ⌘V; if delivery fails, the text stays on the clipboard.",
+  "Panoya kopyala": "Copy to clipboard",
+  "Seç": "Choose",
+  "Uygulamaya yapıştırmak için gerekli.": "Required for pasting into apps.",
+  "Varsayılan hedef": "Default target",
+  "Verildi": "Granted",
+  "Verilmedi": "Not granted",
+  "Yapıştırdıktan sonra panoyu eski haline getir": "Restore the clipboard after pasting",
+  "yüklü değil": "not installed",
+  "İpuçları": "Tips",
+  "İpuçlarını yeniden göster": "Show tips again",
+  "İzin ver…": "Allow…"
+}

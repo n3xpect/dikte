@@ -37,7 +37,7 @@ final class DictationPanel: NSPanel {
     override var canBecomeMain: Bool { false }
 }
 
-/// Shows/positions the panel and routes Enter / Shift+Enter / Esc / ⌘L to the controller.
+/// Shows/positions the panel and routes Enter / Shift+Enter / ⌘1–9 / ⌘C / Esc / ⌘L to the controller.
 final class DictationPanelController {
     /// Distance between the panel's bottom edge and the bottom of the visible frame (Dock).
     static let bottomMargin: CGFloat = 80
@@ -114,6 +114,13 @@ final class DictationPanelController {
         static let returnKey: UInt16 = 36
         static let keypadEnter: UInt16 = 76
         static let escape: UInt16 = 53
+        /// Top-row 1…9 (physical keys, so ⌘1–9 work on any layout).
+        static let digits: [UInt16] = [18, 19, 20, 21, 23, 22, 26, 28, 25]
+    }
+
+    /// 1…9 for the top-row digit keys, else nil.
+    static func shortcutNumber(keyCode: UInt16) -> Int? {
+        Key.digits.firstIndex(of: keyCode).map { $0 + 1 }
     }
 
     /// Returns true when the event was consumed.
@@ -146,7 +153,16 @@ final class DictationPanelController {
                 return true
             }
             if isEscape { controller.escapePressed(); return true }
-            if isReturn && flags.contains(.shift) { controller.copyAndClose(); return true }
+            if isReturn && flags.contains(.shift) { controller.deliverToDefault(); return true }
+            if command, !flags.contains(.shift), let n = Self.shortcutNumber(keyCode: event.keyCode) {
+                controller.deliver(shortcut: n)
+                return true
+            }
+            if command, !flags.contains(.shift), event.charactersIgnoringModifiers?.lowercased() == "c",
+               let tv = panel.firstResponder as? NSTextView, tv.selectedRange().length == 0 {
+                controller.copyOnly()
+                return true
+            }
             if command, editingCommand(event, shift: flags.contains(.shift)) { return true }
             return false
         case .listening, .transcribing, .failed:

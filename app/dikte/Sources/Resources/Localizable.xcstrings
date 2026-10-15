@@ -141,6 +141,26 @@
         }
       }
     },
+    "%@ uygulamasına aktarılacak": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Will be sent to %@"
+          }
+        }
+      }
+    },
+    "%@ uygulamasına aktarılamadı — metin panoda (⌘V)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't send to %@ — the text is on the clipboard (⌘V)"
+          }
+        }
+      }
+    },
     "(boş)": {
       "localizations": {
         "en": {
@@ -171,6 +191,16 @@
         }
       }
     },
+    "**Esc**: hepsini geç ve aktar": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "**Esc**: skip all and send"
+          }
+        }
+      }
+    },
     "**Esc**: kapat": {
       "localizations": {
         "en": {
@@ -191,22 +221,22 @@
         }
       }
     },
-    "**Shift+Enter**: kopyala · **Enter**: yeni satır · **Esc**: kapat": {
+    "+ %lld uygulama daha…": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "**Shift+Enter**: copy · **Enter**: new line · **Esc**: close"
+            "value": "+ %lld more apps…"
           }
         }
       }
     },
-    "**Shift+Enter**: kopyala · **Enter**: yeni satır · **⌘L**: dil · **Esc**: kapat": {
+    "+ 1 uygulama daha…": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "**Shift+Enter**: copy · **Enter**: new line · **⌘L**: language · **Esc**: close"
+            "value": "+ 1 more app…"
           }
         }
       }
@@ -247,6 +277,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "1 term"
+          }
+        }
+      }
+    },
+    "AKTAR": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SEND TO"
           }
         }
       }
@@ -301,6 +341,16 @@
         }
       }
     },
+    "Açık": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Running"
+          }
+        }
+      }
+    },
     "Açılışta başlat": {
       "localizations": {
         "en": {
@@ -347,6 +397,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Disconnected microphone"
+          }
+        }
+      }
+    },
+    "Başka bir uygulama seç…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose Another App…"
           }
         }
       }
@@ -407,6 +467,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Unknown engine error"
+          }
+        }
+      }
+    },
+    "Bir daha gösterme": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Don't show again"
+          }
+        }
+      }
+    },
+    "Bir uygulamaya tıkla ya da kısayoluna bas: metin oraya yapıştırılır. Varsayılanı Ayarlar'dan değiştirebilirsin.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Click an app or press its shortcut to paste the text there. You can change the default in Settings."
           }
         }
       }
@@ -801,6 +881,16 @@
         }
       }
     },
+    "Ekle…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add…"
+          }
+        }
+      }
+    },
     "En az boş disk alanı": {
       "localizations": {
         "en": {
@@ -817,6 +907,76 @@
           "stringUnit": {
             "state": "translated",
             "value": "English"
+          }
+        }
+      }
+    },
+    "Erişilebilirlik izni": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accessibility permission"
+          }
+        }
+      }
+    },
+    "Erişilebilirlik izni gerekli — metin panoda": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accessibility permission needed — the text is on the clipboard"
+          }
+        }
+      }
+    },
+    "Favori olmayan, çalışan uygulamalardan bu kadarı listede doğrudan görünür; gerisi katlanır.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This many running, non-favorite apps are shown directly in the list; the rest are collapsed."
+          }
+        }
+      }
+    },
+    "Favoriler": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Favorites"
+          }
+        }
+      }
+    },
+    "Favoriler panelde varsayılan hedeften hemen sonra listelenir; çalışmıyorlarsa açılırlar.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Favorites are listed in the panel right after the default target; they are launched if they aren't running."
+          }
+        }
+      }
+    },
+    "Favorilerden çıkar": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove from favorites"
+          }
+        }
+      }
+    },
+    "Favorilere ekle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add to favorites"
           }
         }
       }
@@ -1227,6 +1387,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Menus, windows and messages appear in this language."
+          }
+        }
+      }
+    },
+    "Metin aktarımı": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Text delivery"
           }
         }
       }
@@ -1741,6 +1911,36 @@
         }
       }
     },
+    "Panelde gösterilecek diğer uygulama sayısı": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Other apps shown in the panel"
+          }
+        }
+      }
+    },
+    "Panelde ⇧↩ metni varsayılan hedefe gönderir, ⌘1…⌘9 listedeki diğer uygulamalara. Metin panoya konur ve uygulamaya ⌘V ile yapıştırılır; aktarılamazsa metin panoda kalır.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In the panel, ⇧↩ sends the text to the default target and ⌘1…⌘9 to the other apps in the list. The text is put on the clipboard and pasted into the app with ⌘V; if delivery fails, the text stays on the clipboard."
+          }
+        }
+      }
+    },
+    "Panoya kopyala": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy to clipboard"
+          }
+        }
+      }
+    },
     "Panoya kopyalandı": {
       "localizations": {
         "en": {
@@ -1777,6 +1977,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Silence duration"
+          }
+        }
+      }
+    },
+    "Seç": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose"
           }
         }
       }
@@ -2061,6 +2271,46 @@
         }
       }
     },
+    "Uygulamaya yapıştırmak için gerekli.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Required for pasting into apps."
+          }
+        }
+      }
+    },
+    "Varsayılan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Default"
+          }
+        }
+      }
+    },
+    "Varsayılan hedef": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Default target"
+          }
+        }
+      }
+    },
+    "Varsayılan yap": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Make default"
+          }
+        }
+      }
+    },
     "Vazgeç": {
       "localizations": {
         "en": {
@@ -2081,6 +2331,26 @@
         }
       }
     },
+    "Verildi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Granted"
+          }
+        }
+      }
+    },
+    "Verilmedi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not granted"
+          }
+        }
+      }
+    },
     "Virgülle ayır. Bunlar doğru sayılır, değiştirilmez.": {
       "localizations": {
         "en": {
@@ -2097,6 +2367,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Separate with commas. If the model writes one of these, it’s replaced with the term."
+          }
+        }
+      }
+    },
+    "Yapıştırdıktan sonra panoyu eski haline getir": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore the clipboard after pasting"
           }
         }
       }
@@ -2181,6 +2461,26 @@
         }
       }
     },
+    "dil": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "language"
+          }
+        }
+      }
+    },
+    "diğerleri": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "others"
+          }
+        }
+      }
+    },
     "düzeltilir": {
       "localizations": {
         "en": {
@@ -2211,12 +2511,32 @@
         }
       }
     },
+    "kapat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "close"
+          }
+        }
+      }
+    },
     "kayıt": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "entries"
+          }
+        }
+      }
+    },
+    "kopyala": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "copy"
           }
         }
       }
@@ -2257,6 +2577,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "or"
+          }
+        }
+      }
+    },
+    "yeni satır": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "new line"
+          }
+        }
+      }
+    },
+    "yüklü değil": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "not installed"
           }
         }
       }
@@ -2471,6 +2811,26 @@
         }
       }
     },
+    "İpuçları": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tips"
+          }
+        }
+      }
+    },
+    "İpuçlarını yeniden göster": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show tips again"
+          }
+        }
+      }
+    },
     "İstersen modeli daha sonra Modeller bölümünden de indirebilirsin.": {
       "localizations": {
         "en": {
@@ -2497,6 +2857,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "You can continue without it; dictation will need microphone access."
+          }
+        }
+      }
+    },
+    "İzin ver…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow…"
           }
         }
       }

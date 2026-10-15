@@ -1,0 +1,259 @@
+import AppKit
+import SwiftUI
+
+/// AKTAR list under the text area: default target, favourites, other running apps, "+ N more".
+struct DeliveryListView: View {
+    static let rowHeight: CGFloat = 28
+    /// More rows than this scroll instead of growing the panel.
+    static let maxRows = 12
+
+    let controller: DictationController
+
+    var body: some View {
+        let rows = controller.shownDeliveryEntries
+        let hidden = controller.hiddenDeliveryCount
+        VStack(alignment: .leading, spacing: 4) {
+            Text(L("AKTAR"))
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .tracking(0.6)
+                .padding(.leading, 6)
+            rowList(rows, hidden: hidden)
+            if controller.showsDeliveryTip {
+                DeliveryTipNote { controller.dismissDeliveryTip() }
+                    .padding(.top, 4)
+            }
+        }
+        .disabled(controller.retranscribing)
+    }
+
+    @ViewBuilder private func rowList(_ rows: [DeliveryEntry], hidden: Int) -> some View {
+        let stack = VStack(spacing: 0) {
+            ForEach(rows) { entry in
+                DeliveryRow(entry: entry, controller: controller)
+            }
+            if hidden > 0 {
+                MoreRow(count: hidden) { controller.showsAllDeliveryTargets = true }
+            }
+        }
+        let count = rows.count + (hidden > 0 ? 1 : 0)
+        if count > Self.maxRows {
+            ScrollView(.vertical) { stack }
+                .scrollIndicators(.automatic)
+                .frame(height: CGFloat(Self.maxRows) * Self.rowHeight)
+        } else {
+            stack
+        }
+    }
+}
+
+private struct DeliveryRow: View {
+    let entry: DeliveryEntry
+    let controller: DictationController
+    @State private var hovering = false
+
+    private var isDefault: Bool { entry.role == .defaultTarget }
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Button { controller.deliver(entry) } label: {
+                HStack(spacing: 8) {
+                    ShortcutChip(text: chipText)
+                    icon
+                    Text(name)
+                        .font(.callout)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                    if entry.app?.isRunning == true {
+                        Circle()
+                            .fill(.secondary.opacity(0.7))
+                            .frame(width: 5, height: 5)
+                            .help(L("Açık"))
+                            .accessibilityLabel(L("Açık"))
+                    }
+                    if isDefault {
+                        Text(L("Varsayılan"))
+                            .font(.caption2.weight(.medium))
+                            .foregroundStyle(Color.accentColor)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 1)
+                            .background(Color.accentColor.opacity(0.15), in: .capsule)
+                    }
+                    Spacer(minLength: 0)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+                .contentShape(.rect)
+            }
+            .buttonStyle(.plain)
+            .focusable(false)
+            if let app = entry.app {
+                Button { controller.toggleFavorite(app) } label: {
+                    Image(systemName: entry.isFavorite ? "star.fill" : "star")
+                        .font(.system(size: 12))
+                        .foregroundStyle(entry.isFavorite ? AnyShapeStyle(.orange) : AnyShapeStyle(.tertiary))
+                        .frame(width: 22, height: 22)
+                        .contentShape(.rect)
+                }
+                .buttonStyle(.plain)
+                .focusable(false)
+                .help(entry.isFavorite ? L("Favorilerden çıkar") : L("Favorilere ekle"))
+                .accessibilityLabel(entry.isFavorite ? L("Favorilerden çıkar") : L("Favorilere ekle"))
+            }
+        }
+        .padding(.horizontal, 6)
+        .frame(height: DeliveryListView.rowHeight)
+        .background {
+            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                .fill(background)
+        }
+        .onHover { hovering = $0 }
+        .contextMenu {
+            if let app = entry.app {
+                if !isDefault {
+                    Button(L("Varsayılan yap")) { controller.makeDefaultTarget(app) }
+                }
+                Button(entry.isFavorite ? L("Favorilerden çıkar") : L("Favorilere ekle")) {
+                    controller.toggleFavorite(app)
+                }
+            }
+        }
+    }
+
+    private var chipText: String? {
+        if isDefault { return "⇧↩" }
+        return entry.shortcut.map { "⌘\($0)" }
+    }
+
+    private var name: String {
+        entry.app?.name ?? L("Panoya kopyala")
+    }
+
+    @ViewBuilder private var icon: some View {
+        if let app = entry.app {
+            Image(nsImage: controller.deliveryIcon(for: app))
+                .resizable()
+                .interpolation(.high)
+                .frame(width: 18, height: 18)
+        } else {
+            Image(systemName: "doc.on.clipboard")
+                .font(.system(size: 13))
+                .foregroundStyle(.secondary)
+                .frame(width: 18, height: 18)
+        }
+    }
+
+    private var background: Color {
+        if isDefault { return Color.blue.opacity(hovering ? 0.2 : 0.12) }
+        return hovering ? Color.primary.opacity(0.07) : .clear
+    }
+}
+
+private struct MoreRow: View {
+    let count: Int
+    let action: () -> Void
+    @State private var hovering = false
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                ShortcutChip(text: nil)
+                Image(systemName: "ellipsis.circle")
+                    .font(.system(size: 13))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 18, height: 18)
+                Text(count == 1 ? L("+ 1 uygulama daha…") : L("+ %lld uygulama daha…", count))
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 6)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(height: DeliveryListView.rowHeight)
+            .background {
+                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .fill(hovering ? Color.primary.opacity(0.07) : .clear)
+            }
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .focusable(false)
+        .onHover { hovering = $0 }
+    }
+}
+
+/// Fixed-width key label so names line up; empty when the row has no shortcut.
+private struct ShortcutChip: View {
+    let text: String?
+
+    var body: some View {
+        Text(verbatim: text ?? "")
+            .font(.caption.weight(.medium).monospacedDigit())
+            .foregroundStyle(.secondary)
+            .frame(width: 30, height: 18)
+            .background {
+                if text != nil {
+                    RoundedRectangle(cornerRadius: 5, style: .continuous)
+                        .fill(.primary.opacity(0.07))
+                }
+            }
+    }
+}
+
+private struct DeliveryTipNote: View {
+    let dismiss: () -> Void
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 6) {
+            Image(systemName: "info.circle")
+                .foregroundStyle(.secondary)
+            Text(L("Bir uygulamaya tıkla ya da kısayoluna bas: metin oraya yapıştırılır. Varsayılanı Ayarlar'dan değiştirebilirsin."))
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 8)
+            Button(L("Bir daha gösterme"), action: dismiss)
+                .buttonStyle(.link)
+                .focusable(false)
+        }
+        .font(.caption)
+        .padding(.horizontal, 6)
+    }
+}
+
+// MARK: - Hint row
+
+/// Key hints under the AKTAR list: "Enter yeni satır · ⇧↩ Slack · ⌘1–9 diğerleri · ⌘C kopyala · Esc kapat".
+enum DeliveryHint {
+    struct Item: Equatable {
+        var key: String
+        var label: String
+    }
+
+    /// `defaultName` nil = the default target is the clipboard (then ⌘C would only repeat ⇧↩).
+    /// `shortcuts` = highest ⌘ number shown in the list.
+    static func items(defaultName: String?, shortcuts: Int, canSwitchLanguage: Bool) -> [Item] {
+        var items = [Item(key: "Enter", label: L("yeni satır")),
+                     Item(key: "⇧↩", label: defaultName ?? L("kopyala"))]
+        if shortcuts == 1 {
+            items.append(Item(key: "⌘1", label: L("diğerleri")))
+        } else if shortcuts > 1 {
+            items.append(Item(key: "⌘1–\(min(shortcuts, 9))", label: L("diğerleri")))
+        }
+        if defaultName != nil { items.append(Item(key: "⌘C", label: L("kopyala"))) }
+        if canSwitchLanguage { items.append(Item(key: "⌘L", label: L("dil"))) }
+        items.append(Item(key: "Esc", label: L("kapat")))
+        return items
+    }
+
+    /// Keys bold; labels (app names included) are plain text, never parsed as markdown.
+    static func attributed(_ items: [Item]) -> AttributedString {
+        var result = AttributedString()
+        for (i, item) in items.enumerated() {
+            if i > 0 { result += AttributedString(" · ") }
+            var key = AttributedString(item.key)
+            key.inlinePresentationIntent = .stronglyEmphasized
+            result += key
+            result += AttributedString(" " + item.label)
+        }
+        return result
+    }
+}

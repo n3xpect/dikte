@@ -3,8 +3,6 @@
   "**Esc**: hepsini geç": "**Esc**: skip all",
   "**Esc**: kapat": "**Esc**: close",
   "**Esc**: vazgeç": "**Esc**: cancel",
-  "**Shift+Enter**: kopyala · **Enter**: yeni satır · **Esc**: kapat": "**Shift+Enter**: copy · **Enter**: new line · **Esc**: close",
-  "**Shift+Enter**: kopyala · **Enter**: yeni satır · **⌘L**: dil · **Esc**: kapat": "**Shift+Enter**: copy · **Enter**: new line · **⌘L**: language · **Esc**: close",
   "Ayarlar'da başka bir mikrofon seçmeyi dene.": "Try choosing another microphone in Settings.",
   "Bazı uygulamaları kapatıp tekrar dene ya da daha küçük bir model seç.": "Quit some apps and try again, or choose a smaller model.",
   "Bilinmeyen motor hatası": "Unknown engine error",

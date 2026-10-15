@@ -211,8 +211,63 @@ enum DictationSelfCheck {
                 }
             }
         }
+        failures += deliveryFailures()
         for f in failures { print("DictationSelfCheck FAIL:", f) }
         assert(failures.isEmpty, "DictationSelfCheck failed:\n" + failures.joined(separator: "\n"))
+        return failures
+    }
+
+    /// Hint row, ⌘digit key mapping, toast texts and the preview list order / shortcut lookup.
+    private static func deliveryFailures() -> [String] {
+        var failures: [String] = []
+        func expect<T: Equatable>(_ got: T, _ want: T, _ what: String) {
+            if got != want { failures.append("\(what): beklenen \(want), gelen \(got)") }
+        }
+        let keys = { (items: [DeliveryHint.Item]) in items.map(\.key) }
+        let app = DeliveryHint.items(defaultName: "Slack", shortcuts: 9, canSwitchLanguage: false)
+        expect(keys(app), ["Enter", "⇧↩", "⌘1–9", "⌘C", "Esc"], "ipucu (uygulama)")
+        expect(app[1].label, "Slack", "ipucu ⇧↩ adı")
+        let clip = DeliveryHint.items(defaultName: nil, shortcuts: 4, canSwitchLanguage: true)
+        expect(keys(clip), ["Enter", "⇧↩", "⌘1–4", "⌘L", "Esc"], "ipucu (pano)")
+        expect(clip[1].label, L("kopyala"), "ipucu ⇧↩ pano")
+        expect(keys(DeliveryHint.items(defaultName: nil, shortcuts: 0, canSwitchLanguage: false)),
+               ["Enter", "⇧↩", "Esc"], "ipucu (liste boş)")
+        expect(keys(DeliveryHint.items(defaultName: "Mail", shortcuts: 1, canSwitchLanguage: false)),
+               ["Enter", "⇧↩", "⌘1", "⌘C", "Esc"], "ipucu (tek kısayol)")
+        expect(String(DeliveryHint.attributed([.init(key: "⇧↩", label: "*Slack*")]).characters), "⇧↩ *Slack*",
+               "ipucu: ad markdown sayılmaz")
+
+        expect((0...127).compactMap { DictationPanelController.shortcutNumber(keyCode: UInt16($0)) }.sorted(),
+               Array(1...9), "⌘ rakam tuşları")
+        expect(DictationPanelController.shortcutNumber(keyCode: 18), 1, "keyCode 18")
+        expect(DictationPanelController.shortcutNumber(keyCode: 25), 9, "keyCode 25")
+        expect(DictationPanelController.shortcutNumber(keyCode: 29), nil, "keyCode 29 (0)")
+
+        expect(DeliveryToastContent.failure(DeliveryError.accessibilityDenied, appName: "Slack").asksForAccessibility,
+               true, "toast: erişilebilirlik")
+        let paste = DeliveryToastContent.failure(DeliveryError.pasteFailed, appName: "Slack")
+        expect(paste.asksForAccessibility, false, "toast: yapıştırma")
+        expect(paste.message.contains("Slack"), true, "toast: uygulama adı")
+        expect(DeliveryToastContent.failure(CancellationError(), appName: "X").asksForAccessibility, false,
+               "toast: başka hata")
+
+        // Preview list (Slack default, Notes + Mail favourites, 3 others visible, 3 more).
+        let c = DictationController.preview(.deliveryApp)
+        let names = { (entries: [DeliveryEntry]) in entries.map { $0.app?.name ?? "pano" } }
+        expect(names(c.shownDeliveryEntries), ["Slack", "Mail", "Notes", "Calendar", "Finder", "Messages"], "liste")
+        expect(c.hiddenDeliveryCount, 3, "+N")
+        expect(c.shownDeliveryEntries.map { $0.shortcut ?? 0 }, [0, 1, 2, 3, 4, 5], "kısayollar")
+        expect(keys(c.editingHint), ["Enter", "⇧↩", "⌘1–5", "⌘C", "⌘L", "Esc"], "düzenleme ipucu")
+        c.showsAllDeliveryTargets = true
+        expect(c.shownDeliveryEntries.count, 9, "genişletilmiş liste")
+        expect(c.hiddenDeliveryCount, 0, "genişletilmiş +N")
+        c.toggleFavorite(TargetApp(bundleID: "com.apple.Safari", name: "Safari", url: nil, isRunning: true))
+        expect(names(c.shownDeliveryEntries).prefix(4), ["Slack", "Mail", "Notes", "Safari"], "yıldız: yeniden sırala")
+        c.makeDefaultTarget(TargetApp(bundleID: "com.apple.mail", name: "Mail", url: nil, isRunning: true))
+        expect(names(c.shownDeliveryEntries).first, "Mail", "varsayılan yap")
+        c.dismissDeliveryTip()
+        expect(c.showsDeliveryTip, false, "ipucunu kapat")
+        expect(DictationController.preview(.editing).shownDeliveryEntries.first?.app, nil, "pano varsayılanı")
         return failures
     }
 }

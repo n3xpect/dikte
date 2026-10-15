@@ -4,7 +4,8 @@ import Observation
 
 // CONTRACT — implemented by agent "dictation".
 // Owns the ⌥Space flow: hotkey → floating panel → mic capture → /dictate → editable text →
-// Shift+Enter copy (+ learning banner) / Esc close → history.
+// AKTAR (Shift+Enter default target, ⌘1–9 / click other targets, ⌘C copy) (+ learning banner) /
+// Esc close → history.
 
 enum DictationPhase: Equatable {
     case idle            // panel hidden
@@ -31,8 +32,12 @@ final class DictationController {
     private(set) var levels: [Float] = []
     /// Editable text bound to the text area in `.editing`.
     var text = ""
-    /// Shown after Shift+Enter when the user changed words; panel closes when resolved.
+    /// Shown on delivery when the user changed words; the text is delivered when they're resolved.
     private(set) var suggestions: [FixSuggestion] = []
+    /// "+ N uygulama daha…" was clicked: the AKTAR list shows every target.
+    var showsAllDeliveryTargets = false
+    /// Where the suggestions banner's delivery goes (nil = clipboard).
+    private(set) var pendingTarget: TargetApp?
 
     /// Second line under the `.failed` message (how to fix it).
     private(set) var failureHint: String?
@@ -83,6 +88,10 @@ final class DictationController {
     @ObservationIgnored private var historyWritten = false
     @ObservationIgnored private var previousApp: NSRunningApplication?
     @ObservationIgnored private var lastHotkey = Date.distantPast
+    @ObservationIgnored private var deliveryPending = false
+    /// AKTAR rows and the settings they depend on; previews swap in fake data.
+    @ObservationIgnored var deliverySource = DeliverySource.live
+    @ObservationIgnored private lazy var toast = DeliveryToastController()
 
     init() {}
 
@@ -113,9 +122,83 @@ final class DictationController {
         }
     }
 
-    /// Shift+Enter in `.editing`: copy to clipboard, write history, show suggestions or close.
-    func copyAndClose() {
-        guard phase == .editing, suggestions.isEmpty, !retranscribing else { return }
+    // MARK: - Delivery
+
+    /// Rows on screen: the visible ones, plus the rest once "+ N uygulama daha…" was clicked.
+    var shownDeliveryEntries: [DeliveryEntry] {
+        let list = deliverySource.entries(deliverySource.settings())
+        return showsAllDeliveryTargets ? list.visible + list.more : list.visible
+    }
+
+    /// Targets behind "+ N uygulama daha…" (0 once expanded).
+    var hiddenDeliveryCount: Int {
+        showsAllDeliveryTargets ? 0 : deliverySource.entries(deliverySource.settings()).more.count
+    }
+
+    var showsDeliveryTip: Bool {
+        !deliverySource.settings().dismissedTips.contains(Tip.deliveryList.rawValue)
+    }
+
+    func deliveryIcon(for target: TargetApp) -> NSImage {
+        deliverySource.icon(target)
+    }
+
+    /// Key hints for the editing phase (default target name, ⌘ numbers actually shown).
+    var editingHint: [DeliveryHint.Item] {
+        let rows = shownDeliveryEntries
+        let defaultRow = rows.first { $0.role == .defaultTarget }
+        return DeliveryHint.items(defaultName: defaultRow?.app?.name,
+                                  shortcuts: rows.compactMap(\.shortcut).max() ?? 0,
+                                  canSwitchLanguage: canSwitchLanguage)
+    }
+
+    func toggleFavorite(_ target: TargetApp) {
+        deliverySource.update { s in
+            if let i = s.deliveryFavorites.firstIndex(of: target.bundleID) {
+                s.deliveryFavorites.remove(at: i)
+            } else {
+                s.deliveryFavorites.append(target.bundleID)
+            }
+        }
+    }
+
+    func makeDefaultTarget(_ target: TargetApp) {
+        deliverySource.update { $0.deliveryDefaultApp = target.bundleID }
+    }
+
+    func dismissDeliveryTip() {
+        deliverySource.update { s in
+            if !s.dismissedTips.contains(Tip.deliveryList.rawValue) { s.dismissedTips.append(Tip.deliveryList.rawValue) }
+        }
+    }
+
+    /// Shift+Enter: the default row (clipboard when the list is empty).
+    func deliverToDefault() {
+        deliver(to: shownDeliveryEntries.first { $0.role == .defaultTarget }?.app)
+    }
+
+    /// ⌘1…⌘9: the shown row with that shortcut. False when there is none.
+    @discardableResult
+    func deliver(shortcut: Int) -> Bool {
+        guard let entry = shownDeliveryEntries.first(where: { $0.shortcut == shortcut && $0.role != .defaultTarget })
+        else { return false }
+        deliver(entry)
+        return true
+    }
+
+    /// Click on a row.
+    func deliver(_ entry: DeliveryEntry) {
+        deliver(to: entry.app)
+    }
+
+    /// ⌘C without a selection: clipboard only, whatever the default is.
+    func copyOnly() {
+        deliver(to: nil)
+    }
+
+    /// Writes history, then shows the learning banner (delivering once it's resolved) or delivers now.
+    private func deliver(to target: TargetApp?) {
+        guard phase == .editing, suggestions.isEmpty, !retranscribing, !deliveryPending else { return }
         confirmingLanguageSwitch = false
         let final = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !final.isEmpty else {
@@ -123,17 +206,41 @@ final class DictationController {
             close()
             return
         }
-        let pasteboard = NSPasteboard.general
-        pasteboard.clearContents()
-        pasteboard.setString(final, forType: .string)
-        writeHistory(final, copied: true)
         let found = result.map {
             FixLearning.suggestions(original: $0.text, edited: final, terms: app.terms.terms, language: $0.language)
         } ?? []
+        writeHistory(final, copied: true, deliveredTo: target?.bundleID)
+        // The clipboard gets the text right away ("Panoya kopyalandı" over the banner, as before).
+        if target == nil { app.delivery.copyToClipboard(final) }
+        deliveryPending = true
+        pendingTarget = target
         if found.isEmpty {
-            close()
+            finishDelivery()
         } else {
             suggestions = found
+        }
+    }
+
+    /// Closes the panel; for an app target pastes there (no re-activating the previous app).
+    private func finishDelivery() {
+        let final = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard deliveryPending, let target = pendingTarget else {
+            close()
+            return
+        }
+        previousApp = nil
+        close()
+        let delivery = app.delivery
+        let restore = app.settings.settings.restoreClipboardAfterPaste
+        Task {
+            do {
+                try await delivery.deliver(final, to: target.bundleID, restoreClipboard: restore)
+            } catch {
+                let content = DeliveryToastContent.failure(error, appName: target.name)
+                self.toast.show(content) {
+                    if content.asksForAccessibility { delivery.requestAccessibility() }
+                }
+            }
         }
     }
 
@@ -243,7 +350,7 @@ final class DictationController {
 
     func dismissSuggestions() {
         suggestions = []
-        close()
+        finishDelivery()
     }
 
     func performFailureAction() {
@@ -261,7 +368,7 @@ final class DictationController {
 
     private func resolve(_ s: FixSuggestion) {
         suggestions.removeAll { $0 == s }
-        if suggestions.isEmpty { close() }
+        if suggestions.isEmpty { finishDelivery() }
     }
 
     // MARK: - Recording
@@ -269,6 +376,7 @@ final class DictationController {
     private func begin() {
         teardown(cancelSession: true)
         resetState()
+        toast.hide()
         let gen = generation
         let front = NSWorkspace.shared.frontmostApplication
         previousApp = front == NSRunningApplication.current ? nil : front
@@ -538,6 +646,9 @@ final class DictationController {
         levels = []
         text = ""
         suggestions = []
+        showsAllDeliveryTargets = false
+        pendingTarget = nil
+        deliveryPending = false
         failureHint = nil
         failureAction = nil
         isNotice = false
@@ -553,12 +664,12 @@ final class DictationController {
         historyWritten = false
     }
 
-    private func writeHistory(_ final: String, copied: Bool) {
+    private func writeHistory(_ final: String, copied: Bool, deliveredTo: String? = nil) {
         guard let r = result, !historyWritten else { return }
         historyWritten = true
         app.history.add(HistoryEntry(rawText: r.rawText, editedText: final, copied: copied, model: r.model,
                                      audioSeconds: r.audioSeconds, transcribeSeconds: r.transcribeSeconds,
-                                     language: r.language))
+                                     language: r.language, deliveredTo: deliveredTo))
     }
 
     private var panel: DictationPanelController {
@@ -569,17 +680,36 @@ final class DictationController {
     }
 }
 
+/// What the AKTAR list reads and changes: settings, rows, icons.
+struct DeliverySource {
+    var settings: () -> AppSettings
+    var update: ((inout AppSettings) -> Void) -> Void
+    var entries: (AppSettings) -> (visible: [DeliveryEntry], more: [DeliveryEntry])
+    var icon: (TargetApp) -> NSImage
+
+    static var live: DeliverySource {
+        DeliverySource(
+            settings: { AppState.shared.settings.settings },
+            update: { change in change(&AppState.shared.settings.settings) },
+            entries: { AppState.shared.delivery.entries(for: $0) },
+            icon: { AppState.shared.delivery.icon(for: $0) })
+    }
+}
+
 #if DEBUG
 extension DictationController {
     enum PreviewState: String, CaseIterable {
         case listening, listeningModelLoading, transcribing, editing, editingEnglish, retranscribing,
-             confirmSwitch, languageError, suggestions, failed, notice
+             confirmSwitch, languageError, deliveryApp, deliveryExpanded, deliveryTipDismissed,
+             suggestions, suggestionsApp, failed, notice
     }
 
     /// Controller frozen in a phase, for `#Preview` and snapshot rendering.
     static func preview(_ state: PreviewState) -> DictationController {
         let turkish = "Redis cache'ini temizledikten sonra branch'i main'e merge edip pull request açalım."
         let c = DictationController()
+        let fake = PreviewDelivery()
+        c.deliverySource = fake.source
         c.levels = (0..<waveformBarCount).map { i in
             let x = Float(i) / Float(waveformBarCount)
             return max(0.04, abs(sin(x * 19)) * (0.25 + 0.75 * x) * (i % 7 == 0 ? 0.5 : 1))
@@ -594,7 +724,8 @@ extension DictationController {
             c.levels = c.levels.map { $0 * 0.3 }
         case .transcribing:
             c.phase = .transcribing
-        case .editing, .retranscribing, .confirmSwitch, .languageError:
+        case .editing, .retranscribing, .confirmSwitch, .languageError,
+             .deliveryApp, .deliveryExpanded, .deliveryTipDismissed:
             c.phase = .editing
             c.result = DictationResult(rawText: turkish, text: turkish, fixes: [], audioSeconds: 6.1,
                                        transcribeSeconds: 0.9, model: "large-v3", language: "tr",
@@ -606,6 +737,12 @@ extension DictationController {
                 c.text = turkish.replacingOccurrences(of: "açalım", with: "hemen açalım")
                 c.confirmingLanguageSwitch = true
             case .languageError: c.languageError = L("Kayıt artık yok")
+            case .deliveryApp, .deliveryExpanded, .deliveryTipDismissed:
+                fake.settings.deliveryDefaultApp = PreviewDelivery.slack
+                fake.settings.deliveryFavorites = PreviewDelivery.favorites
+                fake.settings.deliveryOtherLimit = 3
+                c.showsAllDeliveryTargets = state == .deliveryExpanded
+                if state == .deliveryTipDismissed { fake.settings.dismissedTips = [Tip.deliveryList.rawValue] }
             default: break
             }
         case .editingEnglish:
@@ -615,10 +752,13 @@ extension DictationController {
                                        transcribeSeconds: 0.9, model: "large-v3", language: "en",
                                        dictationId: "preview")
             c.setResultText(english, language: "en")
-        case .suggestions:
+        case .suggestions, .suggestionsApp:
             c.phase = .editing
             c.suggestions = [FixSuggestion(wrong: "cage", right: "cache"),
                              FixSuggestion(wrong: "get hub", right: "GitHub")]
+            if state == .suggestionsApp {
+                c.pendingTarget = TargetApp(bundleID: PreviewDelivery.slack, name: "Slack", url: nil, isRunning: true)
+            }
         case .failed:
             c.phase = .failed(L("Seçili model indirilmemiş."))
             c.failureHint = L("Modeller sekmesinden bir model indirip seç.")
@@ -628,6 +768,68 @@ extension DictationController {
             c.isNotice = true
         }
         return c
+    }
+}
+
+/// Fake AKTAR data for previews: its own settings (the real store is never touched) and a fixed
+/// set of apps, ordered like the real list so star / "Varsayılan yap" re-sort live in `#Preview`.
+@Observable
+final class PreviewDelivery {
+    static let slack = "com.tinyspeck.slackmacgap"
+    static let favorites = ["com.apple.Notes", "com.apple.mail"]
+
+    var settings: AppSettings = {
+        var s = AppSettings()
+        s.deliveryFavorites = []
+        return s
+    }()
+
+    let apps: [TargetApp] = [
+        ("com.tinyspeck.slackmacgap", "Slack", true), ("com.apple.Notes", "Notes", false),
+        ("com.apple.mail", "Mail", true), ("com.apple.Safari", "Safari", true),
+        ("com.apple.Terminal", "Terminal", true), ("com.apple.TextEdit", "TextEdit", true),
+        ("com.apple.iCal", "Calendar", true), ("com.apple.finder", "Finder", true),
+        ("com.apple.MobileSMS", "Messages", true),
+    ].map { TargetApp(bundleID: $0.0, name: $0.1, url: nil, isRunning: $0.2) }
+
+    var source: DeliverySource {
+        DeliverySource(settings: { self.settings },
+                       update: { change in change(&self.settings) },
+                       entries: { self.entries($0) },
+                       icon: { Self.icon(for: $0) })
+    }
+
+    private func entries(_ s: AppSettings) -> (visible: [DeliveryEntry], more: [DeliveryEntry]) {
+        let byName: (TargetApp, TargetApp) -> Bool = { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+        let defaultApp = s.deliveryDefaultApp.flatMap { id in apps.first { $0.bundleID == id } }
+        let rest = apps.filter { $0.bundleID != defaultApp?.bundleID }
+        let favorites = rest.filter { s.deliveryFavorites.contains($0.bundleID) }.sorted(by: byName)
+        let others = rest.filter { $0.isRunning && !s.deliveryFavorites.contains($0.bundleID) }.sorted(by: byName)
+        var listed = favorites.map { DeliveryEntry(app: $0, role: .favorite, isFavorite: true, shortcut: nil) }
+            + others.map { DeliveryEntry(app: $0, role: .other, isFavorite: false, shortcut: nil) }
+        for i in listed.indices where i < 9 { listed[i].shortcut = i + 1 }
+        let cut = favorites.count + min(others.count, s.deliveryOtherLimit)
+        let head = DeliveryEntry(app: defaultApp, role: .defaultTarget,
+                                 isFavorite: defaultApp.map { s.deliveryFavorites.contains($0.bundleID) } ?? false,
+                                 shortcut: nil)
+        return ([head] + listed.prefix(cut), Array(listed.dropFirst(cut)))
+    }
+
+    /// The installed app's icon, or a coloured letter tile when it isn't installed.
+    static func icon(for app: TargetApp) -> NSImage {
+        if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: app.bundleID) {
+            return NSWorkspace.shared.icon(forFile: url.path)
+        }
+        return NSImage(size: NSSize(width: 32, height: 32), flipped: false) { rect in
+            NSColor.systemPurple.setFill()
+            NSBezierPath(roundedRect: rect.insetBy(dx: 2, dy: 2), xRadius: 7, yRadius: 7).fill()
+            let letter = NSAttributedString(string: String(app.name.prefix(1)), attributes: [
+                .font: NSFont.systemFont(ofSize: 18, weight: .bold), .foregroundColor: NSColor.white,
+            ])
+            let size = letter.size()
+            letter.draw(at: NSPoint(x: rect.midX - size.width / 2, y: rect.midY - size.height / 2))
+            return true
+        }
     }
 }
 #endif

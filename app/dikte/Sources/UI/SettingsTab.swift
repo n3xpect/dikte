@@ -15,6 +15,7 @@ struct SettingsTab: View {
             settings: $settings.settings,
             microphones: microphones,
             launchAtLogin: .system,
+            delivery: .live,
             engineStatus: state.engine.status,
             dataDir: Paths.dataDir
         )
@@ -54,6 +55,7 @@ struct SettingsView: View {
     @Binding var settings: AppSettings
     var microphones: [Microphone]
     var launchAtLogin: LaunchAtLogin
+    var delivery: DeliveryOptions
     var engineStatus: EngineStatus
     var dataDir: URL
 
@@ -79,6 +81,8 @@ struct SettingsView: View {
                 .help(L("Konuşma bittikten sonra bu kadar sessizlik olunca kayıt kendiliğinden biter."))
                 Toggle(L("Ses efektleri"), isOn: $settings.soundsEnabled)
             }
+
+            DeliverySection(settings: $settings, options: delivery)
 
             Section {
                 LabeledContent(L("Modelin boşta kalma süresi")) {
