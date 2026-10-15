@@ -5,6 +5,7 @@ dist/
 build/
 DerivedData/
 *.xcodeproj/
+app/dikte/Info.plist
 *.xcworkspace/
 
 # python
