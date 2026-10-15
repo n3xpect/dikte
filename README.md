@@ -1,87 +1,96 @@
 # Dikte
 
-Mac için yerel çalışan Türkçe ve İngilizce dikte uygulaması. **⌥ Space**'e bas, konuş; metin düzenlenebilir bir panelde çıkar, **Shift+Enter** ile panoya kopyalanır. Ses Mac'ten dışarı çıkmaz: konuşma, Apple Silicon üzerinde [MLX](https://github.com/ml-explore/mlx) ile çalışan **Whisper large-v3** modeliyle yazıya çevrilir.
+**English** · [Türkçe](README.tr.md)
 
-Konuşmanın dili her diktede otomatik algılanır (Türkçe ya da İngilizce); yanlış algılanırsa paneldeki **TR/EN** düğmesiyle (⌘L) aynı kayıt diğer dilde yeniden çevrilir. Arayüz de Türkçe ve İngilizce.
+A local dictation app for the Mac, in Turkish and English. Press **⌥ Space** and speak; the text appears in an editable panel and **Shift+Enter** copies it to the clipboard. Audio never leaves your Mac: speech is transcribed with **Whisper large-v3** running on Apple Silicon via [MLX](https://github.com/ml-explore/mlx).
 
-Türkçe cümle içindeki İngilizce yazılım terimleri (branch, commit, deploy, session, socket…) için özel olarak ayarlandı: düzenlenebilir bir **terim listesi** hem modele ipucu olarak verilir hem de yaygın yanlış yazımları otomatik düzeltir. Panelde bir terimi düzelttiğinde Dikte bunu terim listesine eklemeyi önerir.
+The spoken language is detected on every dictation (Turkish or English); if it's detected wrongly, the **TR/EN** button in the panel (⌘L) transcribes the same recording again in the other language. The interface is available in English and Turkish.
 
-## Kurulum
+It is tuned for English software terms inside Turkish sentences (branch, commit, deploy, session, socket…): an editable **term list** is given to the model as a hint and also fixes common misspellings automatically. When you correct a term in the panel, Dikte offers to add the correction to the term list.
 
-1. [Releases](https://github.com/n3xpect/dikte/releases) sayfasından `dikte-<sürüm>.dmg`'yi indir.
-2. DMG'yi aç, `dikte.app`'i **Uygulamalar**'a sürükle.
-3. İlk açılış: uygulama Apple onaylı bir sertifikayla imzalı değil. "Geliştirici doğrulanamadı" uyarısı çıkarsa **Sistem Ayarları › Gizlilik ve Güvenlik › Yine de Aç**.
-4. İlk açılışta karşılama ekranı seni dört adımda hazırlar: arayüz ve dikte dili, **Whisper large-v3**'ün indirilmesi (~3 GB), mikrofon izni ve kısayol. Hepsi sonradan Ayarlar'dan değiştirilebilir.
+## Installation
 
-**Gereksinimler:** Apple Silicon Mac, macOS 15+, ~4 GB boş RAM, model indirildikten sonra en az 10 GB boş disk.
+1. Download `dikte-<version>.dmg` from [Releases](https://github.com/n3xpect/dikte/releases).
+2. Open the DMG and drag `dikte.app` into **Applications**.
+3. The app isn't signed with an Apple-issued certificate. If macOS says the developer can't be verified, go to **System Settings › Privacy & Security › Open Anyway**.
+4. On first launch a welcome flow sets things up in four steps: interface and dictation language, downloading **Whisper large-v3** (~3 GB), microphone access, and the shortcut. Everything can be changed later.
 
-## Kullanım
+**Requirements:** Apple Silicon Mac, macOS 15+, ~4 GB free RAM, at least 10 GB of free disk space left after the model download.
 
-| Tuş | Ne yapar |
+## Usage
+
+| Key | What it does |
 |---|---|
-| **⌥ Space** | Dikteyi başlat (kayıt sırasında tekrar basınca bitirir) |
-| 3 sn sessizlik / **Enter** | Kaydı bitir ve yazıya çevir |
-| **Esc** | Kayıt sırasında vazgeç; metin ekranında paneli kapat |
-| **Enter** (metin ekranında) | Yeni satır |
-| **Shift+Enter** | Metni panoya kopyala ve paneli kapat |
-| **⌘L** / TR-EN düğmesi | Aynı kaydı diğer dilde yeniden çevir |
+| **⌥ Space** | Start dictating (press again while recording to finish) |
+| 3 s of silence / **Enter** | Stop recording and transcribe |
+| **Esc** | Cancel while recording; close the panel when editing |
+| **Enter** (while editing) | New line |
+| **Shift+Enter** | Copy the text to the clipboard and close the panel |
+| **⌘L** / TR-EN button | Transcribe the same recording in the other language |
 
-Menü çubuğundaki simge durumu gösterir: yeşil nokta model bellekte, turuncu yükleniyor, kırmızı motor çalışmıyor. Ana ekranda üç sekme var:
+The menu bar icon shows the state: green dot = model in memory, orange = loading, red = engine not running. The main window has four tabs:
 
-- **Ayarlar** — arayüz dili (Türkçe / English, anında değişir), dikte dili (Otomatik / Türkçe / English), sessizlik süresi, mikrofon, kısayol, terim listesi, açılışta başlat, ses efektleri, modelin boşta kalma süresi (5 dk sonra bellekten boşaltılır), geçmiş sınırı, en az boş disk alanı.
-- **Modeller** — Whisper large-v3 (önerilen), large-v3 turbo ve Hugging Face'ten elle eklenen MLX Whisper modelleri. Bellekteki model yeşil gösterilir. İndirme sonrası diskte 10 GB'tan az yer kalacaksa indirme başlamaz; RAM yetmiyorsa model yüklenmez.
-- **Geçmiş** — tüm dikteler (dili, ham ve düzeltilmiş metin, aradaki fark), arama, kopyalama, silme.
+- **Settings** — interface language (English / Türkçe, switches instantly), dictation language (Automatic / Turkish / English), shortcut, microphone, silence duration, sound effects, idle unload time (the model is unloaded from memory after 5 min), minimum free disk space, history limit, launch at login.
+- **Models** — Whisper large-v3 (recommended), large-v3 turbo, and MLX Whisper models added manually from Hugging Face. The model in memory is shown in green. A download won't start if less than 10 GB would remain on disk; a model won't load if there isn't enough RAM.
+- **Terms** — the term list: accepted spellings and auto-corrected misspellings per term; search, add, edit, delete.
+- **History** — every dictation (language, raw and corrected text, the diff between them), search, copy, delete.
 
-## Neden Whisper large-v3?
+The TR/EN button is meant to fix a wrongly detected language: switching a correctly detected recording to the other language translates it.
 
-Kendi sesimle okunmuş 33 cümlede (çoğu İngilizce yazılım terimli Türkçe dikte) ölçüldü, terim ipucu açık:
+## Why Whisper large-v3?
 
-| Model | WER | Terim doğruluğu | Çeviri süresi (M4 Pro) |
+**Turkish** — 33 sentences read in my own voice (mostly Turkish dictation full of English software terms), term hints on:
+
+| Model | WER | Term accuracy | Transcription time (M4 Pro) |
 |---|---|---|---|
-| **Whisper large-v3 (MLX)** | **7,6–7,9%** | **74/77** | ~0,8 sn |
-| Whisper large-v3 turbo | 8,3% | 74/77 | ~0,5 sn |
-| Whisper large-v3, Türkçe ince ayar | 15,6% | 72/77 | ~0,8 sn |
-| Qwen3-ASR 1.7B | 16,9% | 61/77 | ~0,5 sn |
+| **Whisper large-v3 (MLX)** | **7.6%** | **74/77** | ~0.8 s |
+| Whisper large-v3 turbo | 8.3% | 74/77 | ~0.5 s |
+| Whisper large-v3, Turkish fine-tune | 15.6% | 72/77 | ~0.8 s |
+| Qwen3-ASR 1.7B | 16.9% | 61/77 | ~0.5 s |
 
-Aynı model whisper.cpp ile eşit doğrulukta (0,9 sn), WhisperKit ile terim ipucu açıkken ~7 sn/kayıt sürdü. Ayrıntılar ve test aracı: [`model-test/`](model-test/).
+The same model was equally accurate with whisper.cpp (0.9 s); WhisperKit took ~7 s per recording with term hints on.
 
-## Mimari
+**English** — 20 sentences read by 5 different macOS English voices (100 recordings): WER 0.8%, terms 235/235, language detection 100%. Automatic language detection adds ~50 ms per dictation. Details and test tools: [`model-test/`](model-test/), [`app/engine/tests/`](app/engine/tests/).
+
+## Architecture
 
 ```
 dikte.app
-├── Swift uygulaması (SwiftUI + AppKit)        menü çubuğu, ⌥ Space paneli, mikrofon, ana ekran,
-│                                               settings/history/terms.json
-└── Contents/Resources/engine (Python + MLX)   model indirme/yükleme, Silero VAD, Whisper,
-                                                terim ipucu ve düzeltmeleri
+├── Swift app (SwiftUI + AppKit)               menu bar, ⌥ Space panel, microphone, main window,
+│                                               welcome flow, settings/history/terms.json
+└── Contents/Resources/engine (Python + MLX)   model download/loading, Silero VAD, language
+                                                detection, Whisper, term hints and corrections
 ```
 
-Uygulama açılınca motoru başlatır, kapanınca durdurur. İkisi `127.0.0.1` üzerinden HTTP + WebSocket ile konuşur (her açılışta rastgele bir anahtarla); sözleşme: [`app/engine/api.md`](app/engine/api.md). Mikrofon sesi parça parça motora akar, motor sessizliği algılar ve metni geri yollar. Model, sen konuşurken arka planda yüklenir.
+The app starts the engine on launch and stops it on quit. They talk over HTTP + WebSocket on `127.0.0.1` (with a random key per launch); contract: [`app/engine/api.md`](app/engine/api.md). Microphone audio streams to the engine in chunks; the engine detects the end of speech and sends the text back. The model loads in the background while you speak.
 
-Veriler `~/Library/Application Support/dikte/` altında: `settings.json`, `history.json`, `terms.json`, `models/` (Hugging Face önbellek düzeni), `logs/engine.log`.
+Data lives in `~/Library/Application Support/dikte/`: `settings.json`, `history.json`, `terms.json`, `models/` (Hugging Face cache layout), `logs/engine.log`.
 
-## Repo yapısı
+## Repository layout
 
-| Klasör | İçerik |
+| Folder | Contents |
 |---|---|
-| [`app/dikte/`](app/dikte/) | Swift uygulaması (XcodeGen `project.yml`) |
-| [`app/engine/`](app/engine/) | Python MLX motoru (`uv` projesi) ve API sözleşmesi |
-| [`app/`](app/README.md) | `package.sh` (paketleme), `make-dmg.sh`, geliştirme notları |
-| [`model-test/`](model-test/) | Model karşılaştırma ve test ortamı |
-| `dist/` | Paketleme çıktısı: yalnızca `dikte-<sürüm>.dmg` (git'te yok) |
+| [`app/dikte/`](app/dikte/) | Swift app (XcodeGen `project.yml`); UI translations `i18n/*.json` → String Catalog |
+| [`app/engine/`](app/engine/) | Python MLX engine (`uv` project) and API contract |
+| [`app/`](app/README.md) | `package.sh` (packaging), `make-dmg.sh`, `scripts/` (icon, strings, signing), development notes |
+| [`model-test/`](model-test/) | Model comparison and test bench |
+| `dist/` | Packaging output: only `dikte-<version>.dmg` (not in git) |
 
-## Geliştirme
+## Development
 
-Gerekenler: Xcode 27, [uv](https://docs.astral.sh/uv/), [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install uv xcodegen`).
+Requirements: Xcode 27, [uv](https://docs.astral.sh/uv/), [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install uv xcodegen`).
 
 ```bash
-cd app/engine && uv sync                            # motor ortamı
+cd app/engine && uv sync                            # engine environment
 cd app/dikte && xcodegen generate && open dikte.xcodeproj
-app/package.sh                                      # → dist/dikte-<sürüm>.dmg
+python3 app/scripts/build-strings.py                # i18n/*.json → Localizable.xcstrings
+app/package.sh                                      # → dist/dikte-<version>.dmg
 ```
 
-Testler, ortam değişkenleri ve paketleme ayrıntıları: [`app/README.md`](app/README.md).
+Tests, environment variables and packaging details: [`app/README.md`](app/README.md) (Turkish).
 
-## Bilinen sınırlar
+## Known limitations
 
-- Dikte dilleri: Türkçe ve İngilizce (Whisper başka dilleri de destekliyor ama uygulamada açık değil).
-- Uygulama yerel bir sertifikayla imzalı (notarize edilmemiş); ilk açılışta Gatekeeper uyarısı verir.
+- Dictation languages: Turkish and English (Whisper supports more, but they aren't enabled in the app).
+- Very short, mixed phrases ("Deploy et.") may be detected as English; fix them with the TR button.
+- The app is signed with a local certificate (not notarized), so Gatekeeper warns on first launch.
