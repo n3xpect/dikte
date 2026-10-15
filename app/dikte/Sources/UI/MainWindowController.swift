@@ -2,7 +2,7 @@ import AppKit
 import Observation
 import SwiftUI
 
-// CONTRACT — implemented by agent "ui". Main window with tabs Ayarlar / Modeller / Geçmiş.
+// CONTRACT — implemented by agent "ui". Main window with tabs Ayarlar / Modeller / Terimler / Geçmiş.
 
 enum MainTab: String, CaseIterable, Identifiable {
     case settings, models, terms, history
@@ -27,6 +27,14 @@ extension MainTab {
         case .history: "clock.arrow.circlepath"
         }
     }
+
+    /// Tabs shown for the current UI language: Terimler only with the Turkish UI.
+    /// (Terms still apply to every dictation; they're just not editable from the English UI.)
+    static var visible: [MainTab] {
+        allCases.filter { $0 != .terms || Localizer.shared.language == .tr }
+    }
+
+    var isVisible: Bool { Self.visible.contains(self) }
 }
 
 final class MainWindowController {
@@ -38,7 +46,7 @@ final class MainWindowController {
 
     /// Create (once) and bring the window to front, activating the app.
     func show(tab: MainTab? = nil) {
-        if let tab { navigation.tab = tab }
+        if let tab, tab.isVisible { navigation.tab = tab }
         let window = window ?? makeWindow()
         self.window = window
         NSApp.activate()
@@ -75,15 +83,20 @@ struct MainSplitView<Detail: View>: View {
     var body: some View {
         NavigationSplitView {
             List(selection: Binding<MainTab?>(get: { tab }, set: { if let t = $0 { tab = t } })) {
-                ForEach(MainTab.allCases) { t in
+                ForEach(MainTab.visible) { t in
                     Label(t.title, systemImage: t.symbol).tag(t)
                 }
             }
             .navigationSplitViewColumnWidth(min: 160, ideal: 180, max: 220)
         } detail: {
-            detail(tab)
+            let shown = tab.isVisible ? tab : .settings
+            detail(shown)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .navigationTitle(tab.title)
+                .navigationTitle(shown.title)
+        }
+        // Leaving a tab that the new UI language hides (Terimler) falls back to Ayarlar.
+        .onChange(of: Localizer.shared.language) { _, _ in
+            if !tab.isVisible { tab = .settings }
         }
         // System-formatted values (number fields, controls) follow the app's UI language.
         .environment(\.locale, Localizer.shared.language.locale)

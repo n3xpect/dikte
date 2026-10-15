@@ -28,11 +28,11 @@ It is tuned for English software terms inside Turkish sentences (branch, commit,
 | **Shift+Enter** | Copy the text to the clipboard and close the panel |
 | **⌘L** / TR-EN button | Transcribe the same recording in the other language |
 
-The menu bar icon shows the state: green dot = model in memory, orange = loading, red = engine not running. The main window has four tabs:
+The menu bar icon shows the state: green dot = model in memory, orange = loading, red = engine not running. The main window has these tabs:
 
 - **Settings** — interface language (English / Türkçe, switches instantly), dictation language (Automatic / Turkish / English), shortcut, microphone, silence duration, sound effects, idle unload time (the model is unloaded from memory after 5 min), minimum free disk space, history limit, launch at login.
 - **Models** — Whisper large-v3 (recommended), large-v3 turbo, and MLX Whisper models added manually from Hugging Face. The model in memory is shown in green. A download won't start if less than 10 GB would remain on disk; a model won't load if there isn't enough RAM.
-- **Terms** — the term list: accepted spellings and auto-corrected misspellings per term; search, add, edit, delete.
+- **Terimler** (Terms, Turkish interface only) — the term list: accepted spellings and auto-corrected misspellings per term; search, add, edit, delete. With the English interface the tab is hidden; the terms still apply to every dictation.
 - **History** — every dictation (language, raw and corrected text, the diff between them), search, copy, delete.
 
 The TR/EN button is meant to fix a wrongly detected language: switching a correctly detected recording to the other language translates it.

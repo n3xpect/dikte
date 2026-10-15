@@ -28,11 +28,11 @@ Türkçe cümle içindeki İngilizce yazılım terimleri (branch, commit, deploy
 | **Shift+Enter** | Metni panoya kopyala ve paneli kapat |
 | **⌘L** / TR-EN düğmesi | Aynı kaydı diğer dilde yeniden çevir |
 
-Menü çubuğundaki simge durumu gösterir: yeşil nokta model bellekte, turuncu yükleniyor, kırmızı motor çalışmıyor. Ana ekranda dört sekme var:
+Menü çubuğundaki simge durumu gösterir: yeşil nokta model bellekte, turuncu yükleniyor, kırmızı motor çalışmıyor. Ana ekranda şu sekmeler var:
 
 - **Ayarlar** — arayüz dili (Türkçe / English, anında değişir), dikte dili (Otomatik / Türkçe / English), kısayol, mikrofon, sessizlik süresi, ses efektleri, modelin boşta kalma süresi (5 dk sonra bellekten boşaltılır), en az boş disk alanı, geçmiş sınırı, açılışta başlat.
 - **Modeller** — Whisper large-v3 (önerilen), large-v3 turbo ve Hugging Face'ten elle eklenen MLX Whisper modelleri. Bellekteki model yeşil gösterilir. İndirme sonrası diskte 10 GB'tan az yer kalacaksa indirme başlamaz; RAM yetmiyorsa model yüklenmez.
-- **Terimler** — terim listesi: her terimin doğru kabul edilen yazımları ve otomatik düzeltilen yanlış yazımları; arama, ekleme, düzenleme, silme.
+- **Terimler** (yalnızca Türkçe arayüzde) — terim listesi: her terimin doğru kabul edilen yazımları ve otomatik düzeltilen yanlış yazımları; arama, ekleme, düzenleme, silme. Arayüz İngilizceyken sekme gizlenir; terimler yine her diktede kullanılır.
 - **Geçmiş** — tüm dikteler (dili, ham ve düzeltilmiş metin, aradaki fark), arama, kopyalama, silme.
 
 TR/EN düğmesi yanlış algılanan dili düzeltmek içindir: doğru algılanmış bir kaydı diğer dile çevirmek metni tercüme eder.
