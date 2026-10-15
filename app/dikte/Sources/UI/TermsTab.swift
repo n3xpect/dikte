@@ -26,7 +26,9 @@ struct TermsView: View {
     }
 }
 
+#if DEBUG
 #Preview("Terimler") {
     TermsView(terms: PreviewData.terms, actions: PreviewData.termActions)
         .frame(width: 720, height: 640)
 }
+#endif
