@@ -19,6 +19,17 @@ struct AppSettings: Codable, Equatable, Sendable {
     var dictationLanguage: DictationLanguage = .auto
     /// Fresh installs show the welcome flow until this is set.
     var onboardingCompleted: Bool = false
+    /// Default delivery target (Shift+Enter): nil = copy to the clipboard only, else an app
+    /// bundle identifier the text is pasted into.
+    var deliveryDefaultApp: String? = nil
+    /// Favourite target apps (bundle identifiers); shown after the default, alphabetically.
+    var deliveryFavorites: [String] = []
+    /// Running, non-favourite apps listed in the panel before "+ N more".
+    var deliveryOtherLimit: Int = 5
+    /// Put the previous clipboard contents back after pasting into an app.
+    var restoreClipboardAfterPaste: Bool = true
+    /// Tips dismissed with "Bir daha gösterme" (see `Tip`).
+    var dismissedTips: [String] = []
 
     /// Catalog entries dropped in later versions; a saved selection falls back to the default.
     static let removedModels: Set<String> = ["qwen3-1.7b"]
@@ -44,6 +55,12 @@ struct AppSettings: Codable, Equatable, Sendable {
         uiLanguage = try c.decodeIfPresent(AppLanguage.self, forKey: .uiLanguage) ?? .tr
         dictationLanguage = try c.decodeIfPresent(DictationLanguage.self, forKey: .dictationLanguage) ?? .tr
         onboardingCompleted = try c.decodeIfPresent(Bool.self, forKey: .onboardingCompleted) ?? true
+        deliveryDefaultApp = try c.decodeIfPresent(String.self, forKey: .deliveryDefaultApp)
+        deliveryFavorites = try c.decodeIfPresent([String].self, forKey: .deliveryFavorites) ?? []
+        deliveryOtherLimit = try c.decodeIfPresent(Int.self, forKey: .deliveryOtherLimit) ?? d.deliveryOtherLimit
+        restoreClipboardAfterPaste = try c.decodeIfPresent(Bool.self, forKey: .restoreClipboardAfterPaste)
+            ?? d.restoreClipboardAfterPaste
+        dismissedTips = try c.decodeIfPresent([String].self, forKey: .dismissedTips) ?? []
     }
 
     var engineConfig: EngineConfig {
@@ -71,6 +88,14 @@ struct HistoryEntry: Codable, Identifiable, Equatable, Sendable {
     var transcribeSeconds: Double
     /// "tr" | "en"; nil for entries written before 0.2.0 (Turkish).
     var language: String? = nil
+    /// Bundle identifier of the app the text was pasted into (nil: clipboard only / not copied).
+    var deliveredTo: String? = nil
+}
+
+/// One-off hints that can be dismissed with "Bir daha gösterme".
+enum Tip: String, CaseIterable, Sendable {
+    /// Explanation under the panel's AKTAR list.
+    case deliveryList
 }
 
 enum DictationLanguage: String, Codable, CaseIterable, Sendable {

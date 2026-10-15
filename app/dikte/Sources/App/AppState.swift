@@ -11,6 +11,7 @@ final class AppState {
     let terms = TermsStore()
     let engine = EngineController()
     let dictation = DictationController()
+    let delivery = DeliveryService()
 
     private init() {}
 
