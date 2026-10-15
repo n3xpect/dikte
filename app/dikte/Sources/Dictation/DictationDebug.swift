@@ -1,0 +1,66 @@
+#if DEBUG
+import AppKit
+import SwiftUI
+
+/// Debug-only hook: launching with env `DIKTE_DICTATION_SNAPSHOTS=<dir>` runs `DictationSelfCheck`,
+/// renders every panel phase to `<dir>/<state>.png` and quits.
+enum DictationDebug {
+    static func runIfRequested() {
+        guard let dir = ProcessInfo.processInfo.environment["DIKTE_DICTATION_SNAPSHOTS"], !dir.isEmpty else { return }
+        let failures = DictationSelfCheck.run()
+        print("DictationSelfCheck:", failures.isEmpty ? "OK" : "\(failures.count) failure(s)")
+        let folder = URL(fileURLWithPath: dir, isDirectory: true)
+        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        // RunLoop (not GCD) so the nested run loops below can still drain the main queue.
+        RunLoop.main.perform { MainActor.assumeIsolated {
+            for appearance in [NSAppearance.Name.aqua, .darkAqua] {
+                for state in DictationController.PreviewState.allCases {
+                    render(state, appearance: appearance, to: folder)
+                }
+            }
+            checkRealPanel()
+            exit(failures.isEmpty ? 0 : 1)
+        } }
+    }
+
+    /// Shows the real panel in two phases and prints its frame, key state and first responder.
+    private static func checkRealPanel() {
+        for state in [DictationController.PreviewState.listening, .editing] {
+            let controller = DictationController.preview(state)
+            let panel = DictationPanelController(controller: controller)
+            panel.show()
+            RunLoop.current.run(until: Date().addingTimeInterval(0.5))
+            let window = NSApp.windows.first { $0 is DictationPanel && $0.isVisible }
+            print("panel \(state.rawValue): frame=\(window?.frame ?? .zero) key=\(window?.isKeyWindow ?? false)",
+                  "firstResponder=\(window?.firstResponder.map { String(describing: type(of: $0)) } ?? "nil")",
+                  "screen.visible=\(window?.screen?.visibleFrame ?? .zero)")
+            panel.hide()
+        }
+    }
+
+    private static func render(_ state: DictationController.PreviewState, appearance: NSAppearance.Name, to folder: URL) {
+        let view = DictationPanelView(controller: .preview(state))
+            .environment(\.solidPanelBackground, true)
+        let host = NSHostingView(rootView: view)
+        let window = NSWindow(contentRect: NSRect(x: -3000, y: -3000, width: DictationPanelView.width, height: 400),
+                              styleMask: [.borderless], backing: .buffered, defer: false)
+        window.appearance = NSAppearance(named: appearance)
+        window.backgroundColor = .clear
+        window.isOpaque = false
+        window.contentView = host
+        window.orderFrontRegardless()
+        host.layoutSubtreeIfNeeded()
+        let size = host.fittingSize
+        window.setContentSize(size)
+        host.layoutSubtreeIfNeeded()
+        RunLoop.current.run(until: Date().addingTimeInterval(0.3))
+        guard let rep = host.bitmapImageRepForCachingDisplay(in: host.bounds) else { return }
+        host.cacheDisplay(in: host.bounds, to: rep)
+        let suffix = appearance == .darkAqua ? "-dark" : ""
+        let url = folder.appendingPathComponent("\(state.rawValue)\(suffix).png")
+        try? rep.representation(using: .png, properties: [:])?.write(to: url)
+        print("snapshot:", url.path, size)
+        window.orderOut(nil)
+    }
+}
+#endif
