@@ -3,7 +3,7 @@ import SwiftUI
 
 // Welcome flow shown on fresh installs (`settings.onboardingCompleted == false`): 1) UI + dictation
 // language, 2) model download, 3) permissions (microphone, Accessibility), 4) shortcut intro + optional test
-// dictation. Finishing — or closing the window at any step — sets `onboardingCompleted = true`;
+// dictation. Finishing — or closing the window once the microphone is allowed — sets `onboardingCompleted = true`;
 // everything can be changed later in Ayarlar.
 
 final class OnboardingWindowController {
@@ -32,7 +32,10 @@ final class OnboardingWindowController {
             forName: NSWindow.willCloseNotification, object: window, queue: .main
         ) { [weak self] _ in
             MainActor.assumeIsolated {
-                flow.backend.markCompleted()
+                // Closing early only counts as done once the microphone is allowed; otherwise the
+                // welcome flow comes back on the next launch.
+                flow.backend.refreshMicPermission()
+                if flow.backend.micPermission == .granted { flow.backend.markCompleted() }
                 self?.windowClosed()
             }
         }

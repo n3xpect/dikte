@@ -4,7 +4,8 @@ import Observation
 import SwiftUI
 
 // Launch-time permission check: if the microphone was refused, or Accessibility is missing while
-// a target app is set up, one window lists what is missing with a way to fix it.
+// a target app is set up, one required window (no close button) lists what is missing with a way to fix it and closes
+// by itself once everything is granted.
 // The welcome flow asks for both itself, so this only runs after it.
 
 /// A permission the check can ask for.
@@ -89,7 +90,10 @@ enum PermissionCheck {
                     return AVCaptureDevice.authorizationStatus(for: .audio) == .authorized
                 case .accessibility:
                     delivery.refreshTrust()
+                    // Also satisfied once no target app is set up any more (it's only needed then).
+                    let s = state.settings.settings
                     return delivery.accessibilityTrusted
+                        || (s.deliveryDefaultApp == nil && s.deliveryFavorites.isEmpty)
                 }
             },
             open: { permission in
@@ -102,7 +106,8 @@ enum PermissionCheck {
         let hosting = NSHostingController(rootView: PermissionAlertView(model: model))
         hosting.sizingOptions = [.preferredContentSize]
         let window = NSWindow(contentViewController: hosting)
-        window.styleMask = [.titled, .closable]
+        // Required: no close button; it closes by itself once everything is granted.
+        window.styleMask = [.titled]
         window.title = "Dikte"
         window.isReleasedWhenClosed = false
         window.center()
@@ -183,7 +188,7 @@ struct PermissionAlertView: View {
                     Text(model.missing.count == 1 ? L("Dikte'nin bir izne ihtiyacı var")
                                                   : L("Dikte'nin bazı izinlere ihtiyacı var"))
                         .font(.title3.weight(.semibold))
-                    Text(L("İzin verene kadar ilgili özellik çalışmaz. İstersen sonra Sistem Ayarları'ndan da verebilirsin."))
+                    Text(L("Devam etmek için bu izinleri vermelisin. İzin verildiğinde bu pencere kendiliğinden kapanır."))
                         .font(.callout)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -197,17 +202,6 @@ struct PermissionAlertView: View {
             }
             .background(RoundedRectangle(cornerRadius: 10).fill(Color(nsColor: .controlBackgroundColor)))
             .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Color(nsColor: .separatorColor)))
-            HStack {
-                Spacer()
-                if model.allGranted {
-                    Button(L("Tamam"), action: model.close)
-                        .keyboardShortcut(.defaultAction)
-                } else {
-                    Button(L("Daha sonra"), action: model.close)
-                        .keyboardShortcut(.cancelAction)
-                }
-            }
-            .controlSize(.large)
         }
         .padding(20)
         .frame(width: Self.width)
@@ -215,6 +209,7 @@ struct PermissionAlertView: View {
             // Picks up a grant made in System Settings while the window is open.
             while !Task.isCancelled {
                 model.refresh()
+                if model.allGranted { model.close(); return }
                 try? await Task.sleep(for: .seconds(1))
             }
         }

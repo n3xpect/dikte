@@ -52,6 +52,8 @@ struct OnboardingView: View {
             } else {
                 Button(continueTitle, action: flow.goNext)
                     .keyboardShortcut(.defaultAction)
+                    // Microphone access is required to get past the permissions step.
+                    .disabled(flow.step == .permissions && flow.backend.micPermission != .granted)
             }
         }
         .controlSize(.large)
@@ -64,8 +66,6 @@ struct OnboardingView: View {
             case .ready, .downloading: break
             case .engine, .waitingForCatalog, .notDownloaded: return L("Şimdilik atla")
             }
-        case .permissions:
-            if flow.backend.micPermission == .notDetermined { return L("Şimdilik atla") }
         default:
             break
         }
@@ -374,7 +374,7 @@ private struct OnboardingPermissionsStep: View {
             }
             OnboardingAccessibilityCard(flow: flow)
             if permission != .granted {
-                Note(text: L("İzin vermeden de devam edebilirsin; dikte için mikrofon izni gerekecek."))
+                Note(text: L("Devam etmek için mikrofon izni gerekli; Erişilebilirlik isteğe bağlı."))
             }
         }
     }

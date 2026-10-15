@@ -551,16 +551,6 @@
         }
       }
     },
-    "Daha sonra": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Later"
-          }
-        }
-      }
-    },
     "Deneme diktesi yap": {
       "localizations": {
         "en": {
@@ -617,6 +607,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Resume"
+          }
+        }
+      }
+    },
+    "Devam etmek için bu izinleri vermelisin. İzin verildiğinde bu pencere kendiliğinden kapanır.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow these permissions to continue. This window closes by itself once they're granted."
+          }
+        }
+      }
+    },
+    "Devam etmek için mikrofon izni gerekli; Erişilebilirlik isteğe bağlı.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Microphone access is required to continue; Accessibility is optional."
           }
         }
       }
@@ -2201,16 +2211,6 @@
         }
       }
     },
-    "Tamam": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "OK"
-          }
-        }
-      }
-    },
     "Tekrar dene": {
       "localizations": {
         "en": {
@@ -2987,26 +2987,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Allow"
-          }
-        }
-      }
-    },
-    "İzin verene kadar ilgili özellik çalışmaz. İstersen sonra Sistem Ayarları'ndan da verebilirsin.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The related feature won't work until you allow it. You can also do this later in System Settings."
-          }
-        }
-      }
-    },
-    "İzin vermeden de devam edebilirsin; dikte için mikrofon izni gerekecek.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "You can continue without it; dictation will need microphone access."
           }
         }
       }
