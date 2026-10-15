@@ -11,7 +11,7 @@ from common import SHARED_MODELS, make_data_dir, run_tests
 
 from dikte_engine import catalog, store
 from dikte_engine import engine as engine_mod
-from dikte_engine.catalog import BUILTIN, QWEN, WHISPER, ModelSpec
+from dikte_engine.catalog import BUILTIN, WHISPER, ModelSpec
 from dikte_engine.engine import Engine, EngineError, disk_rule_ok
 
 TINY = "mlx-community/whisper-tiny-mlx"
@@ -54,9 +54,9 @@ def test_ram_rule():
 
 def test_builtin_catalog():
     ids = [s.id for s in BUILTIN]
-    assert ids == ["large-v3", "turbo", "qwen3-1.7b"], ids
+    assert ids == ["large-v3", "turbo"], ids
     assert [s.id for s in BUILTIN if s.recommended] == ["large-v3"]
-    assert {s.kind for s in BUILTIN} == {WHISPER, QWEN}
+    assert {s.kind for s in BUILTIN} == {WHISPER}
     assert all(s.note for s in BUILTIN)
 
 
@@ -69,20 +69,21 @@ def test_repo_validation_and_ids():
 
 
 def test_hf_detect_kind():
-    for repo, kind in [(TINY, WHISPER), ("mlx-community/whisper-large-v3-turbo", WHISPER),
-                       ("mlx-community/Qwen3-ASR-1.7B-8bit", QWEN)]:
+    for repo, kind in [(TINY, WHISPER), ("mlx-community/whisper-large-v3-turbo", WHISPER)]:
         rf = catalog.fetch_repo_files(repo)
         assert len(rf.sha) == 40 and rf.total > 0 and rf.weights > 0, rf
         assert catalog.detect_kind(repo, rf) == kind, repo
     rf = catalog.fetch_repo_files("mlx-community/whisper-large-v3-mlx")
     assert rf.weights == 3_083_520_416
 
-    rf = catalog.fetch_repo_files("mlx-community/Llama-3.2-1B-Instruct-4bit")  # not ASR
-    try:
-        catalog.detect_kind("mlx-community/Llama-3.2-1B-Instruct-4bit", rf)
-        raise AssertionError("LLM accepted as ASR model")
-    except catalog.UnsupportedModel:
-        pass
+    for repo in ["mlx-community/Llama-3.2-1B-Instruct-4bit",  # not ASR
+                 "mlx-community/Qwen3-ASR-1.7B-8bit"]:          # ASR, but no longer supported
+        rf = catalog.fetch_repo_files(repo)
+        try:
+            catalog.detect_kind(repo, rf)
+            raise AssertionError(f"{repo} accepted as a Whisper model")
+        except catalog.UnsupportedModel:
+            pass
     try:
         catalog.fetch_repo_files("mlx-community/this-repo-does-not-exist-dikte")
         raise AssertionError("missing repo accepted")
@@ -93,9 +94,9 @@ def test_hf_detect_kind():
 def test_custom_and_sizes_persistence():
     d = Path(tempfile.mkdtemp())
     specs = [ModelSpec("hf:a/b", "b", "a/b", WHISPER, custom=True),
-             ModelSpec("hf:c/d", "d", "c/d", QWEN, custom=True)]
+             ModelSpec("hf:c/d", "d", "c/d", "qwen3-asr", custom=True)]  # old, now unsupported
     catalog.save_custom(d / "custom_models.json", specs)
-    assert catalog.load_custom(d / "custom_models.json") == specs
+    assert catalog.load_custom(d / "custom_models.json") == specs[:1]
     assert catalog.load_custom(d / "missing.json") == []
 
     sizes = catalog.SizesCache(d / "sizes.json")
@@ -111,7 +112,8 @@ def test_store_reads_hf_cache():
     assert path is not None and (path / "config.json").exists(), path
     assert s.downloaded_bytes(spec.repo) >= 3_083_520_416
     assert s.weights_on_disk(spec.repo) == 3_083_520_416
-    assert s.local_path(BUILTIN[2]) is None and s.downloaded_bytes(BUILTIN[2].repo) == 0
+    turbo = BUILTIN[1]  # not downloaded in the shared cache
+    assert s.local_path(turbo) is None and s.downloaded_bytes(turbo.repo) == 0
 
 
 def test_download_pause_resume_delete():

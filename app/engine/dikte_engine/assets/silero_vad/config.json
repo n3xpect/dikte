@@ -1,0 +1,20 @@
+{
+  "model_type": "silero_vad",
+  "architecture": "silero_vad",
+  "version": "v6",
+  "source": "silero_vad PyPI 6.2.1 (torch.hub snakers4/silero-vad)",
+  "dtype": "float32",
+  "threshold": 0.5,
+  "min_speech_duration_ms": 250,
+  "min_silence_duration_ms": 100,
+  "speech_pad_ms": 30,
+  "branch_16k": {
+    "sample_rate": 16000,
+    "filter_length": 256,
+    "hop_length": 128,
+    "pad": 64,
+    "cutoff": 129,
+    "context_size": 64,
+    "chunk_size": 512
+  }
+}

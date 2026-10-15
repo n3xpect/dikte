@@ -5,6 +5,7 @@ Run: uv run python tests/test_integration.py"""
 import asyncio
 import json
 import re
+import shutil
 import signal
 import time
 from urllib.parse import quote
@@ -67,10 +68,10 @@ async def models_and_config(eng: EngineProc, ev: Events):
     st, body = await eng.req("GET", "/models")
     assert st == 200 and set(body) == {"models", "system"}
     m = {x["id"]: x for x in body["models"]}
-    assert list(m) == ["large-v3", "turbo", "qwen3-1.7b"], list(m)
+    assert list(m) == ["large-v3", "turbo"], list(m)
     assert m["large-v3"]["state"] == "on_disk" and m["large-v3"]["recommended"]
     assert m["large-v3"]["downloaded_bytes"] >= 3_083_520_416
-    assert m["turbo"]["state"] == m["qwen3-1.7b"]["state"] == "not_downloaded"
+    assert m["turbo"]["state"] == "not_downloaded"
     assert m["turbo"]["size_bytes"] and m["turbo"]["downloaded_bytes"] == 0
     for x in m.values():
         assert x["ram_bytes"] > x["size_bytes"] * 0.9 and x["progress"] is None
@@ -209,6 +210,9 @@ async def dictate_while_unloaded_and_idle_unload(eng: EngineProc, ev: Events):
 
 @step
 async def download_rules_and_custom_model(eng: EngineProc, ev: Events):
+    # The models dir is shared with model-test; drop a tiny left over by an aborted run.
+    shutil.rmtree(eng.data_dir / "models" / "models--mlx-community--whisper-tiny-mlx",
+                  ignore_errors=True)
     st, body = await eng.req("POST", "/models/large-v3/download")
     assert st == 409 and body["error"] == "already_downloaded", body
     assert await eng.req("PUT", "/config", {"min_free_bytes": 10 * 10**12}) == (200, {"ok": True})

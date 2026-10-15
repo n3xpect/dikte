@@ -27,7 +27,7 @@ Türkçe cümle içindeki İngilizce yazılım terimleri (branch, commit, deploy
 Menü çubuğundaki simge durumu gösterir: yeşil nokta model bellekte, turuncu yükleniyor, kırmızı motor çalışmıyor. Ana ekranda üç sekme var:
 
 - **Ayarlar** — sessizlik süresi, mikrofon, kısayol, terim listesi, açılışta başlat, ses efektleri, modelin boşta kalma süresi (5 dk sonra bellekten boşaltılır), geçmiş sınırı, en az boş disk alanı.
-- **Modeller** — Whisper large-v3 (önerilen), large-v3 turbo, Qwen3-ASR 1.7B ve Hugging Face'ten elle eklenen modeller. Bellekteki model yeşil gösterilir. İndirme sonrası diskte 10 GB'tan az yer kalacaksa indirme başlamaz; RAM yetmiyorsa model yüklenmez.
+- **Modeller** — Whisper large-v3 (önerilen), large-v3 turbo ve Hugging Face'ten elle eklenen MLX Whisper modelleri. Bellekteki model yeşil gösterilir. İndirme sonrası diskte 10 GB'tan az yer kalacaksa indirme başlamaz; RAM yetmiyorsa model yüklenmez.
 - **Geçmiş** — tüm dikteler (ham ve düzeltilmiş metin, aradaki fark), arama, kopyalama, silme.
 
 ## Neden Whisper large-v3?
@@ -83,4 +83,3 @@ Testler, ortam değişkenleri ve paketleme ayrıntıları: [`app/README.md`](app
 
 - Yalnızca Türkçe dikte.
 - Uygulama yerel bir sertifikayla imzalı (notarize edilmemiş); ilk açılışta Gatekeeper uyarısı verir.
-- Paket büyük (~650 MB DMG): gömülü Python ortamı. Küçültme çalışması sürüyor.

@@ -14,6 +14,9 @@ struct AppSettings: Codable, Equatable, Sendable {
     var minFreeDiskGB: Int = 10
     var selectedModel: String = "large-v3"
 
+    /// Catalog entries dropped in later versions; a saved selection falls back to the default.
+    static let removedModels: Set<String> = ["qwen3-1.7b"]
+
     init() {}
 
     // Tolerate missing keys so new settings don't break old files.
@@ -29,6 +32,7 @@ struct AppSettings: Codable, Equatable, Sendable {
         historyLimit = try c.decodeIfPresent(Int.self, forKey: .historyLimit) ?? d.historyLimit
         minFreeDiskGB = try c.decodeIfPresent(Int.self, forKey: .minFreeDiskGB) ?? d.minFreeDiskGB
         selectedModel = try c.decodeIfPresent(String.self, forKey: .selectedModel) ?? d.selectedModel
+        if Self.removedModels.contains(selectedModel) { selectedModel = d.selectedModel }
     }
 
     var engineConfig: EngineConfig {

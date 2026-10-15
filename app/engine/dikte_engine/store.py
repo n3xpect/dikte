@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
-import json
 import logging
 import os
 import shutil
@@ -20,7 +19,7 @@ from urllib.parse import quote
 
 import aiohttp
 
-from .catalog import QWEN, WHISPER, ModelSpec, RepoFile, RepoFiles
+from .catalog import WHISPER, ModelSpec, RepoFile, RepoFiles
 
 log = logging.getLogger("dikte.store")
 
@@ -61,18 +60,6 @@ class Store:
             return None
         if spec.kind == WHISPER:
             ok = (path / "weights.safetensors").exists() or (path / "weights.npz").exists()
-        elif spec.kind == QWEN:
-            required = ["vocab.json", "merges.txt", "tokenizer_config.json",
-                        "preprocessor_config.json"]
-            index = path / "model.safetensors.index.json"
-            if index.exists():
-                try:
-                    required += sorted(set(json.loads(index.read_text())["weight_map"].values()))
-                except (OSError, ValueError, KeyError):
-                    return None
-            else:
-                required.append("model.safetensors")
-            ok = all((path / f).exists() for f in required)
         else:
             ok = False
         return path if ok else None

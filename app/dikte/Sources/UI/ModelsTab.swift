@@ -200,7 +200,7 @@ struct ModelsView: View {
     private var customCard: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Hugging Face'ten model ekle").font(.headline)
-            Text("MLX Whisper ya da Qwen3-ASR modeli içeren bir deponun adını veya bağlantısını yaz.")
+            Text("MLX Whisper modeli içeren bir deponun adını veya bağlantısını yaz.")
                 .font(.callout).foregroundStyle(.secondary)
             HStack {
                 TextField("Depo", text: $customRepo, prompt: Text("ör. mlx-community/whisper-large-v3-turbo"))

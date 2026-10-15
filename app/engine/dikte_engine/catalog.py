@@ -9,7 +9,6 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 
 WHISPER = "mlx-whisper"
-QWEN = "qwen3-asr"
 CUSTOM_PREFIX = "hf:"
 _REPO_RE = re.compile(r"^[A-Za-z0-9][\w.-]*/[\w.-]+$")
 
@@ -19,7 +18,7 @@ class ModelSpec:
     id: str
     label: str
     repo: str
-    kind: str  # WHISPER | QWEN
+    kind: str  # WHISPER (the only supported kind)
     custom: bool = False
     recommended: bool = False
     note: str = ""
@@ -32,8 +31,6 @@ BUILTIN: list[ModelSpec] = [
               est_weights_bytes=3_083_520_416),
     ModelSpec("turbo", "Whisper large-v3 turbo", "mlx-community/whisper-large-v3-turbo", WHISPER,
               note="WER 8,3% · ~0,5 sn", est_weights_bytes=1_613_977_612),
-    ModelSpec("qwen3-1.7b", "Qwen3-ASR 1.7B (8-bit)", "mlx-community/Qwen3-ASR-1.7B-8bit", QWEN,
-              note="terim 79%", est_weights_bytes=2_463_307_541),
 ]
 
 
@@ -110,7 +107,7 @@ def fetch_repo_files(repo: str) -> RepoFiles:
 
 
 def detect_kind(repo: str, rf: RepoFiles) -> str:
-    """mlx-whisper: whisper config + weights.npz|weights.safetensors; qwen3-asr: model_type."""
+    """mlx-whisper: whisper config + weights.npz|weights.safetensors (the only supported kind)."""
     from huggingface_hub import hf_hub_url
     from huggingface_hub.utils import get_session
 
@@ -129,8 +126,6 @@ def detect_kind(repo: str, rf: RepoFiles) -> str:
     if ("n_mels" in config or "n_audio_state" in config) and (
             names & {"weights.npz", "weights.safetensors"}):
         return WHISPER
-    if config.get("model_type") == "qwen3_asr":
-        return QWEN
     raise UnsupportedModel(f"model_type={config.get('model_type')!r}")
 
 
@@ -166,7 +161,7 @@ def load_custom(path: Path) -> list[ModelSpec]:
         items = json.loads(path.read_text(encoding="utf-8"))["models"]
         return [ModelSpec(custom_id(m["repo"]), m.get("label") or m["repo"].split("/")[-1],
                           m["repo"], m["kind"], custom=True) for m in items
-                if m.get("kind") in (WHISPER, QWEN) and valid_repo(m.get("repo", ""))]
+                if m.get("kind") == WHISPER and valid_repo(m.get("repo", ""))]
     except (OSError, ValueError, KeyError, TypeError):
         return []
 

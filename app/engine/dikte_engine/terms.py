@@ -1,4 +1,4 @@
-"""Term library: Whisper prompt / Qwen hotwords, output fixes and scoring helpers.
+"""Term library: Whisper prompt, output fixes and scoring helpers.
 
 Suffix handling (Turkish attaches suffixes to English terms):
 - apply_fixes only keeps a suffix written after an apostrophe ("brenç'i" -> "branch'i").
@@ -84,10 +84,6 @@ def build_whisper_prompt(terms: list[Term]) -> str:
             break
         names.append(t.term)
     return _PROMPT_HEAD + ", ".join(names) + "." if names else ""
-
-
-def hotwords(terms: list[Term]) -> list[str]:
-    return [t.term for t in terms]
 
 
 def tr_lower(s: str) -> str:

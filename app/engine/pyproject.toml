@@ -1,21 +1,34 @@
 [project]
 name = "dikte-engine"
-version = "0.1.0"
+version = "0.1.1"
 description = "Dikte local Turkish dictation engine (MLX STT, VAD, terms) over HTTP/WebSocket"
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "aiohttp>=3.12",
     "huggingface-hub>=2.2.0,<3",  # store.py uses its shared-blob helpers
-    "mlx-audio[stt]>=0.5.9",
+    "mlx>=0.31",
     "mlx-whisper>=0.4.3",
     "numpy>=2.0",
     "psutil>=7.0",
-    "silero-vad>=6.2.3",
+]
+
+[tool.uv]
+# mlx-whisper declares these, but the engine never needs them:
+# - torch (+ sympy, networkx): only used to convert PyTorch checkpoints; Silero VAD runs on MLX
+#   (dikte_engine/silero.py).
+# - numba (+ llvmlite), scipy: only for word timestamps / non-16 kHz resampling (unused);
+#   dikte_engine/shims.py stands in for the module-level imports.
+# The impossible marker drops them from the lock and the bundle.
+override-dependencies = [
+    "torch; sys_platform == 'never'",
+    "numba; sys_platform == 'never'",
+    "scipy; sys_platform == 'never'",
 ]
 
 [dependency-groups]
 dev = [
     "jiwer>=4.0.0",
+    "pyyaml>=6.0.3",
 ]
 
 [build-system]

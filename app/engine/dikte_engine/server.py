@@ -230,9 +230,9 @@ class Dictation:
                 await self.error(e)
                 return
             await _send(ws, {"type": "transcribing"})
-            terms, prompt, hot = engine.terms, engine.prompt, engine.hotwords()
+            terms, prompt = engine.terms, engine.prompt
             tr = await self.loop.run_in_executor(engine.ml, lambda: backend.transcribe(
-                audio, language=cfg.language, prompt=prompt, hotwords=hot))
+                audio, language=cfg.language, prompt=prompt))
             if aborted.done():
                 return
             aborted.cancel()

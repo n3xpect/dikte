@@ -30,7 +30,7 @@ The app owns UI, microphone capture, and the JSON files (settings/history/terms)
   "id": "large-v3",                   // catalog key, or "hf:<org>/<repo>" for custom models
   "label": "Whisper large-v3",
   "repo": "mlx-community/whisper-large-v3-mlx",
-  "kind": "mlx-whisper",              // "mlx-whisper" | "qwen3-asr"
+  "kind": "mlx-whisper",              // only "mlx-whisper" (Qwen3-ASR removed in 0.1.1)
   "custom": false,
   "recommended": true,
   "note": "WER 7,9% · terim 96% · ~0,8 sn",   // short Turkish note, may be ""

@@ -8,7 +8,7 @@ are measured in samples, so audio fed faster than real time behaves identically.
 from __future__ import annotations
 
 import threading
-import warnings
+from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -20,27 +20,33 @@ POSTROLL_S = 0.2  # kept after the last speech frame
 MIN_SPEECH_FRAMES = 3  # ~96 ms of consecutive speech before speech_start (rejects clicks)
 START_TIMEOUT_S = 15.0
 
+# Silero VAD v6 in MLX format, shipped with the engine (no torch, no download).
+# Matches the torch `silero-vad` package exactly; see assets/silero_vad/SOURCE.md.
+WEIGHTS_DIR = Path(__file__).parent / "assets" / "silero_vad"
+
 _model: Any = None
+_stream: Any = None
 _model_lock = threading.Lock()
 
 
 def load_vad() -> Any:
-    """Silero VAD (torch JIT), loaded once per process."""
-    global _model
+    """Silero VAD (MLX), loaded once per process. Runs on its own CPU stream so it never
+    contends with Whisper, which uses the GPU from another thread."""
+    global _model, _stream
     with _model_lock:
         if _model is None:
-            import torch
-            from silero_vad import load_silero_vad
+            import mlx.core as mx
 
-            torch.set_num_threads(1)
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore", FutureWarning)  # torch.jit.load deprecation
-                _model = load_silero_vad(onnx=False)
+            from .silero import load
+
+            _stream = mx.new_stream(mx.cpu)
+            with mx.stream(_stream):
+                _model = load(WEIGHTS_DIR)
         return _model
 
 
 class Endpointer:
-    """Not thread-safe; also resets the shared Silero state, so one instance at a time."""
+    """Not thread-safe; each instance keeps its own Silero state."""
 
     def __init__(self, *, silence_s: float = 3.0, max_duration_s: float = 120.0,
                  start_timeout_s: float = START_TIMEOUT_S, threshold: float = 0.5):
@@ -51,7 +57,7 @@ class Endpointer:
         self.neg_threshold = max(threshold - 0.15, 0.01)
 
         self.model = load_vad()
-        self.model.reset_states()
+        self._state = self.model.initial_state()
         self._frames: list[np.ndarray] = []
         self._pending = np.zeros(0, dtype=np.float32)
         self.pos = 0  # samples run through the VAD
@@ -64,7 +70,7 @@ class Endpointer:
 
     def feed(self, pcm: np.ndarray) -> list[str]:
         """Consume samples; return new events: "speech_start", "end:<reason>"."""
-        import torch
+        import mlx.core as mx
 
         if self.end_reason is not None:
             return []
@@ -72,11 +78,11 @@ class Endpointer:
         buf = np.concatenate([self._pending, np.asarray(pcm, dtype=np.float32).reshape(-1)])
         n = len(buf) // FRAME * FRAME
         self._pending = buf[n:].copy()
-        with torch.no_grad():
+        with mx.stream(_stream):
             for i in range(0, n, FRAME):
                 frame = buf[i:i + FRAME]
                 self._frames.append(frame)
-                prob = self.model(torch.from_numpy(frame.copy()), SR).item()
+                prob, self._state = self.model.feed(frame, self._state)
                 self.pos += FRAME
                 if prob >= self.threshold:
                     self._speech_run += 1

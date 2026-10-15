@@ -40,12 +40,14 @@ def test_fix_lists_never_contain_accepted_form():
 def test_whisper_prompt():
     prompt = T.build_whisper_prompt(TERMS)
     assert prompt.endswith(".") and "branch" in prompt and "PostgreSQL" in prompt, prompt
+    from dikte_engine.shims import import_mlx_whisper
+
+    import_mlx_whisper()
     from mlx_whisper.tokenizer import get_tokenizer
 
     n = len(get_tokenizer(True, num_languages=100, language="tr").encode(" " + prompt))
     assert n < 224, n
     assert T.build_whisper_prompt([]) == ""
-    assert T.hotwords(TERMS)[:3] == ["git", "branch", "commit"]
 
 
 def test_apply_fixes():

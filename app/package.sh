@@ -42,10 +42,16 @@ PY="$RES/python/bin/python3"
 log "Motor bağımlılıkları kuruluyor"
 REQ="$BUILD/requirements.txt"
 uv export --project "$ENGINE_SRC" --frozen --no-dev --no-emit-project --no-hashes -q > "$REQ"
-uv pip install --python "$PY" --break-system-packages --link-mode copy -r "$REQ" -q
+# --no-deps: the export is the complete, pinned set; re-resolving would pull back packages
+# dropped via `override-dependencies` (e.g. torch, which mlx-whisper declares).
+uv pip install --python "$PY" --break-system-packages --link-mode copy --no-deps -r "$REQ" -q
 # PEP 668 marker would block later pip use; harmless to remove inside our private copy.
 find "$RES/python/lib" -maxdepth 2 -name EXTERNALLY-MANAGED -delete
 rm -rf "$RES/python/share" "$RES/python/include"
+# Not needed at runtime: pip itself, MLX C++ headers / CMake files (only for building extensions).
+SITE="$RES/python/lib/python$PY_VERSION/site-packages"
+rm -rf "$SITE"/pip "$SITE"/pip-*.dist-info "$RES"/python/bin/pip* \
+       "$SITE/mlx/include" "$SITE/mlx/lib/cmake" "$SITE/mlx/share"
 find "$RES/python" -name "__pycache__" -type d -prune -exec rm -rf {} +
 
 log "Motor kodu kopyalanıyor"

@@ -26,9 +26,10 @@ enum PreviewData {
               note: "WER 7,9% · terim 96% · ~0,8 sn", recommended: true, repo: "mlx-community/whisper-large-v3-mlx"),
         model("large-v3-turbo", "Whisper large-v3 turbo", .downloading, size: 1.5, downloaded: 0.93, ram: 1.9,
               note: "Daha hızlı, biraz daha az isabetli", progress: 0.62, repo: "mlx-community/whisper-large-v3-turbo"),
-        model("qwen3-asr", "Qwen3-ASR 1.7B", .paused, size: 4.4, downloaded: 1.2, ram: 5.2,
-              note: "Deneysel", error: "İndirme durduruldu: diskte en az 10 GB boş kalmalı.",
-              repo: "mlx-community/Qwen3-ASR-1.7B"),
+        model("hf:mlx-community/whisper-large-v3-mlx-8bit", "whisper-large-v3-mlx-8bit", .paused,
+              size: 1.7, downloaded: 0.6, ram: 2.0, custom: true,
+              error: "İndirme durduruldu: diskte en az 10 GB boş kalmalı.",
+              repo: "mlx-community/whisper-large-v3-mlx-8bit"),
         model("hf:mlx-community/whisper-medium-mlx", "whisper-medium-mlx", .onDisk, size: 1.4, ram: 1.8,
               custom: true, repo: "mlx-community/whisper-medium-mlx"),
         model("small", "Whisper small", .loading, size: 0.45, ram: 0.6, note: "Küçük ve hızlı",
@@ -43,8 +44,8 @@ enum PreviewData {
               note: "WER 7,9% · terim 96% · ~0,8 sn", recommended: true, repo: "mlx-community/whisper-large-v3-mlx"),
         model("large-v3-turbo", "Whisper large-v3 turbo", .notDownloaded, size: 1.5, ram: 1.9,
               note: "Daha hızlı, biraz daha az isabetli", repo: "mlx-community/whisper-large-v3-turbo"),
-        model("qwen3-asr", "Qwen3-ASR 1.7B", .notDownloaded, size: 4.4, ram: 5.2, note: "Deneysel",
-              repo: "mlx-community/Qwen3-ASR-1.7B"),
+        model("hf:mlx-community/whisper-large-v3-mlx-8bit", "whisper-large-v3-mlx-8bit", .notDownloaded,
+              size: 4.4, ram: 2.0, custom: true, repo: "mlx-community/whisper-large-v3-mlx-8bit"),
         model("hf:mlx-community/whisper-medium-mlx", "whisper-medium-mlx", .onDisk, size: 1.4, ram: 1.8,
               custom: true, repo: "mlx-community/whisper-medium-mlx"),
     ]
@@ -134,7 +135,7 @@ enum PreviewData {
 #Preview("Modeller — tüm durumlar") { PreviewData.window(.models).frame(width: 900, height: 900) }
 #Preview("Modeller — az disk") {
     PreviewData.window(.models, models: PreviewData.lowDisk, system: PreviewData.system(freeGB: 14, idleIn: nil),
-                       selected: "qwen3-asr")
+                       selected: "hf:mlx-community/whisper-large-v3-mlx-8bit")
         .frame(width: 900, height: 760)
 }
 #Preview("Modeller — motor çalışmıyor") {
@@ -167,7 +168,7 @@ enum UIPreviewRenderer {
         render(PreviewData.window(.models), "models-all-states-dark", w, 1180, dir, dark: true)
         render(PreviewData.window(.models), "models-window", w, 660, dir)
         render(PreviewData.window(.models, models: PreviewData.lowDisk,
-                                  system: PreviewData.system(freeGB: 14, idleIn: nil), selected: "qwen3-asr"),
+                                  system: PreviewData.system(freeGB: 14, idleIn: nil), selected: "hf:mlx-community/whisper-large-v3-mlx-8bit"),
                "models-low-disk", w, 1000, dir)
         render(PreviewData.window(.models, models: [], system: nil, status: .failed("Python bulunamadı.")),
                "models-engine-failed", w, 500, dir)

@@ -1,14 +1,14 @@
 """Accuracy regression: stream the user's recordings (model-test/recordings) through /dictate
-with large-v3 + default terms and score against model-test/results.csv references.
-Prior MLX bench: WER ~7.9%, terms 74/77. Run: uv run python tests/test_accuracy.py"""
+with large-v3 + default terms and score against the sentences they read
+(model-test/test_sentences.yaml; the id is the file name suffix, e.g. `…_dev02.wav`).
+Prior MLX bench: WER ~7.6–7.9%, terms 74/77. Run: uv run python tests/test_accuracy.py"""
 
 import asyncio
-import csv
 import statistics as st
 import sys
-from pathlib import Path
 
 import numpy as np
+import yaml
 from common import MODEL_TEST, EngineProc, Events, dictate, load_wav, make_data_dir, model_of, noise
 
 import dikte_engine.terms as T
@@ -18,12 +18,14 @@ MAX_WER, MIN_TERM_ACC = 0.10, 0.93
 
 
 def references() -> dict[str, tuple[str, str]]:
+    """wav file name → (sentence id, reference text)."""
+    data = yaml.safe_load((MODEL_TEST / "test_sentences.yaml").read_text(encoding="utf-8"))
+    texts = {s["id"]: s["text"] for s in data["sentences"]}
     out = {}
-    with open(MODEL_TEST / "results.csv", encoding="utf-8") as f:
-        for r in csv.DictReader(f):
-            name = Path(r["wav"]).name
-            if r["model"] == "large-v3" and r["reference"] and name not in SKIP:
-                out[name] = (r["sentence_id"], r["reference"])
+    for wav in sorted((MODEL_TEST / "recordings").glob("*.wav")):
+        sid = wav.stem.rsplit("_", 1)[-1]
+        if wav.name not in SKIP and sid in texts:
+            out[wav.name] = (sid, texts[sid])
     return out
 
 

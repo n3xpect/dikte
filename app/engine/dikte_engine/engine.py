@@ -17,7 +17,7 @@ import psutil
 from . import asr, catalog
 from .catalog import BUILTIN, ModelSpec, RepoFiles
 from .store import DiskGuard, Store
-from .terms import Term, build_whisper_prompt, default_terms_json, hotwords, parse_terms
+from .terms import Term, build_whisper_prompt, default_terms_json, parse_terms
 
 log = logging.getLogger("dikte.engine")
 GB = 1024**3
@@ -281,9 +281,6 @@ class Engine:
             self.touch_idle()
         self.notify()
 
-    def hotwords(self) -> list[str]:
-        return hotwords(self.terms)
-
     # ------------------------------------------------------------------ load / unload
 
     def start_load(self, model_id: str) -> asyncio.Task[asr.Backend]:
@@ -477,7 +474,7 @@ class Engine:
                 None, catalog.detect_kind, repo, rf)
         except catalog.UnsupportedModel as e:
             raise EngineError(422, "unsupported_model",
-                              "Bu model desteklenmiyor. MLX Whisper ya da Qwen3-ASR modeli olmalı.",
+                              "Bu model desteklenmiyor. MLX Whisper modeli olmalı (config.json + weights.npz/safetensors).",
                               detail=str(e))
         except catalog.NetworkError as e:
             raise EngineError(503, "network_error", "Hugging Face'e ulaşılamadı.", detail=str(e))
