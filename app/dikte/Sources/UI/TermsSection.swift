@@ -5,7 +5,7 @@ struct TermActions {
     var delete: (String) -> Void
 }
 
-/// "Terimler" section of Ayarlar: searchable list with add / edit / delete.
+/// Term list (Terimler tab): searchable, with add / edit / delete.
 struct TermsSection: View {
     var terms: [Term]
     var actions: TermActions

@@ -5,7 +5,7 @@ import SwiftUI
 // CONTRACT — implemented by agent "ui". Main window with tabs Ayarlar / Modeller / Geçmiş.
 
 enum MainTab: String, CaseIterable, Identifiable {
-    case settings, models, history
+    case settings, models, terms, history
     var id: String { rawValue }
 }
 
@@ -14,6 +14,7 @@ extension MainTab {
         switch self {
         case .settings: L("Ayarlar")
         case .models: L("Modeller")
+        case .terms: L("Terimler")
         case .history: L("Geçmiş")
         }
     }
@@ -22,6 +23,7 @@ extension MainTab {
         switch self {
         case .settings: "gearshape"
         case .models: "cpu"
+        case .terms: "character.book.closed"
         case .history: "clock.arrow.circlepath"
         }
     }
@@ -97,6 +99,7 @@ private struct LiveMainView: View {
             switch tab {
             case .settings: SettingsTab(state: state)
             case .models: ModelsTab(state: state)
+            case .terms: TermsTab(state: state)
             case .history: HistoryTab(state: state)
             }
         }

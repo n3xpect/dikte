@@ -14,8 +14,6 @@ struct SettingsTab: View {
         SettingsView(
             settings: $settings.settings,
             microphones: microphones,
-            terms: state.terms.terms,
-            termActions: TermActions(upsert: state.terms.upsert, delete: state.terms.delete(term:)),
             launchAtLogin: .system,
             engineStatus: state.engine.status,
             dataDir: Paths.dataDir
@@ -55,8 +53,6 @@ struct LaunchAtLogin {
 struct SettingsView: View {
     @Binding var settings: AppSettings
     var microphones: [Microphone]
-    var terms: [Term]
-    var termActions: TermActions
     var launchAtLogin: LaunchAtLogin
     var engineStatus: EngineStatus
     var dataDir: URL
@@ -147,8 +143,6 @@ struct SettingsView: View {
                         .font(.callout)
                 }
             }
-
-            TermsSection(terms: terms, actions: termActions)
         }
         .formStyle(.grouped)
         .onChange(of: settings.historyLimit) { _, v in

@@ -121,7 +121,7 @@ enum PreviewData {
         SettingsView(settings: settings,
                      microphones: [Microphone(uid: "builtin", name: "MacBook Pro Mikrofonu"),
                                    Microphone(uid: "usb", name: "Shure MV7")],
-                     terms: terms, termActions: termActions, launchAtLogin: launchAtLogin,
+                     launchAtLogin: launchAtLogin,
                      engineStatus: .running(port: 1),
                      dataDir: URL(fileURLWithPath: NSHomeDirectory() + "/Library/Application Support/dikte"))
     }
@@ -137,6 +137,7 @@ enum PreviewData {
             switch t {
             case .settings: settingsView(.constant(settings()))
             case .models: modelsView(models, system: system, status: status, selected: selected)
+            case .terms: TermsView(terms: terms, actions: termActions)
             case .history: historyView()
             }
         }
@@ -217,6 +218,8 @@ enum UIPreviewRenderer {
         render(PreviewData.window(.settings), "settings", w, 1300, dir)
         render(PreviewData.window(.settings), "settings-window", w, 660, dir)
         render(PreviewData.window(.settings), "settings-dark", w, 1300, dir, dark: true)
+        render(PreviewData.window(.terms), "terms", w, 760, dir)
+        render(PreviewData.window(.terms), "terms-dark", w, 760, dir, dark: true)
         render(PreviewData.window(.history), "history", w, 660, dir)
         render(PreviewData.window(.history), "history-dark", w, 660, dir, dark: true)
         render(TermEditor(draft: TermDraft(PreviewData.terms[0]), existing: [], save: { _ in }),
@@ -411,6 +414,7 @@ private struct PreviewLiveWindow: View {
             switch t {
             case .settings: PreviewData.settingsView($settings)
             case .models: PreviewData.modelsView()
+            case .terms: TermsView(terms: PreviewData.terms, actions: PreviewData.termActions)
             case .history: PreviewData.historyView()
             }
         }

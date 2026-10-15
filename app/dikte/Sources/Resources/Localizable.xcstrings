@@ -1961,6 +1961,16 @@
         }
       }
     },
+    "Terimler modele ipucu olarak verilir; böylece Türkçe cümle içindeki İngilizce kelimeler doğru yazılır. Model bir terimi yanlış yazarsa düzeltme listesindeki yazım otomatik olarak terime çevrilir.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Terms are given to the model as hints, so English words inside Turkish sentences are spelled correctly. If the model misspells a term, spellings in its correction list are replaced with the term automatically."
+          }
+        }
+      }
+    },
     "Terimlerde ara": {
       "localizations": {
         "en": {
