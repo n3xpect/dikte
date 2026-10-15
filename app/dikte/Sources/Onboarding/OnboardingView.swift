@@ -396,19 +396,34 @@ private struct OnboardingPermissionsStep: View {
     }
 
     @ViewBuilder private var content: some View {
+        // Same layout as the Accessibility card: title + status on the right, then hint and action.
+        HStack(alignment: .firstTextBaseline) {
+            Text(L("Mikrofon izni")).font(.headline)
+            Spacer(minLength: 8)
+            switch permission {
+            case .granted:
+                Label(L("Verildi"), systemImage: "checkmark.circle.fill")
+                    .foregroundStyle(Palette.loadedText)
+            case .notDetermined:
+                Label { Text(L("Verilmedi")) } icon: { Image(systemName: "circle.fill").imageScale(.small) }
+                    .foregroundStyle(Palette.loading)
+            case .denied:
+                Label { Text(L("Reddedildi")) } icon: { Image(systemName: "circle.fill").imageScale(.small) }
+                    .foregroundStyle(Palette.danger)
+            }
+        }
+        .font(.callout)
         switch permission {
         case .notDetermined:
-            Text(L("Mikrofon izni henüz verilmedi")).font(.headline)
-            Text(L("“İzin ver”e bastığında macOS sana soracak."))
+            Text(L("Dikte için gerekli. “İzin ver”e bastığında macOS sana soracak."))
                 .font(.callout).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
             Button(L("İzin ver"), systemImage: "mic.fill", action: flow.requestMicrophone)
                 .buttonStyle(.borderedProminent)
                 .padding(.top, 4)
         case .granted:
-            Text(L("Mikrofon izni verildi")).font(.headline).foregroundStyle(Palette.loadedText)
             Text(L("Dikte mikrofonu kullanabilir.")).font(.callout).foregroundStyle(.secondary)
         case .denied:
-            Text(L("Mikrofon izni verilmedi")).font(.headline).foregroundStyle(Palette.danger)
             Text(L("Sistem Ayarları › Gizlilik ve Güvenlik › Mikrofon bölümünde Dikte'yi aç, sonra bu pencereye dön."))
                 .font(.callout).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)

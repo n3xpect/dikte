@@ -681,6 +681,16 @@
         }
       }
     },
+    "Dikte için gerekli. “İzin ver”e bastığında macOS sana soracak.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Required for dictation. macOS will ask you when you click “Allow”."
+          }
+        }
+      }
+    },
     "Dikte kısayolu": {
       "localizations": {
         "en": {
@@ -1571,32 +1581,12 @@
         }
       }
     },
-    "Mikrofon izni henüz verilmedi": {
+    "Mikrofon izni": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Microphone access not granted yet"
-          }
-        }
-      }
-    },
-    "Mikrofon izni verildi": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Microphone access granted"
-          }
-        }
-      }
-    },
-    "Mikrofon izni verilmedi": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Microphone access denied"
+            "value": "Microphone access"
           }
         }
       }
@@ -2057,6 +2047,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "RAM: %@ available / %@"
+          }
+        }
+      }
+    },
+    "Reddedildi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Denied"
           }
         }
       }
@@ -3077,16 +3077,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Delete the term “%@”?"
-          }
-        }
-      }
-    },
-    "“İzin ver”e bastığında macOS sana soracak.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "macOS will ask you when you click “Allow”."
           }
         }
       }

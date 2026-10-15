@@ -14,6 +14,7 @@
   "Devam et": "Resume",
   "Devam etmek için mikrofon izni gerekli; Erişilebilirlik isteğe bağlı.": "Microphone access is required to continue; Accessibility is optional.",
   "Dikte dili": "Dictation language",
+  "Dikte için gerekli. “İzin ver”e bastığında macOS sana soracak.": "Required for dictation. macOS will ask you when you click “Allow”.",
   "Dikte kısayolu": "Dictation shortcut",
   "Dikte mikrofonu kullanabilir.": "Dikte can use the microphone.",
   "Dikte yalnızca kısayola bastığında dinler. Ses bu Mac'te işlenir, hiçbir yere gönderilmez.": "Dikte only listens when you press the shortcut. Audio is processed on this Mac and never sent anywhere.",
@@ -38,9 +39,7 @@
   "Metne yeni satır ekler.": "Adds a new line to the text.",
   "Metni bir uygulamaya yapıştırmak için gerekli; sadece panoyu kullanacaksan gerekmez.": "Needed to paste the text into an app; not needed if you only use the clipboard.",
   "Metni panoya kopyalar ve paneli kapatır.": "Copies the text to the clipboard and closes the panel.",
-  "Mikrofon izni henüz verilmedi": "Microphone access not granted yet",
-  "Mikrofon izni verildi": "Microphone access granted",
-  "Mikrofon izni verilmedi": "Microphone access denied",
+  "Mikrofon izni": "Microphone access",
   "Model": "Model",
   "Model bilgisi alınıyor…": "Getting model info…",
   "Model indirildi ve kullanıma hazır.": "The model is downloaded and ready to use.",
@@ -49,6 +48,7 @@
   "Motor hazır olunca deneyebilirsin.": "You can try it once the engine is ready.",
   "Otomatik (Türkçe + English)": "Automatic (Turkish + English)",
   "Panel açılır; bir şey söyle, sonra sus.": "The panel opens; say something, then stop talking.",
+  "Reddedildi": "Denied",
   "Sistem Ayarları › Gizlilik ve Güvenlik › Mikrofon bölümünde Dikte'yi aç, sonra bu pencereye dön.": "Turn on Dikte in System Settings › Privacy & Security › Microphone, then come back to this window.",
   "Sistem Ayarları'nı aç": "Open System Settings",
   "Tekrar dene": "Try again",
@@ -66,6 +66,5 @@
   "İzin ver": "Allow",
   "İzin ver…": "Allow…",
   "İzinler": "Permissions",
-  "Şimdilik atla": "Skip for now",
-  "“İzin ver”e bastığında macOS sana soracak.": "macOS will ask you when you click “Allow”."
+  "Şimdilik atla": "Skip for now"
 }
