@@ -10,7 +10,9 @@ final class StatusItemController {
     private var item: NSStatusItem?
     private weak var state: AppState?
     private let statusLine = NSMenuItem(title: "", action: nil, keyEquivalent: "")
+    private var openItem: NSMenuItem?
     private var unloadItem: NSMenuItem?
+    private var quitItem: NSMenuItem?
     private var shownIcon: StatusIcon?
     private let menuTarget = MenuTarget()
 
@@ -28,18 +30,23 @@ final class StatusItemController {
 
         let menu = NSMenu()
         menu.autoenablesItems = false
-        menu.addItem(menuTarget.item("Dikte'yi aç") { MainWindowController.shared.show() })
+        // Titles are set in update() so they follow the UI language.
+        let open = menuTarget.item { MainWindowController.shared.show() }
+        openItem = open
+        menu.addItem(open)
         menu.addItem(.separator())
         statusLine.isEnabled = false
         menu.addItem(statusLine)
-        let unload = menuTarget.item("Modeli şimdi boşalt") { [weak state] in
+        let unload = menuTarget.item { [weak state] in
             guard let state else { return }
             Task { try? await state.engine.unload() }
         }
         unloadItem = unload
         menu.addItem(unload)
         menu.addItem(.separator())
-        menu.addItem(menuTarget.item("Çıkış", key: "q") { NSApp.terminate(nil) })
+        let quit = menuTarget.item(key: "q") { NSApp.terminate(nil) }
+        quitItem = quit
+        menu.addItem(quit)
         item.menu = menu
 
         observe()
@@ -77,6 +84,9 @@ final class StatusItemController {
             button.appearsDisabled = icon == .starting
         }
 
+        openItem?.title = L("Dikte'yi aç")
+        unloadItem?.title = L("Modeli şimdi boşalt")
+        quitItem?.title = L("Çıkış")
         let line = Self.statusText(engine: engine, selected: state.settings.settings.selectedModel)
         statusLine.title = line
         button.toolTip = "Dikte — " + line
@@ -85,18 +95,20 @@ final class StatusItemController {
 
     static func statusText(engine: EngineController, selected: String) -> String {
         guard engine.isRunning else { return engine.status.display.text }
-        if let m = engine.loadedModel { return "Model: \(m.label) · Bellekte" }
-        if let m = engine.models.first(where: { $0.state == .loading }) { return "Model: \(m.label) · Yükleniyor…" }
-        guard let m = engine.models.first(where: { $0.id == selected }) else { return "Model seçilmedi" }
-        let s: String = switch m.state {
-        case .notDownloaded: "İndirilmedi"
-        case .downloading: "İndiriliyor \(Fmt.percent(m.progress ?? 0))"
-        case .paused: "İndirme duraklatıldı"
-        case .onDisk: "Diskte"
-        case .loading: "Yükleniyor…"
-        case .loaded: "Bellekte"
+        if let m = engine.loadedModel { return L("Model: %@ · %@", m.label, L("Bellekte")) }
+        if let m = engine.models.first(where: { $0.state == .loading }) {
+            return L("Model: %@ · %@", m.label, L("Yükleniyor…"))
         }
-        return "Model: \(m.label) · \(s)"
+        guard let m = engine.models.first(where: { $0.id == selected }) else { return L("Model seçilmedi") }
+        let s: String = switch m.state {
+        case .notDownloaded: L("İndirilmedi")
+        case .downloading: L("İndiriliyor %@", Fmt.percent(m.progress ?? 0))
+        case .paused: L("İndirme duraklatıldı")
+        case .onDisk: L("Diskte")
+        case .loading: L("Yükleniyor…")
+        case .loaded: L("Bellekte")
+        }
+        return L("Model: %@ · %@", m.label, s)
     }
 }
 
@@ -156,8 +168,8 @@ enum StatusIcon: CaseIterable {
 private final class MenuTarget: NSObject {
     private var handlers: [Int: () -> Void] = [:]
 
-    func item(_ title: String, key: String = "", handler: @escaping () -> Void) -> NSMenuItem {
-        let item = NSMenuItem(title: title, action: #selector(fire(_:)), keyEquivalent: key)
+    func item(key: String = "", handler: @escaping () -> Void) -> NSMenuItem {
+        let item = NSMenuItem(title: "", action: #selector(fire(_:)), keyEquivalent: key)
         item.target = self
         item.tag = handlers.count
         handlers[item.tag] = handler

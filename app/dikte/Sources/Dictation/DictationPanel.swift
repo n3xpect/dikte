@@ -37,7 +37,7 @@ final class DictationPanel: NSPanel {
     override var canBecomeMain: Bool { false }
 }
 
-/// Shows/positions the panel and routes Enter / Shift+Enter / Esc to the controller.
+/// Shows/positions the panel and routes Enter / Shift+Enter / Esc / ⌘L to the controller.
 final class DictationPanelController {
     /// Distance between the panel's bottom edge and the bottom of the visible frame (Dock).
     static let bottomMargin: CGFloat = 80
@@ -130,9 +130,24 @@ final class DictationPanelController {
                 if isEscape { controller.dismissSuggestions(); return true }
                 return false
             }
+            let command = flags.contains(.command)
+            if command, event.charactersIgnoringModifiers?.lowercased() == "l" {
+                controller.switchLanguage()
+                return true
+            }
+            if controller.retranscribing {
+                // Text is read-only meanwhile; Esc stops, ⌘C/⌘A still work, the rest is swallowed.
+                if isEscape { controller.escapePressed() }
+                else if command { _ = editingCommand(event, shift: flags.contains(.shift)) }
+                return true
+            }
+            if controller.confirmingLanguageSwitch, isReturn, !flags.contains(.shift) {
+                controller.switchLanguage()
+                return true
+            }
             if isEscape { controller.escapePressed(); return true }
             if isReturn && flags.contains(.shift) { controller.copyAndClose(); return true }
-            if flags.contains(.command), editingCommand(event, shift: flags.contains(.shift)) { return true }
+            if command, editingCommand(event, shift: flags.contains(.shift)) { return true }
             return false
         case .listening, .transcribing, .failed:
             if isEscape { controller.escapePressed() }

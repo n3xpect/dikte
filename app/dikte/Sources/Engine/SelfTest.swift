@@ -117,8 +117,8 @@ enum SelfTest {
         }
         try? await Task.sleep(for: .milliseconds(400))   // let the debounced config PUT land
 
-        if let path = o.wav {
-            await dictationTest(engine: engine, path: path, realtime: o.realtime)
+        if let path = o.wav, let result = await dictationTest(engine: engine, path: path, realtime: o.realtime) {
+            await retranscribeTest(engine: engine, result: result)
         }
         await cancelTest(engine: engine)
 
@@ -141,13 +141,14 @@ enum SelfTest {
         return failures.isEmpty
     }
 
-    private static func dictationTest(engine: EngineController, path: String, realtime: Bool) async {
+    @discardableResult
+    private static func dictationTest(engine: EngineController, path: String, realtime: Bool) async -> DictationResult? {
         let samples: [Float]
         do {
             samples = try readWav(URL(fileURLWithPath: path))
         } catch {
             check(false, "dictation", ["error": "WAV okunamadı: \(error)"])
-            return
+            return nil
         }
         let session = engine.makeDictation()
         let chunk = 1600   // 100 ms
@@ -175,8 +176,38 @@ enum SelfTest {
             "fixes": result?.fixes.map { [$0.wrong, $0.right] } ?? [],
             "transcribe_s": result?.transcribeSeconds ?? NSNull(),
             "model": result?.model ?? NSNull(),
+            "language": result?.language ?? NSNull(),
+            "dictation_id": result?.dictationId ?? NSNull(),
             "wall_s": Date().timeIntervalSince(t0),
         ])
+        return result
+    }
+
+    /// POST /retranscribe in the other language, then with an unknown id (→ `dictation_expired`).
+    private static func retranscribeTest(engine: EngineController, result: DictationResult) async {
+        guard let id = result.dictationId else {
+            out(["step": "retranscribe", "skipped": "engine sent no dictation_id (api v1)"])
+            return
+        }
+        let target = result.language == "en" ? "tr" : "en"
+        let t0 = Date()
+        do {
+            let r = try await engine.retranscribe(dictationId: id, language: target)
+            check(r.language == target && !r.text.isEmpty, "retranscribe", [
+                "language": r.language, "text": r.text, "dictation_id": r.dictationId ?? NSNull(),
+                "wall_s": Date().timeIntervalSince(t0),
+            ])
+        } catch {
+            check(false, "retranscribe", ["error": "\(error)"])
+        }
+        do {
+            _ = try await engine.retranscribe(dictationId: "selftest-unknown", language: target)
+            check(false, "retranscribe_expired", ["error": "no error thrown"])
+        } catch let e as EngineAPIError {
+            check(e.error == "dictation_expired", "retranscribe_expired", ["code": e.error, "message": e.message])
+        } catch {
+            check(false, "retranscribe_expired", ["error": "\(error)"])
+        }
     }
 
     private static func cancelTest(engine: EngineController) async {

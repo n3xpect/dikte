@@ -12,9 +12,9 @@ enum MainTab: String, CaseIterable, Identifiable {
 extension MainTab {
     var title: String {
         switch self {
-        case .settings: "Ayarlar"
-        case .models: "Modeller"
-        case .history: "Geçmiş"
+        case .settings: L("Ayarlar")
+        case .models: L("Modeller")
+        case .history: L("Geçmiş")
         }
     }
 
@@ -83,6 +83,8 @@ struct MainSplitView<Detail: View>: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .navigationTitle(tab.title)
         }
+        // System-formatted values (number fields, controls) follow the app's UI language.
+        .environment(\.locale, Localizer.shared.language.locale)
     }
 }
 

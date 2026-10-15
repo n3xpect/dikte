@@ -8,6 +8,11 @@ extension KeyboardShortcuts.Name {
 }
 
 enum Hotkeys {
+    /// The current dictation shortcut as shown in menus, e.g. "⌥Space"; "—" if none is set.
+    static var dictateDisplay: String {
+        KeyboardShortcuts.getShortcut(for: .dictate)?.description ?? "—"
+    }
+
     static func install(dictation: DictationController) {
         KeyboardShortcuts.onKeyDown(for: .dictate) {
             dictation.hotkeyPressed()

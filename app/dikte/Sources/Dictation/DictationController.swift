@@ -40,12 +40,25 @@ final class DictationController {
     /// `.failed` used as a short notice ("Konuşma algılanmadı") that closes by itself.
     private(set) var isNotice = false
 
+    /// Language of the text shown in `.editing` ("tr" | "en"); the panel shows it as a badge.
+    private(set) var language = "tr"
+    /// The engine kept this recording, so it can be transcribed again in the other language.
+    private(set) var canSwitchLanguage = false
+    /// Re-transcription in the other language is running (spinner over the text area).
+    private(set) var retranscribing = false
+    /// Badge / ⌘L after the user edited the text: waiting for "Çevir" or "Vazgeç".
+    private(set) var confirmingLanguageSwitch = false
+    /// Inline error under the text area when re-transcription failed.
+    private(set) var languageError: String?
+
+    var otherLanguage: String { language == "en" ? "tr" : "en" }
+
     enum FailureAction: Equatable {
         case openMicrophoneSettings, openModels
         var title: String {
             switch self {
-            case .openMicrophoneSettings: "Sistem Ayarları'nı aç"
-            case .openModels: "Modeller'i aç"
+            case .openMicrophoneSettings: L("Sistem Ayarları'nı aç")
+            case .openModels: L("Modeller'i aç")
             }
         }
     }
@@ -58,6 +71,9 @@ final class DictationController {
     @ObservationIgnored private var runTask: Task<Void, Never>?
     @ObservationIgnored private var noticeTask: Task<Void, Never>?
     @ObservationIgnored private var result: DictationResult?
+    /// `text` as last filled in from a result; anything else counts as the user's edit.
+    @ObservationIgnored private var shownText = ""
+    @ObservationIgnored private var retranscribeTask: Task<Void, Never>?
     /// Bumped on every start/teardown; callbacks from older recordings are ignored.
     @ObservationIgnored private var generation = 0
     /// Audio captured before the engine session exists (engine still starting).
@@ -99,7 +115,8 @@ final class DictationController {
 
     /// Shift+Enter in `.editing`: copy to clipboard, write history, show suggestions or close.
     func copyAndClose() {
-        guard phase == .editing, suggestions.isEmpty else { return }
+        guard phase == .editing, suggestions.isEmpty, !retranscribing else { return }
+        confirmingLanguageSwitch = false
         let final = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !final.isEmpty else {
             writeHistory(final, copied: false)
@@ -111,7 +128,7 @@ final class DictationController {
         pasteboard.setString(final, forType: .string)
         writeHistory(final, copied: true)
         let found = result.map {
-            FixLearning.suggestions(original: $0.text, edited: final, terms: app.terms.terms)
+            FixLearning.suggestions(original: $0.text, edited: final, terms: app.terms.terms, language: $0.language)
         } ?? []
         if found.isEmpty {
             close()
@@ -129,11 +146,89 @@ final class DictationController {
             session?.cancel()
             close()
         case .editing:
-            writeHistory(text.trimmingCharacters(in: .whitespacesAndNewlines), copied: false)
-            close()
+            if retranscribing {
+                stopRetranscribing()
+            } else if confirmingLanguageSwitch {
+                confirmingLanguageSwitch = false
+            } else {
+                writeHistory(text.trimmingCharacters(in: .whitespacesAndNewlines), copied: false)
+                close()
+            }
         case .failed:
             close()
         }
+    }
+
+    // MARK: - Language switch
+
+    /// Badge click / ⌘L in `.editing`: transcribe the same recording again in the other language.
+    /// If the user changed the text, the first call only asks (`confirmingLanguageSwitch`).
+    func switchLanguage() {
+        guard phase == .editing, suggestions.isEmpty, !retranscribing else { return }
+        languageError = nil
+        if !confirmingLanguageSwitch, text.trimmingCharacters(in: .whitespacesAndNewlines) != shownText {
+            confirmingLanguageSwitch = true
+            return
+        }
+        confirmingLanguageSwitch = false
+        guard let id = result?.dictationId else {
+            languageError = L("Kayıt artık yok")
+            return
+        }
+        let target = otherLanguage
+        let gen = generation
+        retranscribing = true
+        retranscribeTask = Task {
+            let outcome: Result<DictationResult, Error>
+            do {
+                outcome = .success(try await self.app.engine.retranscribe(dictationId: id, language: target))
+            } catch {
+                outcome = .failure(error)
+            }
+            guard !Task.isCancelled, self.generation == gen, self.phase == .editing else { return }
+            self.retranscribing = false
+            self.retranscribeTask = nil
+            switch outcome {
+            case .success(var r):
+                let t = r.text.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !t.isEmpty else {
+                    self.languageError = L("Konuşma algılanmadı")
+                    return
+                }
+                if r.dictationId == nil { r.dictationId = id }
+                self.result = r
+                self.setResultText(t, language: r.language)
+            case .failure(let error):
+                self.languageError = Self.retranscribeMessage(error)
+            }
+        }
+    }
+
+    /// "Vazgeç" in the confirmation row.
+    func cancelLanguageSwitch() {
+        confirmingLanguageSwitch = false
+    }
+
+    private func stopRetranscribing() {
+        retranscribeTask?.cancel()
+        retranscribeTask = nil
+        retranscribing = false
+    }
+
+    private static func retranscribeMessage(_ error: Error) -> String {
+        guard let e = error as? EngineAPIError else { return error.localizedDescription }
+        switch e.error {
+        case "dictation_expired": return L("Kayıt artık yok")
+        case "busy": return L("Motor meşgul — biraz sonra tekrar dene.")
+        default: return e.message.isEmpty ? L("Yeniden çevrilemedi.") : e.message
+        }
+    }
+
+    private func setResultText(_ t: String, language: String) {
+        text = t
+        shownText = t
+        self.language = language
+        canSwitchLanguage = result?.dictationId != nil
     }
 
     func acceptSuggestion(_ s: FixSuggestion) {
@@ -228,7 +323,7 @@ final class DictationController {
             onInterrupted: {
                 DispatchQueue.main.async {
                     guard self.generation == gen, self.phase == .listening else { return }
-                    self.fail("Mikrofon bağlantısı kesildi.", hint: "Mikrofonu kontrol edip tekrar dene.")
+                    self.fail(L("Mikrofon bağlantısı kesildi."), hint: L("Mikrofonu kontrol edip tekrar dene."))
                 }
             }
         )
@@ -236,13 +331,18 @@ final class DictationController {
             try capture.start(deviceUID: app.settings.settings.microphoneUID)
             self.capture = capture
         } catch {
-            fail(error.localizedDescription, hint: "Ayarlar'da başka bir mikrofon seçmeyi dene.")
+            let message = switch error as? AudioCapture.CaptureError {
+            case .noDevice: L("Mikrofon bulunamadı.")
+            case .startFailed(let reason): L("Mikrofon açılamadı: %@", reason)
+            case .tooManyRestarts, nil: L("Mikrofon açılamadı: %@", error.localizedDescription)
+            }
+            fail(message, hint: L("Ayarlar'da başka bir mikrofon seçmeyi dene."))
         }
     }
 
     private func failMicrophonePermission() {
-        fail("Mikrofon izni yok — Sistem Ayarları › Gizlilik › Mikrofon",
-             hint: "Dikte'ye mikrofon izni verip tekrar dene.", action: .openMicrophoneSettings)
+        fail(L("Mikrofon izni yok — Sistem Ayarları › Gizlilik › Mikrofon"),
+             hint: L("Dikte'ye mikrofon izni verip tekrar dene."), action: .openMicrophoneSettings)
     }
 
     private func receive(samples: [Float], _ gen: Int) {
@@ -279,9 +379,9 @@ final class DictationController {
                 guard generation == gen else { return }
                 if Date() > deadline {
                     if case .failed(let message) = engine.status {
-                        fail(message, hint: "Sorun sürerse Dikte'yi yeniden başlat.")
+                        fail(message, hint: L("Sorun sürerse Dikte'yi yeniden başlat."))
                     } else {
-                        fail("Motor başlatılamadı.", hint: "Sorun sürerse Dikte'yi yeniden başlat.")
+                        fail(L("Motor başlatılamadı."), hint: L("Sorun sürerse Dikte'yi yeniden başlat."))
                     }
                     return
                 }
@@ -322,7 +422,7 @@ final class DictationController {
             show(r)
         case .error(let code, let message):
             let (hint, action) = Self.hint(forEngineError: code)
-            fail(message.isEmpty ? "Motor hatası (\(code))." : message, hint: hint, action: action)
+            fail(message.isEmpty ? L("Motor hatası (%@).", code) : message, hint: hint, action: action)
         case .closed:
             sessionClosed()
         }
@@ -332,7 +432,7 @@ final class DictationController {
         switch reason {
         case .noSpeech:
             stopCapture()
-            notice("Konuşma algılanmadı")
+            notice(L("Konuşma algılanmadı"))
         case .cancel:
             if phase == .listening || phase == .transcribing { close() }
         case .silence, .finish, .maxDuration:
@@ -348,11 +448,11 @@ final class DictationController {
         modelLoading = false
         let t = r.text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !t.isEmpty else {
-            notice("Konuşma algılanmadı")
+            notice(L("Konuşma algılanmadı"))
             return
         }
         result = r
-        text = t
+        setResultText(t, language: r.language)
         phase = .editing
         panel.show()
     }
@@ -362,20 +462,20 @@ final class DictationController {
         session = nil
         guard phase == .listening || phase == .transcribing else { return }
         if recordingEnded && !speechDetected {
-            notice("Konuşma algılanmadı")
+            notice(L("Konuşma algılanmadı"))
         } else {
-            fail("Motorla bağlantı kesildi.", hint: "Tekrar dene; sorun sürerse Dikte'yi yeniden başlat.")
+            fail(L("Motorla bağlantı kesildi."), hint: L("Tekrar dene; sorun sürerse Dikte'yi yeniden başlat."))
         }
     }
 
     private static func hint(forEngineError code: String) -> (String?, FailureAction?) {
         switch code {
         case "model_not_downloaded", "no_model_selected":
-            ("Modeller sekmesinden bir model indirip seç.", .openModels)
+            (L("Modeller sekmesinden bir model indirip seç."), .openModels)
         case "insufficient_ram":
-            ("Bazı uygulamaları kapatıp tekrar dene ya da daha küçük bir model seç.", .openModels)
+            (L("Bazı uygulamaları kapatıp tekrar dene ya da daha küçük bir model seç."), .openModels)
         default:
-            ("Sorun sürerse Dikte'yi yeniden başlat.", nil)
+            (L("Sorun sürerse Dikte'yi yeniden başlat."), nil)
         }
     }
 
@@ -427,6 +527,7 @@ final class DictationController {
         runTask = nil
         noticeTask?.cancel()
         noticeTask = nil
+        stopRetranscribing()
         stopCapture()
         pending = []
     }
@@ -441,6 +542,12 @@ final class DictationController {
         failureAction = nil
         isNotice = false
         result = nil
+        shownText = ""
+        language = "tr"
+        canSwitchLanguage = false
+        retranscribing = false
+        confirmingLanguageSwitch = false
+        languageError = nil
         finishRequested = false
         recordingEnded = false
         historyWritten = false
@@ -450,7 +557,8 @@ final class DictationController {
         guard let r = result, !historyWritten else { return }
         historyWritten = true
         app.history.add(HistoryEntry(rawText: r.rawText, editedText: final, copied: copied, model: r.model,
-                                     audioSeconds: r.audioSeconds, transcribeSeconds: r.transcribeSeconds))
+                                     audioSeconds: r.audioSeconds, transcribeSeconds: r.transcribeSeconds,
+                                     language: r.language))
     }
 
     private var panel: DictationPanelController {
@@ -464,11 +572,13 @@ final class DictationController {
 #if DEBUG
 extension DictationController {
     enum PreviewState: String, CaseIterable {
-        case listening, listeningModelLoading, transcribing, editing, suggestions, failed, notice
+        case listening, listeningModelLoading, transcribing, editing, editingEnglish, retranscribing,
+             confirmSwitch, languageError, suggestions, failed, notice
     }
 
     /// Controller frozen in a phase, for `#Preview` and snapshot rendering.
     static func preview(_ state: PreviewState) -> DictationController {
+        let turkish = "Redis cache'ini temizledikten sonra branch'i main'e merge edip pull request açalım."
         let c = DictationController()
         c.levels = (0..<waveformBarCount).map { i in
             let x = Float(i) / Float(waveformBarCount)
@@ -484,19 +594,37 @@ extension DictationController {
             c.levels = c.levels.map { $0 * 0.3 }
         case .transcribing:
             c.phase = .transcribing
-        case .editing:
+        case .editing, .retranscribing, .confirmSwitch, .languageError:
             c.phase = .editing
-            c.text = "Redis cache'ini temizledikten sonra branch'i main'e merge edip pull request açalım."
+            c.result = DictationResult(rawText: turkish, text: turkish, fixes: [], audioSeconds: 6.1,
+                                       transcribeSeconds: 0.9, model: "large-v3", language: "tr",
+                                       dictationId: "preview")
+            c.setResultText(turkish, language: "tr")
+            switch state {
+            case .retranscribing: c.retranscribing = true
+            case .confirmSwitch:
+                c.text = turkish.replacingOccurrences(of: "açalım", with: "hemen açalım")
+                c.confirmingLanguageSwitch = true
+            case .languageError: c.languageError = L("Kayıt artık yok")
+            default: break
+            }
+        case .editingEnglish:
+            let english = "Let's clear the Redis cache, merge the branch into main and open a pull request."
+            c.phase = .editing
+            c.result = DictationResult(rawText: english, text: english, fixes: [], audioSeconds: 6.1,
+                                       transcribeSeconds: 0.9, model: "large-v3", language: "en",
+                                       dictationId: "preview")
+            c.setResultText(english, language: "en")
         case .suggestions:
             c.phase = .editing
             c.suggestions = [FixSuggestion(wrong: "cage", right: "cache"),
                              FixSuggestion(wrong: "get hub", right: "GitHub")]
         case .failed:
-            c.phase = .failed("Seçili model indirilmemiş.")
-            c.failureHint = "Modeller sekmesinden bir model indirip seç."
+            c.phase = .failed(L("Seçili model indirilmemiş."))
+            c.failureHint = L("Modeller sekmesinden bir model indirip seç.")
             c.failureAction = .openModels
         case .notice:
-            c.phase = .failed("Konuşma algılanmadı")
+            c.phase = .failed(L("Konuşma algılanmadı"))
             c.isNotice = true
         }
         return c

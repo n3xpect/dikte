@@ -44,7 +44,7 @@ final class DictationSession {
         guard !started, !closed else { return }
         started = true
         guard let port, let url = URL(string: "ws://127.0.0.1:\(port)/dictate?token=\(token)") else {
-            emit(.error(code: "engine_not_running", message: "Motor çalışmıyor"))
+            emit(.error(code: "engine_not_running", message: L("Motor çalışmıyor")))
             close()
             return
         }
@@ -72,7 +72,7 @@ final class DictationSession {
                     || endReason == .noSpeech || endReason == .cancel
                 if !expectedClose {
                     log.error("/dictate dropped: \(error.localizedDescription, privacy: .public)")
-                    emit(.error(code: "connection_lost", message: "Motor bağlantısı koptu"))
+                    emit(.error(code: "connection_lost", message: L("Motor bağlantısı koptu")))
                 }
                 close()
             }
@@ -122,7 +122,7 @@ final class DictationSession {
     private func sendFailed(_ error: Error) {
         guard !closed, !gotTerminal, !cancelRequested else { return }
         log.error("/dictate send failed: \(error.localizedDescription, privacy: .public)")
-        emit(.error(code: "connection_lost", message: "Motor bağlantısı koptu"))
+        emit(.error(code: "connection_lost", message: L("Motor bağlantısı koptu")))
         close()
     }
 
@@ -132,12 +132,6 @@ final class DictationSession {
         var reason: String?
         var code: String?
         var message: String?
-        var rawText: String?
-        var text: String?
-        var fixes: [[String]]?
-        var audioS: Double?
-        var transcribeS: Double?
-        var model: String?
     }
 
     private func handle(_ message: URLSessionWebSocketTask.Message) {
@@ -157,20 +151,13 @@ final class DictationSession {
             emit(.transcribing)
         case "result":
             gotTerminal = true
-            let fixes = (m.fixes ?? []).compactMap { pair in
-                pair.count == 2 ? (wrong: pair[0], right: pair[1]) : nil
-            }
-            emit(.result(DictationResult(rawText: m.rawText ?? m.text ?? "",
-                                         text: m.text ?? m.rawText ?? "",
-                                         fixes: fixes,
-                                         audioSeconds: m.audioS ?? 0,
-                                         transcribeSeconds: m.transcribeS ?? 0,
-                                         model: m.model ?? "")))
+            let payload = try? EngineJSON.decoder.decode(DictationResultPayload.self, from: Data(s.utf8))
+            emit(.result((payload ?? DictationResultPayload()).result))
             close()
         case "error":
             gotTerminal = true
             audioStopped = true
-            emit(.error(code: m.code ?? "error", message: m.message ?? "Bilinmeyen motor hatası"))
+            emit(.error(code: m.code ?? "error", message: m.message ?? L("Bilinmeyen motor hatası")))
             close()
         default:
             break
@@ -192,5 +179,32 @@ final class DictationSession {
         socket = nil
         continuation.yield(.closed)
         continuation.finish()
+    }
+}
+
+/// `/dictate` `result` message and `POST /retranscribe` response. Fields from api.md v2
+/// (`language`, `dictation_id`) are optional so older engines still decode.
+struct DictationResultPayload: Decodable {
+    var rawText: String?
+    var text: String?
+    var fixes: [[String]]?
+    var audioS: Double?
+    var transcribeS: Double?
+    var model: String?
+    var language: String?
+    var dictationId: String?
+
+    var result: DictationResult {
+        let fixes = (fixes ?? []).compactMap { pair in
+            pair.count == 2 ? (wrong: pair[0], right: pair[1]) : nil
+        }
+        return DictationResult(rawText: rawText ?? text ?? "",
+                               text: text ?? rawText ?? "",
+                               fixes: fixes,
+                               audioSeconds: audioS ?? 0,
+                               transcribeSeconds: transcribeS ?? 0,
+                               model: model ?? "",
+                               language: language == "en" ? "en" : "tr",
+                               dictationId: dictationId.flatMap { $0.isEmpty ? nil : $0 })
     }
 }

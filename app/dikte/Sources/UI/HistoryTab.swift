@@ -47,12 +47,14 @@ struct HistoryView: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 10) {
-                SearchField(prompt: "Geçmişte ara", text: $query)
+                SearchField(prompt: L("Geçmişte ara"), text: $query)
                     .frame(maxWidth: 320)
-                Text(query.isEmpty ? "\(entries.count) kayıt" : "\(filtered.count) / \(entries.count) kayıt")
+                Text(query.isEmpty
+                     ? Fmt.count(entries.count, one: L("1 kayıt"), other: { L("%@ kayıt", $0) })
+                     : L("%@ / %@ kayıt", Fmt.int(filtered.count), Fmt.int(entries.count)))
                     .font(.callout).foregroundStyle(.secondary).monospacedDigit()
                 Spacer()
-                Button("Tümünü temizle", systemImage: "trash", role: .destructive) { confirmClear = true }
+                Button(L("Tümünü temizle"), systemImage: "trash", role: .destructive) { confirmClear = true }
                     .disabled(entries.isEmpty)
             }
             .padding(.horizontal, 14)
@@ -64,22 +66,23 @@ struct HistoryView: View {
                 detail.frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
-        .confirmationDialog("Tüm geçmiş silinsin mi?", isPresented: $confirmClear) {
-            Button("Tümünü sil", role: .destructive) {
+        .confirmationDialog(L("Tüm geçmiş silinsin mi?"), isPresented: $confirmClear) {
+            Button(L("Tümünü sil"), role: .destructive) {
                 clear()
                 selection = nil
             }
-            Button("Vazgeç", role: .cancel) {}
+            Button(L("Vazgeç"), role: .cancel) {}
         } message: {
-            Text("\(entries.count) kayıt kalıcı olarak silinir.")
+            Text(Fmt.count(entries.count, one: L("1 kayıt kalıcı olarak silinir."),
+                           other: { L("%@ kayıt kalıcı olarak silinir.", $0) }))
         }
     }
 
     @ViewBuilder private var list: some View {
         if entries.isEmpty {
-            placeholder("Henüz dikte yok", "⌥Space ile dikte ettiklerin burada görünür.", "clock")
+            placeholder(L("Henüz dikte yok"), L("%@ ile dikte ettiklerin burada görünür.", Hotkeys.dictateDisplay), "clock")
         } else if filtered.isEmpty {
-            placeholder("Sonuç yok", "“\(query)” için kayıt bulunamadı.", "magnifyingglass")
+            placeholder(L("Sonuç yok"), L("“%@” için kayıt bulunamadı.", query), "magnifyingglass")
         } else {
             List(filtered, selection: $selection) { entry in
                 HistoryRow(entry: entry, modelLabel: modelLabel(entry.model),
@@ -87,10 +90,10 @@ struct HistoryView: View {
                            delete: { remove(entry.id) })
                     .tag(entry.id)
                     .contextMenu {
-                        Button("Kopyala") { Clipboard.copy(entry.editedText) }
-                        Button("Ham metni kopyala") { Clipboard.copy(entry.rawText) }
+                        Button(L("Kopyala")) { Clipboard.copy(entry.editedText) }
+                        Button(L("Ham metni kopyala")) { Clipboard.copy(entry.rawText) }
                         Divider()
-                        Button("Sil", role: .destructive) { remove(entry.id) }
+                        Button(L("Sil"), role: .destructive) { remove(entry.id) }
                     }
             }
             .listStyle(.inset)
@@ -102,7 +105,7 @@ struct HistoryView: View {
         if let entry = selected {
             HistoryDetail(entry: entry, modelLabel: modelLabel(entry.model), delete: { remove(entry.id) })
         } else {
-            placeholder("Kayıt seç", "Ham çıktı ile son metin arasındaki farkları görmek için soldan bir kayıt seç.",
+            placeholder(L("Kayıt seç"), L("Ham çıktı ile son metin arasındaki farkları görmek için soldan bir kayıt seç."),
                         "text.magnifyingglass")
         }
     }
@@ -125,15 +128,25 @@ struct HistoryView: View {
 private struct CopiedTag: View {
     var copied: Bool
     var body: some View {
-        Badge(text: copied ? "kopyalandı" : "kopyalanmadı",
+        Badge(text: copied ? L("kopyalandı") : L("kopyalanmadı"),
               systemImage: copied ? "doc.on.clipboard" : nil,
               color: copied ? Palette.loaded : .secondary,
               style: copied ? .tinted : .outline)
     }
 }
 
+/// Dictation language of an entry; entries from before 0.2.0 have none and were Turkish.
+private struct LanguageTag: View {
+    var language: String?
+    var body: some View {
+        let code = (language ?? "tr").uppercased()
+        Badge(text: code, color: .secondary, style: .outline)
+            .help(code == "EN" ? L("İngilizce dikte") : code == "TR" ? L("Türkçe dikte") : code)
+    }
+}
+
 private func durations(_ e: HistoryEntry) -> String {
-    "\(Fmt.seconds(e.audioSeconds)) ses · \(Fmt.seconds(e.transcribeSeconds)) çeviri"
+    L("%@ ses · %@ çeviri", Fmt.seconds(e.audioSeconds), Fmt.seconds(e.transcribeSeconds))
 }
 
 private struct HistoryRow: View {
@@ -146,17 +159,18 @@ private struct HistoryRow: View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 6) {
                 Text(Fmt.date(entry.date)).font(.caption.weight(.semibold))
+                LanguageTag(language: entry.language)
                 CopiedTag(copied: entry.copied)
                 Spacer()
                 Button(action: copy) { Image(systemName: "doc.on.doc") }
-                    .buttonStyle(.borderless).help("Kopyala")
+                    .buttonStyle(.borderless).help(L("Kopyala"))
                 Button(action: delete) { Image(systemName: "trash") }
-                    .buttonStyle(.borderless).help("Sil")
+                    .buttonStyle(.borderless).help(L("Sil"))
             }
-            Text(entry.editedText.isEmpty ? "(boş)" : entry.editedText)
+            Text(entry.editedText.isEmpty ? L("(boş)") : entry.editedText)
                 .lineLimit(3)
                 .foregroundStyle(entry.editedText.isEmpty ? .secondary : .primary)
-            Text("\(modelLabel) · \(durations(entry))")
+            Text(verbatim: "\(modelLabel) · \(durations(entry))")
                 .font(.caption).foregroundStyle(.secondary)
         }
         .padding(.vertical, 4)
@@ -171,38 +185,38 @@ private struct HistoryDetail: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                HStack(alignment: .firstTextBaseline) {
-                    VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(alignment: .firstTextBaseline, spacing: 6) {
                         Text(Fmt.date(entry.date)).font(.headline)
-                        Text("\(modelLabel) · \(durations(entry))").font(.callout).foregroundStyle(.secondary)
+                        LanguageTag(language: entry.language)
+                        CopiedTag(copied: entry.copied)
                     }
-                    Spacer()
-                    CopiedTag(copied: entry.copied)
+                    Text(verbatim: "\(modelLabel) · \(durations(entry))").font(.callout).foregroundStyle(.secondary)
                 }
                 HStack {
-                    Button("Kopyala", systemImage: "doc.on.doc") { Clipboard.copy(entry.editedText) }
+                    Button(L("Kopyala"), systemImage: "doc.on.doc") { Clipboard.copy(entry.editedText) }
                         .keyboardShortcut("c", modifiers: [.command, .shift])
-                    Button("Sil", systemImage: "trash", role: .destructive, action: delete)
+                    Button(L("Sil"), systemImage: "trash", role: .destructive, action: delete)
                 }
 
-                section("Son metin") {
+                section(L("Son metin")) {
                     Text(entry.editedText).textSelection(.enabled)
                 }
-                section("Değişiklikler") {
+                section(L("Değişiklikler")) {
                     if entry.rawText == entry.editedText {
-                        Text("Ham çıktı değiştirilmeden kullanıldı.").foregroundStyle(.secondary)
+                        Text(L("Ham çıktı değiştirilmeden kullanıldı.")).foregroundStyle(.secondary)
                     } else {
                         Text(WordDiff.attributed(WordDiff.diff(entry.rawText, entry.editedText)))
                             .textSelection(.enabled)
                             .lineSpacing(3)
                         HStack(spacing: 12) {
-                            Text(WordDiff.attributed([.removed("silinen")]))
-                            Text(WordDiff.attributed([.added("eklenen")]))
+                            Text(WordDiff.attributed([.removed(L("silinen"))]))
+                            Text(WordDiff.attributed([.added(L("eklenen"))]))
                         }
                         .font(.caption)
                     }
                 }
-                section("Ham çıktı") {
+                section(L("Ham çıktı")) {
                     Text(entry.rawText).textSelection(.enabled).foregroundStyle(.secondary)
                 }
             }

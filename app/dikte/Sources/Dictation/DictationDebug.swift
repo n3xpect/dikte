@@ -3,7 +3,7 @@ import AppKit
 import SwiftUI
 
 /// Debug-only hook: launching with env `DIKTE_DICTATION_SNAPSHOTS=<dir>` runs `DictationSelfCheck`,
-/// renders every panel phase to `<dir>/<state>.png` and quits.
+/// renders every panel phase to `<dir>/<state>[-en][-dark].png` (Turkish and English UI) and quits.
 enum DictationDebug {
     static func runIfRequested() {
         guard let dir = ProcessInfo.processInfo.environment["DIKTE_DICTATION_SNAPSHOTS"], !dir.isEmpty else { return }
@@ -13,11 +13,16 @@ enum DictationDebug {
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         // RunLoop (not GCD) so the nested run loops below can still drain the main queue.
         RunLoop.main.perform { MainActor.assumeIsolated {
-            for appearance in [NSAppearance.Name.aqua, .darkAqua] {
-                for state in DictationController.PreviewState.allCases {
-                    render(state, appearance: appearance, to: folder)
+            let uiLanguage = Localizer.shared.language
+            for language in AppLanguage.allCases {
+                Localizer.shared.language = language
+                for appearance in [NSAppearance.Name.aqua, .darkAqua] {
+                    for state in DictationController.PreviewState.allCases {
+                        render(state, appearance: appearance, to: folder)
+                    }
                 }
             }
+            Localizer.shared.language = uiLanguage
             checkRealPanel()
             exit(failures.isEmpty ? 0 : 1)
         } }
@@ -56,7 +61,7 @@ enum DictationDebug {
         RunLoop.current.run(until: Date().addingTimeInterval(0.3))
         guard let rep = host.bitmapImageRepForCachingDisplay(in: host.bounds) else { return }
         host.cacheDisplay(in: host.bounds, to: rep)
-        let suffix = appearance == .darkAqua ? "-dark" : ""
+        let suffix = (Localizer.shared.language == .en ? "-en" : "") + (appearance == .darkAqua ? "-dark" : "")
         let url = folder.appendingPathComponent("\(state.rawValue)\(suffix).png")
         try? rep.representation(using: .png, properties: [:])?.write(to: url)
         print("snapshot:", url.path, size)

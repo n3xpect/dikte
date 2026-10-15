@@ -93,7 +93,7 @@ final class EngineController {
         let gen = generation
         guard let python = Paths.enginePython, let dir = Paths.engineDir else {
             wantRunning = false
-            status = .failed("Motor bulunamadı: Python ortamı yok. Uygulamayı yeniden kurmayı dene.")
+            status = .failed(L("Motor bulunamadı: Python ortamı yok. Uygulamayı yeniden kurmayı dene."))
             return
         }
         status = .starting
@@ -133,7 +133,7 @@ final class EngineController {
         } catch {
             engineLog.note("launch failed: \(error.localizedDescription)")
             process = nil
-            scheduleRestartOrFail("Motor başlatılamadı: \(error.localizedDescription)", gen: gen)
+            scheduleRestartOrFail(L("Motor başlatılamadı: %@", error.localizedDescription), gen: gen)
             return
         }
         process = p
@@ -157,7 +157,7 @@ final class EngineController {
             self.generation += 1
             self.process?.terminate()
             self.process = nil
-            self.status = .failed("Motor 60 saniye içinde hazır olmadı. Ayrıntılar: logs/engine.log")
+            self.status = .failed(L("Motor 60 saniye içinde hazır olmadı. Ayrıntılar: logs/engine.log"))
         }
     }
 
@@ -198,7 +198,10 @@ final class EngineController {
         models = []
         system = nil
         guard wantRunning else { status = .stopped; return }
-        scheduleRestartOrFail("Motor beklenmedik şekilde durdu (\(signaled ? "sinyal" : "çıkış kodu") \(code)). Ayrıntılar: logs/engine.log", gen: gen)
+        let message = signaled
+            ? L("Motor beklenmedik şekilde durdu (sinyal %d). Ayrıntılar: logs/engine.log", code)
+            : L("Motor beklenmedik şekilde durdu (çıkış kodu %d). Ayrıntılar: logs/engine.log", code)
+        scheduleRestartOrFail(message, gen: gen)
     }
 
     private func scheduleRestartOrFail(_ message: String, gen: Int) {
@@ -335,12 +338,15 @@ final class EngineController {
         _ = try await request("DELETE", "/models/custom/\(Self.segment(id))")
     }
 
-    /// `GET /terms/default` → `{"terms": [Term]}` (a bare array is accepted too).
     /// POST /retranscribe — the last dictation's audio again, in `language` ("tr" | "en").
+    /// May load the model first, so it gets a longer timeout than the other calls.
     func retranscribe(dictationId: String, language: String) async throws -> DictationResult {
-        throw EngineAPIError(error: "not_implemented", message: "")
+        let data = try await request("POST", "/retranscribe",
+                                     json: ["dictation_id": dictationId, "language": language], timeout: 300)
+        return try Self.decode(DictationResultPayload.self, data).result
     }
 
+    /// `GET /terms/default` → `{"terms": [Term]}` (a bare array is accepted too).
     func defaultTerms() async throws -> [Term] {
         struct Wrapper: Decodable { var terms: [Term] }
         let data = try await request("GET", "/terms/default")
@@ -356,19 +362,22 @@ final class EngineController {
 
     // MARK: - HTTP
 
-    private func request(_ method: String, _ path: String, json: some Encodable) async throws -> Data {
-        try await request(method, path, body: try EngineJSON.encoder.encode(json))
+    private func request(_ method: String, _ path: String, json: some Encodable,
+                         timeout: TimeInterval? = nil) async throws -> Data {
+        try await request(method, path, body: try EngineJSON.encoder.encode(json), timeout: timeout)
     }
 
-    private func request(_ method: String, _ path: String, body: Data? = nil) async throws -> Data {
+    private func request(_ method: String, _ path: String, body: Data? = nil,
+                         timeout: TimeInterval? = nil) async throws -> Data {
         guard case .running(let port) = status else {
-            throw EngineAPIError(error: "engine_not_running", message: "Motor çalışmıyor")
+            throw EngineAPIError(error: "engine_not_running", message: L("Motor çalışmıyor"))
         }
         guard let url = URL(string: "http://127.0.0.1:\(port)\(path)") else {
-            throw EngineAPIError(error: "bad_request", message: "Geçersiz istek: \(path)")
+            throw EngineAPIError(error: "bad_request", message: L("Geçersiz istek: %@", path))
         }
         var req = URLRequest(url: url)
         req.httpMethod = method
+        if let timeout { req.timeoutInterval = timeout }
         req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         if let body {
             req.httpBody = body
@@ -379,12 +388,12 @@ final class EngineController {
         do {
             (data, response) = try await urlSession.data(for: req)
         } catch {
-            throw EngineAPIError(error: "network", message: "Motora ulaşılamadı: \(error.localizedDescription)")
+            throw EngineAPIError(error: "network", message: L("Motora ulaşılamadı: %@", error.localizedDescription))
         }
         let code = (response as? HTTPURLResponse)?.statusCode ?? 0
         guard (200..<300).contains(code) else {
             if let apiError = try? EngineJSON.decoder.decode(EngineAPIError.self, from: data) { throw apiError }
-            throw EngineAPIError(error: "http_\(code)", message: "Motor hatası (HTTP \(code))")
+            throw EngineAPIError(error: "http_\(code)", message: L("Motor hatası (HTTP %ld)", code))
         }
         return data
     }
@@ -393,7 +402,7 @@ final class EngineController {
         do {
             return try EngineJSON.decoder.decode(T.self, from: data)
         } catch {
-            throw EngineAPIError(error: "bad_response", message: "Motordan beklenmeyen yanıt")
+            throw EngineAPIError(error: "bad_response", message: L("Motordan beklenmeyen yanıt"))
         }
     }
 
@@ -414,6 +423,7 @@ extension EngineConfig {
         if let v = other.silenceS { silenceS = v }
         if let v = other.maxDurationS { maxDurationS = v }
         if let v = other.language { language = v }
+        if let v = other.uiLanguage { uiLanguage = v }
         if let v = other.terms { terms = v }
     }
 }

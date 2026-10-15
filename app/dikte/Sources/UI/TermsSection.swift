@@ -23,11 +23,11 @@ struct TermsSection: View {
     var body: some View {
         Section {
             HStack {
-                SearchField(prompt: "Terimlerde ara", text: $query)
+                SearchField(prompt: L("Terimlerde ara"), text: $query)
                 Button {
                     editing = TermDraft(original: nil, term: query.trimmingCharacters(in: .whitespaces))
                 } label: {
-                    Label("Terim ekle", systemImage: "plus")
+                    Label(L("Terim ekle"), systemImage: "plus")
                 }
             }
             // Presentations hang off this single row: modifiers on a Section can be applied per row.
@@ -38,15 +38,15 @@ struct TermsSection: View {
                 }
             }
             .confirmationDialog(
-                "“\(pendingDelete?.term ?? "")” terimi silinsin mi?",
+                L("“%@” terimi silinsin mi?", pendingDelete?.term ?? ""),
                 isPresented: Binding(get: { pendingDelete != nil }, set: { if !$0 { pendingDelete = nil } }),
                 presenting: pendingDelete
             ) { term in
-                Button("Sil", role: .destructive) { actions.delete(term.term) }
-                Button("Vazgeç", role: .cancel) {}
+                Button(L("Sil"), role: .destructive) { actions.delete(term.term) }
+                Button(L("Vazgeç"), role: .cancel) {}
             }
             if filtered.isEmpty {
-                Text(terms.isEmpty ? "Henüz terim yok." : "Aramaya uyan terim yok.")
+                Text(terms.isEmpty ? L("Henüz terim yok.") : L("Aramaya uyan terim yok."))
                     .foregroundStyle(.secondary)
             }
             ForEach(filtered) { term in
@@ -56,16 +56,17 @@ struct TermsSection: View {
             }
         } header: {
             HStack {
-                Text("Terimler")
+                Text(L("Terimler"))
                 Spacer()
-                Text("\(terms.count) terim").foregroundStyle(.secondary)
+                Text(Fmt.count(terms.count, one: L("1 terim"), other: { L("%@ terim", $0) }))
+                    .foregroundStyle(.secondary)
             }
         } footer: {
             HStack(spacing: 12) {
-                Badge(text: "düzeltilir", color: Palette.loading)
-                Text("Model böyle yazarsa terime çevrilir.")
-                Badge(text: "kabul", color: .secondary)
-                Text("Doğru sayılan yazım.")
+                Badge(text: L("düzeltilir"), color: Palette.loading)
+                Text(L("Model böyle yazarsa terime çevrilir."))
+                Badge(text: L("kabul"), color: .secondary)
+                Text(L("Doğru sayılan yazım."))
             }
             .font(.caption)
             .foregroundStyle(.secondary)
@@ -90,10 +91,10 @@ private struct TermRow: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             Button(action: edit) { Image(systemName: "pencil") }
                 .buttonStyle(.borderless)
-                .help("Düzenle")
+                .help(L("Düzenle"))
             Button(action: delete) { Image(systemName: "trash") }
                 .buttonStyle(.borderless)
-                .help("Sil")
+                .help(L("Sil"))
         }
         .contentShape(Rectangle())
         .onTapGesture(count: 2, perform: edit)
@@ -144,38 +145,38 @@ struct TermEditor: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(draft.original == nil ? "Yeni terim" : "Terimi düzenle")
+            Text(draft.original == nil ? L("Yeni terim") : L("Terimi düzenle"))
                 .font(.headline)
                 .padding([.horizontal, .top], 20)
             Form {
                 Section {
-                    TextField("Terim", text: $draft.term, prompt: Text("ör. branch"))
+                    TextField(L("Terim"), text: $draft.term, prompt: Text(L("ör. %@", "branch")))
                     if overwrites {
-                        Text("Bu terim zaten var; kaydedersen üzerine yazılır.")
+                        Text(L("Bu terim zaten var; kaydedersen üzerine yazılır."))
                             .font(.callout).foregroundStyle(Palette.loading)
                     }
                 } footer: {
-                    Text("Metinde olması gereken doğru yazım.").font(.caption).foregroundStyle(.secondary)
+                    Text(L("Metinde olması gereken doğru yazım.")).font(.caption).foregroundStyle(.secondary)
                 }
                 Section {
-                    TextField("Düzeltilecek yazımlar", text: $draft.fix, prompt: Text("ör. brenç, branş"))
+                    TextField(L("Düzeltilecek yazımlar"), text: $draft.fix, prompt: Text(L("ör. %@", "brenç, branş")))
                 } footer: {
-                    Text("Virgülle ayır. Model bunlardan birini yazarsa terimle değiştirilir.")
+                    Text(L("Virgülle ayır. Model bunlardan birini yazarsa terimle değiştirilir."))
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 Section {
-                    TextField("Kabul edilen yazımlar", text: $draft.accept, prompt: Text("ör. branch, Branch"))
+                    TextField(L("Kabul edilen yazımlar"), text: $draft.accept, prompt: Text(L("ör. %@", "branch, Branch")))
                 } footer: {
-                    Text("Virgülle ayır. Bunlar doğru sayılır, değiştirilmez.")
+                    Text(L("Virgülle ayır. Bunlar doğru sayılır, değiştirilmez."))
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }
             .formStyle(.grouped)
             HStack {
                 Spacer()
-                Button("Vazgeç", role: .cancel) { dismiss() }
+                Button(L("Vazgeç"), role: .cancel) { dismiss() }
                     .keyboardShortcut(.cancelAction)
-                Button("Kaydet") {
+                Button(L("Kaydet")) {
                     save(draft.result)
                     dismiss()
                 }

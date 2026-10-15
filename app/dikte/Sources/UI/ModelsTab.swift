@@ -67,13 +67,13 @@ struct ModelsView: View {
             VStack(alignment: .leading, spacing: 12) {
                 engineCard
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Modeller").font(.title3.weight(.semibold))
-                    Text("Dikte, seçili modeli (◉) kullanır. Bellekte aynı anda tek model bulunur.")
+                    Text(L("Modeller")).font(.title3.weight(.semibold))
+                    Text(L("Dikte, seçili modeli (◉) kullanır. Bellekte aynı anda tek model bulunur."))
                         .font(.callout).foregroundStyle(.secondary)
                 }
                 .padding(.top, 8)
                 if models.isEmpty {
-                    Text(running ? "Model listesi bekleniyor…" : "Model listesi için motorun çalışması gerekiyor.")
+                    Text(running ? L("Model listesi bekleniyor…") : L("Model listesi için motorun çalışması gerekiyor."))
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity, minHeight: 80)
                 }
@@ -100,24 +100,24 @@ struct ModelsView: View {
             .padding(20)
         }
         .confirmationDialog(
-            "“\(pendingDelete?.label ?? "")” silinsin mi?",
+            L("“%@” silinsin mi?", pendingDelete?.label ?? ""),
             isPresented: Binding(get: { pendingDelete != nil }, set: { if !$0 { pendingDelete = nil } }),
             presenting: pendingDelete
         ) { m in
-            Button("Sil", role: .destructive) { run(m.id) { try await actions.delete(m.id) } }
-            Button("Vazgeç", role: .cancel) {}
+            Button(L("Sil"), role: .destructive) { run(m.id) { try await actions.delete(m.id) } }
+            Button(L("Vazgeç"), role: .cancel) {}
         } message: { m in
-            Text("Model dosyaları (\(Fmt.gb(m.downloadedBytes))) diskten silinir. Gerekirse yeniden indirebilirsin.")
+            Text(L("Model dosyaları (%@) diskten silinir. Gerekirse yeniden indirebilirsin.", Fmt.gb(m.downloadedBytes)))
         }
         .confirmationDialog(
-            "“\(pendingRemove?.label ?? "")” listeden kaldırılsın mı?",
+            L("“%@” listeden kaldırılsın mı?", pendingRemove?.label ?? ""),
             isPresented: Binding(get: { pendingRemove != nil }, set: { if !$0 { pendingRemove = nil } }),
             presenting: pendingRemove
         ) { m in
-            Button("Kaldır", role: .destructive) { run(m.id) { try await actions.removeCustom(m.id) } }
-            Button("Vazgeç", role: .cancel) {}
+            Button(L("Kaldır"), role: .destructive) { run(m.id) { try await actions.removeCustom(m.id) } }
+            Button(L("Vazgeç"), role: .cancel) {}
         } message: { _ in
-            Text("İndirilmiş dosyaları da silinir.")
+            Text(L("İndirilmiş dosyaları da silinir."))
         }
     }
 
@@ -130,7 +130,7 @@ struct ModelsView: View {
                 Text(status.display.text).font(.headline)
                     .lineLimit(2)
                 Spacer()
-                Button("Yeniden başlat", systemImage: "arrow.clockwise", action: actions.restartEngine)
+                Button(L("Yeniden başlat"), systemImage: "arrow.clockwise", action: actions.restartEngine)
                     .disabled(status == .starting)
             }
             if running {
@@ -139,10 +139,10 @@ struct ModelsView: View {
                 if let system {
                     HStack(spacing: 18) {
                         Label {
-                            Text("\(Fmt.gb(system.diskFreeBytes)) boş · en az \(Fmt.gb(system.minFreeBytes)) boş kalmalı")
+                            Text(L("%@ boş · en az %@ boş kalmalı", Fmt.gb(system.diskFreeBytes), Fmt.gb(system.minFreeBytes)))
                         } icon: { Image(systemName: "internaldrive") }
                         Label {
-                            Text("RAM: \(Fmt.gb(system.ramAvailableBytes)) kullanılabilir / \(Fmt.gb(system.ramTotalBytes))")
+                            Text(L("RAM: %@ kullanılabilir / %@", Fmt.gb(system.ramAvailableBytes), Fmt.gb(system.ramTotalBytes)))
                         } icon: { Image(systemName: "memorychip") }
                     }
                     .font(.callout)
@@ -165,19 +165,19 @@ struct ModelsView: View {
             Image(systemName: "memorychip.fill")
                 .foregroundStyle(loaded != nil ? Palette.loaded : loading != nil ? Palette.loading : .secondary)
             if let loaded {
-                Text("Bellekte:")
+                Text(L("Bellekte:"))
                 Text(loaded.label).fontWeight(.semibold).foregroundStyle(Palette.loadedText)
-                if let ram = loaded.ramBytes { Text("· ~\(Fmt.gb(ram)) RAM").foregroundStyle(.secondary) }
+                if let ram = loaded.ramBytes { Text(verbatim: "· ~\(Fmt.gb(ram)) RAM").foregroundStyle(.secondary) }
                 idleCountdown.foregroundStyle(.secondary)
             } else if let loading {
-                Text("Belleğe yükleniyor:")
+                Text(L("Belleğe yükleniyor:"))
                 Text(loading.label).fontWeight(.semibold).foregroundStyle(Palette.loading)
             } else {
-                Text("Bellekte model yok").foregroundStyle(.secondary)
-                Text("· ilk diktede seçili model yüklenir").foregroundStyle(.tertiary)
+                Text(L("Bellekte model yok")).foregroundStyle(.secondary)
+                Text(L("· ilk diktede seçili model yüklenir")).foregroundStyle(.tertiary)
             }
             Spacer()
-            Button("Şimdi boşalt", systemImage: "eject") {
+            Button(L("Şimdi boşalt"), systemImage: "eject") {
                 run(Self.engineKey) { try await actions.unload() }
             }
             .disabled(loaded == nil || busy.contains(Self.engineKey))
@@ -187,11 +187,11 @@ struct ModelsView: View {
     @ViewBuilder private var idleCountdown: some View {
         if let at = system?.idleUnloadAt {
             TimelineView(.periodic(from: .now, by: 1)) { ctx in
-                Text("· \(Fmt.countdown(at - ctx.date.timeIntervalSince1970)) sonra boşaltılacak")
+                Text(L("· %@ sonra boşaltılacak", Fmt.countdown(at - ctx.date.timeIntervalSince1970)))
                     .monospacedDigit()
             }
         } else if system?.idleUnloadS == 0 {
-            Text("· otomatik boşaltma kapalı")
+            Text(L("· otomatik boşaltma kapalı"))
         }
     }
 
@@ -199,15 +199,15 @@ struct ModelsView: View {
 
     private var customCard: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Hugging Face'ten model ekle").font(.headline)
-            Text("MLX Whisper modeli içeren bir deponun adını veya bağlantısını yaz.")
+            Text(L("Hugging Face'ten model ekle")).font(.headline)
+            Text(L("MLX Whisper modeli içeren bir deponun adını veya bağlantısını yaz."))
                 .font(.callout).foregroundStyle(.secondary)
             HStack {
-                TextField("Depo", text: $customRepo, prompt: Text("ör. mlx-community/whisper-large-v3-turbo"))
+                TextField(L("Depo"), text: $customRepo, prompt: Text(L("ör. %@", "mlx-community/whisper-large-v3-turbo")))
                     .textFieldStyle(.roundedBorder)
                     .onSubmit(addCustom)
                     .labelsHidden()
-                Button("Ekle", systemImage: "plus", action: addCustom)
+                Button(L("Ekle"), systemImage: "plus", action: addCustom)
                     .disabled(Self.normalizedRepo(customRepo) == nil || !running || busy.contains(Self.customKey))
                 if busy.contains(Self.customKey) { ProgressView().controlSize(.small) }
             }
@@ -244,7 +244,7 @@ struct ModelsView: View {
             defer { busy.remove(Self.customKey) }
             do {
                 let info = try await actions.addCustom(repo)
-                customMessage = ("“\(info.label)” eklendi. Kullanmak için indir.", false)
+                customMessage = (L("“%@” eklendi. Kullanmak için indir.", info.label), false)
                 customRepo = ""
             } catch {
                 customMessage = (Self.message(error), true)
@@ -321,15 +321,15 @@ private struct ModelRow: View {
                     .foregroundStyle(isSelected ? (isLoaded ? Palette.loaded : Color.accentColor) : .secondary)
             }
             .buttonStyle(.plain)
-            .help(isSelected ? "Dikte bu modeli kullanıyor" : "Dikte için bu modeli seç")
+            .help(isSelected ? L("Dikte bu modeli kullanıyor") : L("Dikte için bu modeli seç"))
 
             VStack(alignment: .leading, spacing: 6) {
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
                     Text(model.label)
                         .font(.headline)
                         .foregroundStyle(isLoaded ? Palette.loadedText : .primary)
-                    if model.recommended { Badge(text: "Önerilen", systemImage: "star.fill", color: .accentColor) }
-                    if model.custom { Badge(text: "Özel", color: .purple) }
+                    if model.recommended { Badge(text: L("Önerilen"), systemImage: "star.fill", color: .accentColor) }
+                    if model.custom { Badge(text: L("Özel"), color: .purple) }
                     Spacer(minLength: 8)
                     StateBadge(model: model)
                 }
@@ -389,7 +389,7 @@ private struct ModelRow: View {
         return VStack(alignment: .leading, spacing: 2) {
             ProgressView(value: p).tint(Palette.downloading)
             if let size = model.sizeBytes {
-                Text("\(Fmt.gb(model.downloadedBytes)) / \(Fmt.gb(size))")
+                Text(verbatim: "\(Fmt.gb(model.downloadedBytes)) / \(Fmt.gb(size))")
                     .font(.caption).foregroundStyle(.secondary).monospacedDigit()
             }
         }
@@ -398,13 +398,13 @@ private struct ModelRow: View {
     @ViewBuilder private var selectionHint: some View {
         switch model.state {
         case .notDownloaded, .paused:
-            Label("Seçili model henüz indirilmedi; dikte için önce indirmen gerekiyor.", systemImage: "info.circle")
+            Label(L("Seçili model henüz indirilmedi; dikte için önce indirmen gerekiyor."), systemImage: "info.circle")
                 .font(.callout).foregroundStyle(Palette.loading)
         case .downloading:
-            Label("İndirme bitince dikte bu modeli kullanır.", systemImage: "info.circle")
+            Label(L("İndirme bitince dikte bu modeli kullanır."), systemImage: "info.circle")
                 .font(.callout).foregroundStyle(.secondary)
         case .onDisk:
-            Label("İlk diktede belleğe yüklenir.", systemImage: "info.circle")
+            Label(L("İlk diktede belleğe yüklenir."), systemImage: "info.circle")
                 .font(.callout).foregroundStyle(.secondary)
         case .loading, .loaded:
             EmptyView()
@@ -414,29 +414,29 @@ private struct ModelRow: View {
     @ViewBuilder private var buttons: some View {
         switch model.state {
         case .notDownloaded:
-            Button("İndir", systemImage: "arrow.down.circle", action: download)
+            Button(L("İndir"), systemImage: "arrow.down.circle", action: download)
                 .buttonStyle(.borderedProminent)
                 .disabled(!(disk?.allowsDownload ?? true))
         case .downloading:
-            Button("Durdur", systemImage: "pause.fill", action: cancel)
+            Button(L("Durdur"), systemImage: "pause.fill", action: cancel)
         case .paused:
-            Button("Sil", systemImage: "trash") { delete(model) }
-            Button("Devam et", systemImage: "arrow.down.circle", action: download)
+            Button(L("Sil"), systemImage: "trash") { delete(model) }
+            Button(L("Devam et"), systemImage: "arrow.down.circle", action: download)
                 .buttonStyle(.borderedProminent)
                 .disabled(!(disk?.allowsDownload ?? true))
         case .onDisk:
-            Button("Sil", systemImage: "trash") { delete(model) }
-            Button("Yükle", systemImage: "memorychip", action: load)
+            Button(L("Sil"), systemImage: "trash") { delete(model) }
+            Button(L("Yükle"), systemImage: "memorychip", action: load)
         case .loading:
             EmptyView()
         case .loaded:
-            Button("Sil", systemImage: "trash") {}
+            Button(L("Sil"), systemImage: "trash") {}
                 .disabled(true)
-                .help("Bellekteki model silinemez; önce boşalt.")
-            Button("Boşalt", systemImage: "eject", action: unload)
+                .help(L("Bellekteki model silinemez; önce boşalt."))
+            Button(L("Boşalt"), systemImage: "eject", action: unload)
         }
         if model.custom {
-            Button("Listeden kaldır", systemImage: "xmark", action: remove)
+            Button(L("Listeden kaldır"), systemImage: "xmark", action: remove)
                 .disabled([.loaded, .loading, .downloading].contains(model.state))
         }
     }
@@ -448,22 +448,22 @@ private struct StateBadge: View {
     var body: some View {
         switch model.state {
         case .loaded:
-            Badge(text: "Bellekte", systemImage: "checkmark.circle.fill", color: Palette.loaded, style: .filled)
+            Badge(text: L("Bellekte"), systemImage: "checkmark.circle.fill", color: Palette.loaded, style: .filled)
         case .loading:
             TimelineView(.animation(minimumInterval: 1 / 30)) { ctx in
                 let phase = ctx.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 1.6) / 1.6
-                Badge(text: "Yükleniyor…", systemImage: "hourglass", color: Palette.loading, style: .filled)
+                Badge(text: L("Yükleniyor…"), systemImage: "hourglass", color: Palette.loading, style: .filled)
                     .opacity(0.7 + 0.3 * cos(phase * 2 * .pi))
             }
         case .onDisk:
-            Badge(text: "Diskte", systemImage: "internaldrive", color: .secondary)
+            Badge(text: L("Diskte"), systemImage: "internaldrive", color: .secondary)
         case .downloading:
-            Badge(text: "İndiriliyor \(Fmt.percent(model.progress ?? 0))", systemImage: "arrow.down.circle",
+            Badge(text: L("İndiriliyor %@", Fmt.percent(model.progress ?? 0)), systemImage: "arrow.down.circle",
                   color: Palette.downloading)
         case .paused:
-            Badge(text: "Duraklatıldı", systemImage: "pause.circle", color: Palette.downloading, style: .outline)
+            Badge(text: L("Duraklatıldı"), systemImage: "pause.circle", color: Palette.downloading, style: .outline)
         case .notDownloaded:
-            Badge(text: "İndirilmedi", color: .secondary, style: .outline)
+            Badge(text: L("İndirilmedi"), color: .secondary, style: .outline)
         }
     }
 }
@@ -477,18 +477,20 @@ private struct DiskGuardView: View {
     var body: some View {
         switch check {
         case .unknownFree:
-            Text("Boş alan bilgisi yok.").font(.callout).foregroundStyle(.secondary)
+            Text(L("Boş alan bilgisi yok.")).font(.callout).foregroundStyle(.secondary)
         case .unknownSize(let free):
-            Text("Boyut henüz bilinmiyor · \(Fmt.gb(free)) boş").font(.callout).foregroundStyle(.secondary)
+            Text(L("Boyut henüz bilinmiyor · %@ boş", Fmt.gb(free))).font(.callout).foregroundStyle(.secondary)
         case .known(let needed, let free, let minFree):
             let after = free - needed
             VStack(alignment: .leading, spacing: 6) {
-                Text("\(Fmt.gb(needed)) inecek · \(Fmt.gb(free)) boş · "
-                     + (after >= 0 ? "indirme sonrası \(Fmt.gb(after)) kalır" : "\(Fmt.gb(-after)) sığmıyor"))
+                Text(after >= 0
+                     ? L("%@ inecek · %@ boş · indirme sonrası %@ kalır", Fmt.gb(needed), Fmt.gb(free), Fmt.gb(after))
+                     : L("%@ inecek · %@ boş · %@ sığmıyor", Fmt.gb(needed), Fmt.gb(free), Fmt.gb(-after)))
                     .font(.callout)
                     .foregroundStyle(.secondary)
                 if after < minFree {
-                    Label("Yetersiz alan: en az \(Fmt.gb(minFree - after)) daha yer açmalısın (en az \(Fmt.gb(minFree)) boş kalmalı).",
+                    Label(L("Yetersiz alan: en az %@ daha yer açmalısın (en az %@ boş kalmalı).",
+                            Fmt.gb(minFree - after), Fmt.gb(minFree)),
                           systemImage: "exclamationmark.octagon.fill")
                         .font(.callout.weight(.medium))
                         .foregroundStyle(Palette.danger)
@@ -500,7 +502,7 @@ private struct DiskGuardView: View {
 
     private var reclaimList: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("Yer açmak için indirilmiş bir modeli silebilirsin:")
+            Text(L("Yer açmak için indirilmiş bir modeli silebilirsin:"))
                 .font(.caption).foregroundStyle(.secondary)
             ForEach(reclaimable) { m in
                 HStack(spacing: 8) {
@@ -508,10 +510,10 @@ private struct DiskGuardView: View {
                     Text(m.label)
                     Text(Fmt.gb(m.downloadedBytes)).foregroundStyle(.secondary).monospacedDigit()
                     if m.state == .loaded {
-                        Text("bellekte · önce boşalt").font(.caption).foregroundStyle(Palette.loadedText)
+                        Text(L("bellekte · önce boşalt")).font(.caption).foregroundStyle(Palette.loadedText)
                     }
                     Spacer()
-                    Button("Sil", systemImage: "trash") { delete(m) }
+                    Button(L("Sil"), systemImage: "trash") { delete(m) }
                         .controlSize(.small)
                         .disabled(!enabled || m.state == .loaded || m.state == .loading)
                 }

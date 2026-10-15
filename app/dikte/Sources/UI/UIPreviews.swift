@@ -71,7 +71,11 @@ enum PreviewData {
             HistoryEntry(date: now.addingTimeInterval(-120),
                          rawText: "Yeni brenç açıp değişiklikleri komit ettim, şimdi pul rikuest açıyorum.",
                          editedText: "Yeni branch açıp değişiklikleri commit ettim, şimdi pull request açıyorum.",
-                         copied: true, model: "large-v3", audioSeconds: 5.2, transcribeSeconds: 0.8),
+                         copied: true, model: "large-v3", audioSeconds: 5.2, transcribeSeconds: 0.8, language: "tr"),
+            HistoryEntry(date: now.addingTimeInterval(-1_800),
+                         rawText: "Can you push the fix to the release branch before the demo",
+                         editedText: "Can you push the fix to the release branch before the demo?",
+                         copied: true, model: "large-v3", audioSeconds: 3.4, transcribeSeconds: 0.6, language: "en"),
             HistoryEntry(date: now.addingTimeInterval(-3_600),
                          rawText: "Toplantıyı yarın saat üçe alalım mı acaba",
                          editedText: "Toplantıyı yarın saat 15.00'e alalım mı?",
@@ -106,6 +110,13 @@ enum PreviewData {
                    minFreeDiskGB: 10, actions: actions)
     }
 
+    /// Settings as a user of `language` would have them.
+    static func settings(_ language: AppLanguage = Localizer.shared.language) -> AppSettings {
+        var s = AppSettings()
+        s.uiLanguage = language
+        return s
+    }
+
     static func settingsView(_ settings: Binding<AppSettings>) -> some View {
         SettingsView(settings: settings,
                      microphones: [Microphone(uid: "builtin", name: "MacBook Pro Mikrofonu"),
@@ -124,7 +135,7 @@ enum PreviewData {
                        status: EngineStatus = .running(port: 1), selected: String = "large-v3") -> some View {
         MainSplitView(tab: .constant(tab)) { t in
             switch t {
-            case .settings: settingsView(.constant(AppSettings()))
+            case .settings: settingsView(.constant(settings()))
             case .models: modelsView(models, system: system, status: status, selected: selected)
             case .history: historyView()
             }
@@ -143,8 +154,19 @@ enum PreviewData {
         .frame(width: 900, height: 500)
 }
 #Preview("Ayarlar") {
-    @Previewable @State var settings = AppSettings()
+    @Previewable @State var settings = PreviewData.settings()
     PreviewData.settingsView($settings).frame(width: 720, height: 900)
+        .onChange(of: settings.uiLanguage) { _, l in Localizer.shared.language = l }
+}
+#Preview("Ayarlar — English") {
+    @Previewable @State var settings = PreviewData.settings(.en)
+    PreviewData.settingsView($settings).frame(width: 720, height: 900)
+        .onAppear { Localizer.shared.language = .en }
+        .onChange(of: settings.uiLanguage) { _, l in Localizer.shared.language = l }
+}
+#Preview("Geçmiş — English") {
+    PreviewData.window(.history).frame(width: 900, height: 660)
+        .onAppear { Localizer.shared.language = .en }
 }
 #Preview("Geçmiş") { PreviewData.window(.history).frame(width: 900, height: 660) }
 #Preview("Terim düzenle") {
@@ -162,7 +184,27 @@ enum UIPreviewRenderer {
             return FileManager.default.temporaryDirectory.appendingPathComponent("dikte-ui-previews")
         }()
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        PreviewStrings.install()
 
+        for language in AppLanguage.allCases {
+            Localizer.shared.language = language
+            let sub = dir.appendingPathComponent(language.rawValue, isDirectory: true)
+            try? FileManager.default.createDirectory(at: sub, withIntermediateDirectories: true)
+            renderTabs(sub)
+        }
+        renderLiveSwitch(dir)
+        renderStatusIcons(dir)
+        print("UI previews written to \(dir.path)")
+        let failures = selfCheck()
+        print(failures.isEmpty ? "UI self-check: OK" : "UI self-check FAILED:\n" + failures.joined(separator: "\n"))
+        let missing = PreviewStrings.missing.sorted()
+        if !missing.isEmpty {
+            print("Missing English strings (\(missing.count)):\n" + missing.map { "  " + $0 }.joined(separator: "\n"))
+        }
+        NSApp.terminate(nil)
+    }
+
+    private static func renderTabs(_ dir: URL) {
         let w = 900.0
         render(PreviewData.window(.models), "models-all-states", w, 1180, dir)
         render(PreviewData.window(.models), "models-all-states-dark", w, 1180, dir, dark: true)
@@ -179,11 +221,51 @@ enum UIPreviewRenderer {
         render(PreviewData.window(.history), "history-dark", w, 660, dir, dark: true)
         render(TermEditor(draft: TermDraft(PreviewData.terms[0]), existing: [], save: { _ in }),
                "term-editor", 440, 420, dir)
-        renderStatusIcons(dir)
-        print("UI previews written to \(dir.path)")
-        let failures = selfCheck()
-        print(failures.isEmpty ? "UI self-check: OK" : "UI self-check FAILED:\n" + failures.joined(separator: "\n"))
-        NSApp.terminate(nil)
+        render(TermEditor(draft: TermDraft(original: nil, term: ""), existing: [], save: { _ in }),
+               "term-editor-new", 440, 420, dir)
+        render(statusMenuMock, "status-menu", 320, 330, dir)
+    }
+
+    /// Menu bar menu titles for each status line (NSMenu can't be drawn offscreen).
+    private static var statusMenuMock: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(L("Dikte'yi aç"))
+            Divider()
+            ForEach([EngineStatus.starting, .stopped, .failed("Python bulunamadı.")].map(\.display.text),
+                    id: \.self) {
+                Text($0).foregroundStyle(.secondary)
+            }
+            Text(L("Model: %@ · %@", "Whisper large-v3", L("Bellekte"))).foregroundStyle(.secondary)
+            Text(L("Model: %@ · %@", "Whisper large-v3", L("İndiriliyor %@", Fmt.percent(0.62))))
+                .foregroundStyle(.secondary)
+            Text(L("Model: %@ · %@", "Whisper large-v3", L("İndirme duraklatıldı"))).foregroundStyle(.secondary)
+            Text(L("Model seçilmedi")).foregroundStyle(.secondary)
+            Text(L("Modeli şimdi boşalt"))
+            Divider()
+            HStack { Text(L("Çıkış")); Spacer(); Text(verbatim: "⌘Q").foregroundStyle(.secondary) }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    /// Switches the language under a live window (tr → en → tr) to check that everything re-renders.
+    private static func renderLiveSwitch(_ dir: URL) {
+        Localizer.shared.language = .tr
+        let navigation = MainNavigation()
+        let view = PreviewLiveWindow(navigation: navigation)
+        let (window, hosting) = host(view, 900, 1300, dark: false)
+        defer { window.orderOut(nil) }
+        settle(hosting)
+        snapshot(hosting, window, dir.appendingPathComponent("live-1-settings-tr.png"))
+        Localizer.shared.language = .en
+        settle(hosting)
+        snapshot(hosting, window, dir.appendingPathComponent("live-2-settings-en.png"))
+        navigation.tab = .history
+        settle(hosting)
+        snapshot(hosting, window, dir.appendingPathComponent("live-3-history-en.png"))
+        Localizer.shared.language = .tr
+        settle(hosting)
+        snapshot(hosting, window, dir.appendingPathComponent("live-4-history-tr.png"))
     }
 
     /// Pure-logic checks for the helpers (search folding, diff, formatting, repo parsing).
@@ -197,10 +279,24 @@ enum UIPreviewRenderer {
         check(WordDiff.diff("a b c", "a x c") == [.same("a"), .removed("b"), .added("x"), .same("c")], "diff: replace")
         check(WordDiff.diff("", "a b") == [.added("a"), .added("b")], "diff: from empty")
         check(WordDiff.diff("a b", "a b") == [.same("a"), .same("b")], "diff: equal")
-        check(Fmt.gb(10 * PreviewData.gib) == "10 GB", "gb: 10 GB, got \(Fmt.gb(10 * PreviewData.gib))")
-        check(Fmt.gb(3_100_000_000) == "2,9 GB", "gb: 2,9 GB, got \(Fmt.gb(3_100_000_000))")
-        check(Fmt.percent(0.625) == "%62", "percent: %62")
+        let language = Localizer.shared.language
+        defer { Localizer.shared.language = language }
+        Localizer.shared.language = .tr
+        check(Fmt.gb(10 * PreviewData.gib) == "10\u{00A0}GB", "gb: 10 GB, got \(Fmt.gb(10 * PreviewData.gib))")
+        check(Fmt.gb(3_100_000_000) == "2,9\u{00A0}GB", "gb: 2,9 GB, got \(Fmt.gb(3_100_000_000))")
+        check(Fmt.percent(0.625) == "%62", "percent: %62, got \(Fmt.percent(0.625))")
+        check(Fmt.percent(0.999) == "%99", "percent: %99, got \(Fmt.percent(0.999))")
+        check(Fmt.seconds(3.5) == "3,5\u{00A0}sn", "seconds: 3,5 sn, got \(Fmt.seconds(3.5))")
+        check(Fmt.int(1234) == "1.234", "int: 1.234, got \(Fmt.int(1234))")
         check(Fmt.countdown(272) == "4:32", "countdown: 4:32")
+        Localizer.shared.language = .en
+        check(Fmt.gb(3_100_000_000) == "2.9\u{00A0}GB", "gb en: 2.9 GB, got \(Fmt.gb(3_100_000_000))")
+        check(Fmt.percent(0.625) == "62%", "percent en: 62%, got \(Fmt.percent(0.625))")
+        check(Fmt.seconds(3.5) == "3.5\u{00A0}s", "seconds en: 3.5 s, got \(Fmt.seconds(3.5))")
+        check(Fmt.int(1234) == "1,234", "int en: 1,234, got \(Fmt.int(1234))")
+        check(Fmt.count(1, one: L("1 kayıt"), other: { L("%@ kayıt", $0) }) == "1 entry", "count en: 1 entry")
+        check(Fmt.count(3, one: L("1 kayıt"), other: { L("%@ kayıt", $0) }) == "3 entries", "count en: 3 entries")
+        check(L("Dikte'yi aç") == "Open Dikte", "L en: Open Dikte")
         check(ModelsView.normalizedRepo("https://huggingface.co/mlx-community/whisper-x/tree/main")
               == "mlx-community/whisper-x", "repo: url")
         check(ModelsView.normalizedRepo("org/name") == "org/name", "repo: plain")
@@ -215,6 +311,14 @@ enum UIPreviewRenderer {
 
     private static func render<V: View>(_ view: V, _ name: String, _ width: CGFloat, _ height: CGFloat,
                                         _ dir: URL, dark: Bool = false) {
+        let (window, hosting) = host(view, width, height, dark: dark)
+        defer { window.orderOut(nil) }
+        settle(hosting)
+        snapshot(hosting, window, dir.appendingPathComponent(name + ".png"))
+    }
+
+    private static func host<V: View>(_ view: V, _ width: CGFloat, _ height: CGFloat,
+                                      dark: Bool) -> (NSWindow, NSView) {
         let size = NSSize(width: width, height: height)
         let hosting = NSHostingView(rootView: view.frame(width: width, height: height))
         let window = NSWindow(contentRect: NSRect(origin: NSPoint(x: -30_000, y: 0), size: size),
@@ -223,11 +327,17 @@ enum UIPreviewRenderer {
         window.backgroundColor = .windowBackgroundColor
         window.contentView = hosting
         window.orderFrontRegardless()
+        return (window, hosting)
+    }
+
+    private static func settle(_ hosting: NSView) {
         for _ in 0..<5 {
             hosting.layoutSubtreeIfNeeded()
             RunLoop.main.run(until: Date().addingTimeInterval(0.1))
         }
-        defer { window.orderOut(nil) }
+    }
+
+    private static func snapshot(_ hosting: NSView, _ window: NSWindow, _ url: URL) {
         guard let rep = hosting.bitmapImageRepForCachingDisplay(in: hosting.bounds) else { return }
         hosting.cacheDisplay(in: hosting.bounds, to: rep)
         // Materials render transparent offscreen: flatten onto the window background.
@@ -245,7 +355,7 @@ enum UIPreviewRenderer {
         rep.draw(in: NSRect(origin: .zero, size: rep.size), from: .zero, operation: .sourceOver,
                  fraction: 1, respectFlipped: true, hints: nil)
         NSGraphicsContext.restoreGraphicsState()
-        try? flat.representation(using: .png, properties: [:])?.write(to: dir.appendingPathComponent(name + ".png"))
+        try? flat.representation(using: .png, properties: [:])?.write(to: url)
     }
 
     /// Menu bar icons on light and dark bars, 4× scale.
@@ -288,6 +398,62 @@ enum UIPreviewRenderer {
             rect.fill(using: .sourceAtop)
             return true
         }
+    }
+}
+
+/// Live-switch scenario: the real settings binding drives the language like `AppState` does.
+private struct PreviewLiveWindow: View {
+    @Bindable var navigation: MainNavigation
+    @State private var settings = PreviewData.settings(.tr)
+
+    var body: some View {
+        MainSplitView(tab: $navigation.tab) { t in
+            switch t {
+            case .settings: PreviewData.settingsView($settings)
+            case .models: PreviewData.modelsView()
+            case .history: PreviewData.historyView()
+            }
+        }
+    }
+}
+
+/// Renderer-only English fallback: until the lead merges `i18n/*.json` into the String Catalog,
+/// the built `en.lproj` lacks most keys, so lookups that come back unchanged are answered from
+/// `app/dikte/i18n/ui.json` in the repo. Not used by the app itself.
+enum PreviewStrings {
+    nonisolated static let en: [String: String] = {
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("i18n/ui.json")
+        guard let data = try? Data(contentsOf: url),
+              let dict = try? JSONSerialization.jsonObject(with: data) as? [String: String] else {
+            print("PreviewStrings: could not read \(url.path)")
+            return [:]
+        }
+        return dict
+    }()
+
+    static var missing: Set<String> = []
+
+    static func install() {
+        guard let original = class_getInstanceMethod(Bundle.self, #selector(Bundle.localizedString(forKey:value:table:))),
+              let fallback = class_getInstanceMethod(Bundle.self, #selector(Bundle.dikte_previewLocalizedString(forKey:value:table:)))
+        else { return }
+        _ = en
+        method_exchangeImplementations(original, fallback)
+    }
+}
+
+extension Bundle {
+    /// Swapped with `localizedString(forKey:value:table:)` by `PreviewStrings.install()`;
+    /// the call below therefore reaches the original implementation.
+    @objc nonisolated dynamic func dikte_previewLocalizedString(forKey key: String, value: String?,
+                                                                table: String?) -> String {
+        let s = dikte_previewLocalizedString(forKey: key, value: value, table: table)
+        guard s == key || s == value, bundlePath.hasSuffix("/en.lproj") else { return s }
+        if let t = PreviewStrings.en[key] { return t }
+        if Thread.isMainThread { MainActor.assumeIsolated { _ = PreviewStrings.missing.insert(key) } }
+        return s
     }
 }
 #endif

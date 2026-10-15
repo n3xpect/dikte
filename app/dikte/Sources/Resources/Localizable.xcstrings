@@ -1,16 +1,2576 @@
 {
-  "sourceLanguage" : "tr",
-  "strings" : {
-    "Dinliyorum…" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Listening…"
+  "sourceLanguage": "tr",
+  "strings": {
+    "%@ / %@ kayıt": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ of %@ entries"
+          }
+        }
+      }
+    },
+    "%@ boş · en az %@ boş kalmalı": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ free · at least %@ must stay free"
+          }
+        }
+      }
+    },
+    "%@ dk": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ min"
+          }
+        }
+      }
+    },
+    "%@ ile dikte ettiklerin burada görünür.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What you dictate with %@ appears here."
+          }
+        }
+      }
+    },
+    "%@ indirme": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ download"
+          }
+        }
+      }
+    },
+    "%@ indirme · bellekte ~%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ download · ~%@ in memory"
+          }
+        }
+      }
+    },
+    "%@ inecek · %@ boş · %@ sığmıyor": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ to download · %@ free · %@ short"
+          }
+        }
+      }
+    },
+    "%@ inecek · %@ boş · indirme sonrası %@ kalır": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ to download · %@ free · %@ left after download"
+          }
+        }
+      }
+    },
+    "%@ kayıt": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ entries"
+          }
+        }
+      }
+    },
+    "%@ kayıt kalıcı olarak silinir.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ entries will be permanently deleted."
+          }
+        }
+      }
+    },
+    "%@ ses · %@ çeviri": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ audio · %@ transcription"
+          }
+        }
+      }
+    },
+    "%@ sn": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ s"
+          }
+        }
+      }
+    },
+    "%@ sn sessizlik": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ s of silence"
+          }
+        }
+      }
+    },
+    "%@ terim": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ terms"
+          }
+        }
+      }
+    },
+    "(boş)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "(empty)"
+          }
+        }
+      }
+    },
+    "**Enter**: bitir · **Esc**: vazgeç": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "**Enter**: finish · **Esc**: cancel"
+          }
+        }
+      }
+    },
+    "**Esc**: hepsini geç": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "**Esc**: skip all"
+          }
+        }
+      }
+    },
+    "**Esc**: kapat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "**Esc**: close"
+          }
+        }
+      }
+    },
+    "**Esc**: vazgeç": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "**Esc**: cancel"
+          }
+        }
+      }
+    },
+    "**Shift+Enter**: kopyala · **Enter**: yeni satır · **Esc**: kapat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "**Shift+Enter**: copy · **Enter**: new line · **Esc**: close"
+          }
+        }
+      }
+    },
+    "**Shift+Enter**: kopyala · **Enter**: yeni satır · **⌘L**: dil · **Esc**: kapat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "**Shift+Enter**: copy · **Enter**: new line · **⌘L**: language · **Esc**: close"
+          }
+        }
+      }
+    },
+    "0 = Sınırsız. Sınır aşılınca en eski kayıtlar silinir.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "0 = Unlimited. When the limit is exceeded, the oldest entries are deleted."
+          }
+        }
+      }
+    },
+    "1 kayıt": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 entry"
+          }
+        }
+      }
+    },
+    "1 kayıt kalıcı olarak silinir.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 entry will be permanently deleted."
+          }
+        }
+      }
+    },
+    "1 terim": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 term"
+          }
+        }
+      }
+    },
+    "Aramaya uyan terim yok.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No terms match your search."
+          }
+        }
+      }
+    },
+    "Aramayı temizle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear Search"
+          }
+        }
+      }
+    },
+    "Arayüz dili": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Interface language"
+          }
+        }
+      }
+    },
+    "Ayarlar": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settings"
+          }
+        }
+      }
+    },
+    "Ayarlar'da başka bir mikrofon seçmeyi dene.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try choosing another microphone in Settings."
+          }
+        }
+      }
+    },
+    "Açılışta başlat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Launch at login"
+          }
+        }
+      }
+    },
+    "Açılışta başlatma açılamadı: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn’t turn on launch at login: %@"
+          }
+        }
+      }
+    },
+    "Açılışta başlatma kapatılamadı: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn’t turn off launch at login: %@"
+          }
+        }
+      }
+    },
+    "Bazı uygulamaları kapatıp tekrar dene ya da daha küçük bir model seç.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quit some apps and try again, or choose a smaller model."
+          }
+        }
+      }
+    },
+    "Bağlı olmayan mikrofon": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disconnected microphone"
+          }
+        }
+      }
+    },
+    "Bellekte": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In Memory"
+          }
+        }
+      }
+    },
+    "Bellekte model yok": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No model in memory"
+          }
+        }
+      }
+    },
+    "Bellekte:": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In memory:"
+          }
+        }
+      }
+    },
+    "Bellekteki model silinemez; önce boşalt.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A model in memory can’t be deleted; unload it first."
+          }
+        }
+      }
+    },
+    "Belleğe yükleniyor:": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loading into memory:"
+          }
+        }
+      }
+    },
+    "Bilinmeyen motor hatası": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unknown engine error"
+          }
+        }
+      }
+    },
+    "Bitir": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finish"
+          }
+        }
+      }
+    },
+    "Boyut henüz bilinmiyor · %@ boş": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Size not known yet · %@ free"
+          }
+        }
+      }
+    },
+    "Boş alan bilgisi yok.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Free space unknown."
+          }
+        }
+      }
+    },
+    "Boşalt": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unload"
+          }
+        }
+      }
+    },
+    "Bu kayıt yeniden çevrilemez": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This recording can't be transcribed again"
+          }
+        }
+      }
+    },
+    "Bu terim zaten var; kaydedersen üzerine yazılır.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This term already exists; saving will overwrite it."
+          }
+        }
+      }
+    },
+    "Deneme diktesi yap": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try a dictation"
+          }
+        }
+      }
+    },
+    "Denemek için mikrofon izni gerekiyor (3. adım).": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trying it needs microphone access (step 3)."
+          }
+        }
+      }
+    },
+    "Denemek için önce modeli indir (2. adım).": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Download the model first to try it (step 2)."
+          }
+        }
+      }
+    },
+    "Depo": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Repository"
+          }
+        }
+      }
+    },
+    "Devam": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continue"
+          }
+        }
+      }
+    },
+    "Devam et": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resume"
+          }
+        }
+      }
+    },
+    "Değişiklikler": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Changes"
+          }
+        }
+      }
+    },
+    "Dikte": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dictation"
+          }
+        }
+      }
+    },
+    "Dikte bu modeli kullanıyor": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dikte uses this model"
+          }
+        }
+      }
+    },
+    "Dikte dili": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dictation language"
+          }
+        }
+      }
+    },
+    "Dikte için bu modeli seç": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use this model for dictation"
+          }
+        }
+      }
+    },
+    "Dikte kısayolu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dictation shortcut"
+          }
+        }
+      }
+    },
+    "Dikte mikrofonu kullanabilir.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dikte can use the microphone."
+          }
+        }
+      }
+    },
+    "Dikte yalnızca kısayola bastığında dinler. Ses bu Mac'te işlenir, hiçbir yere gönderilmez.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dikte only listens when you press the shortcut. Audio is processed on this Mac and never sent anywhere."
+          }
+        }
+      }
+    },
+    "Dikte'ye hoş geldin": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Welcome to Dikte"
+          }
+        }
+      }
+    },
+    "Dikte'ye mikrofon izni verip tekrar dene.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Give Dikte microphone access and try again."
+          }
+        }
+      }
+    },
+    "Dikte'yi aç": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Dikte"
+          }
+        }
+      }
+    },
+    "Dikte, konuşmanı bu Mac'te bir Whisper modeliyle yazıya çevirir. Modeli bir kez indirmen yeterli; sonra internet gerekmez.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dikte turns your speech into text on this Mac with a Whisper model. You download the model once; after that no internet connection is needed."
+          }
+        }
+      }
+    },
+    "Dikte, seçili modeli (◉) kullanır. Bellekte aynı anda tek model bulunur.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dikte uses the selected model (◉). Only one model is in memory at a time."
+          }
+        }
+      }
+    },
+    "Dikteyi her uygulamadan tek bir kısayolla başlatırsın.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start dictating from any app with a single shortcut."
+          }
+        }
+      }
+    },
+    "Dil": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Language"
+          }
+        }
+      }
+    },
+    "Dil: Türkçe": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Language: Turkish"
+          }
+        }
+      }
+    },
+    "Dil: İngilizce": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Language: English"
+          }
+        }
+      }
+    },
+    "Dinlemeye başlar; konuşmaya başla.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Starts listening; start talking."
+          }
+        }
+      }
+    },
+    "Dinliyorum…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Listening…"
+          }
+        }
+      }
+    },
+    "Diskte": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On Disk"
+          }
+        }
+      }
+    },
+    "Doğru sayılan yazım.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spelling accepted as correct."
+          }
+        }
+      }
+    },
+    "Duraklatıldı": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paused"
+          }
+        }
+      }
+    },
+    "Durdur": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pause"
+          }
+        }
+      }
+    },
+    "Düzeltilecek yazımlar": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spellings to fix"
+          }
+        }
+      }
+    },
+    "Düzenle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit"
+          }
+        }
+      }
+    },
+    "Düzenlemen kaybolacak — yine de çevir?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your edits will be lost — transcribe anyway?"
+          }
+        }
+      }
+    },
+    "Ekle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add"
+          }
+        }
+      }
+    },
+    "En az boş disk alanı": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Minimum free disk space"
+          }
+        }
+      }
+    },
+    "English": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "English"
+          }
+        }
+      }
+    },
+    "Finder'da göster": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show in Finder"
+          }
+        }
+      }
+    },
+    "Genel": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "General"
+          }
+        }
+      }
+    },
+    "Geri": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back"
+          }
+        }
+      }
+    },
+    "Geç": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skip"
+          }
+        }
+      }
+    },
+    "Geçersiz istek: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Invalid request: %@"
+          }
+        }
+      }
+    },
+    "Geçmiş": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "History"
+          }
+        }
+      }
+    },
+    "Geçmiş sınırı": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "History limit"
+          }
+        }
+      }
+    },
+    "Geçmişte ara": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search History"
+          }
+        }
+      }
+    },
+    "Giriş Öğeleri'ni aç": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Login Items"
+          }
+        }
+      }
+    },
+    "Ham metni kopyala": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy Raw Text"
+          }
+        }
+      }
+    },
+    "Ham çıktı": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Raw output"
+          }
+        }
+      }
+    },
+    "Ham çıktı değiştirilmeden kullanıldı.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The raw output was used unchanged."
+          }
+        }
+      }
+    },
+    "Ham çıktı ile son metin arasındaki farkları görmek için soldan bir kayıt seç.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Select an entry on the left to see the differences between the raw output and the final text."
+          }
+        }
+      }
+    },
+    "Hazır": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ready"
+          }
+        }
+      }
+    },
+    "Henüz dikte yok": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No Dictations Yet"
+          }
+        }
+      }
+    },
+    "Henüz terim yok.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No terms yet."
+          }
+        }
+      }
+    },
+    "Her dikte Türkçe olarak yazıya çevrilir.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every dictation is transcribed as Turkish."
+          }
+        }
+      }
+    },
+    "Her dikte İngilizce olarak yazıya çevrilir.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every dictation is transcribed as English."
+          }
+        }
+      }
+    },
+    "Her diktede Türkçe mi İngilizce mi konuştuğunu kendisi anlar.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Detects on every dictation whether you speak Turkish or English."
+          }
+        }
+      }
+    },
+    "Her diktede dil algılanır; panelde TR/EN düğmesiyle değiştirebilirsin.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The language is detected for each dictation; you can switch it with the TR/EN button in the panel."
+          }
+        }
+      }
+    },
+    "Hiç": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Never"
+          }
+        }
+      }
+    },
+    "Hugging Face'ten model ekle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add a Model from Hugging Face"
+          }
+        }
+      }
+    },
+    "Kabul edilen yazımlar": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accepted spellings"
+          }
+        }
+      }
+    },
+    "Kaldır": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove"
+          }
+        }
+      }
+    },
+    "Kaydet": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save"
+          }
+        }
+      }
+    },
+    "Kaydı bitirir; metin düzenlenebilir hâlde gelir.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stops recording; the text arrives ready to edit."
+          }
+        }
+      }
+    },
+    "Kayıt artık yok": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The recording is no longer available"
+          }
+        }
+      }
+    },
+    "Kayıt seç": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Select an Entry"
+          }
+        }
+      }
+    },
+    "Konuşma algılandı": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Speech detected"
+          }
+        }
+      }
+    },
+    "Konuşma algılanmadı": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No speech detected"
+          }
+        }
+      }
+    },
+    "Konuşma bittikten sonra bu kadar sessizlik olunca kayıt kendiliğinden biter.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recording stops automatically after this much silence once you finish speaking."
+          }
+        }
+      }
+    },
+    "Konuşma modeli": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Speech model"
+          }
+        }
+      }
+    },
+    "Konuşmanı her zaman Türkçe olarak yazıya çevirir.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Always transcribes your speech as Turkish."
+          }
+        }
+      }
+    },
+    "Konuşmanı her zaman İngilizce olarak yazıya çevirir.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Always transcribes your speech as English."
+          }
+        }
+      }
+    },
+    "Konuşmanı yazıya çevirir; ses bu Mac'ten dışarı çıkmaz. Başlamadan önce birkaç şeyi ayarlayalım.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turns your speech into text; audio never leaves this Mac. Let's set up a few things before you start."
+          }
+        }
+      }
+    },
+    "Kopyala": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy"
+          }
+        }
+      }
+    },
+    "Kısayol": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shortcut"
+          }
+        }
+      }
+    },
+    "Kısayol yok": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No shortcut"
+          }
+        }
+      }
+    },
+    "Listeden kaldır": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove from List"
+          }
+        }
+      }
+    },
+    "MLX Whisper modeli içeren bir deponun adını veya bağlantısını yaz.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter the name or link of a repository containing an MLX Whisper model."
+          }
+        }
+      }
+    },
+    "Menüler, pencereler ve mesajlar bu dilde görünür.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Menus, windows and messages appear in this language."
+          }
+        }
+      }
+    },
+    "Metinde olması gereken doğru yazım.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The correct spelling that should appear in the text."
+          }
+        }
+      }
+    },
+    "Metni panoya kopyalar ve paneli kapatır.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copies the text to the clipboard and closes the panel."
+          }
+        }
+      }
+    },
+    "Mikrofon": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Microphone"
+          }
+        }
+      }
+    },
+    "Mikrofon açılamadı: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't open the microphone: %@"
+          }
+        }
+      }
+    },
+    "Mikrofon bağlantısı kesildi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The microphone was disconnected."
+          }
+        }
+      }
+    },
+    "Mikrofon bulunamadı.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No microphone found."
+          }
+        }
+      }
+    },
+    "Mikrofon izni": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Microphone access"
+          }
+        }
+      }
+    },
+    "Mikrofon izni henüz verilmedi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Microphone access not granted yet"
+          }
+        }
+      }
+    },
+    "Mikrofon izni verildi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Microphone access granted"
+          }
+        }
+      }
+    },
+    "Mikrofon izni verilmedi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Microphone access denied"
+          }
+        }
+      }
+    },
+    "Mikrofon izni yok — Sistem Ayarları › Gizlilik › Mikrofon": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No microphone access — System Settings › Privacy › Microphone"
+          }
+        }
+      }
+    },
+    "Mikrofonu kontrol edip tekrar dene.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check the microphone and try again."
+          }
+        }
+      }
+    },
+    "Model": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Model"
+          }
+        }
+      }
+    },
+    "Model bilgisi alınıyor…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Getting model info…"
+          }
+        }
+      }
+    },
+    "Model böyle yazarsa terime çevrilir.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Replaced with the term if the model writes it."
+          }
+        }
+      }
+    },
+    "Model dosyaları (%@) diskten silinir. Gerekirse yeniden indirebilirsin.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The model files (%@) will be deleted from disk. You can download them again if needed."
+          }
+        }
+      }
+    },
+    "Model hazırlanıyor…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preparing model…"
+          }
+        }
+      }
+    },
+    "Model indirildi ve kullanıma hazır.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The model is downloaded and ready to use."
+          }
+        }
+      }
+    },
+    "Model indirmek için motorun çalışması gerekiyor. Sorun sürerse uygulamayı yeniden başlat.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The engine must be running to download the model. If the problem persists, restart the app."
+          }
+        }
+      }
+    },
+    "Model inince deneyebilirsin (%@).": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can try it once the model is downloaded (%@)."
+          }
+        }
+      }
+    },
+    "Model listesi bekleniyor…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waiting for the model list…"
+          }
+        }
+      }
+    },
+    "Model listesi için motorun çalışması gerekiyor.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The engine must be running to list models."
+          }
+        }
+      }
+    },
+    "Model seçilmedi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No model selected"
+          }
+        }
+      }
+    },
+    "Model ve bellek": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Model and memory"
+          }
+        }
+      }
+    },
+    "Model, sen boşaltana kadar bellekte kalır.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The model stays in memory until you unload it."
+          }
+        }
+      }
+    },
+    "Model: %@ · %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Model: %@ · %@"
+          }
+        }
+      }
+    },
+    "Modeli şimdi boşalt": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unload Model Now"
+          }
+        }
+      }
+    },
+    "Modelin boşta kalma süresi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unload idle model after"
+          }
+        }
+      }
+    },
+    "Modeller": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Models"
+          }
+        }
+      }
+    },
+    "Modeller sekmesinden bir model indirip seç.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Download and select a model in the Models tab."
+          }
+        }
+      }
+    },
+    "Modeller'i aç": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Models"
+          }
+        }
+      }
+    },
+    "Motor 60 saniye içinde hazır olmadı. Ayrıntılar: logs/engine.log": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The engine wasn't ready within 60 seconds. Details: logs/engine.log"
+          }
+        }
+      }
+    },
+    "Motor bağlantısı koptu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lost connection to the engine"
+          }
+        }
+      }
+    },
+    "Motor başlatılamadı.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't start the engine."
+          }
+        }
+      }
+    },
+    "Motor başlatılamadı: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't start the engine: %@"
+          }
+        }
+      }
+    },
+    "Motor başlatılıyor…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Engine starting…"
+          }
+        }
+      }
+    },
+    "Motor beklenmedik şekilde durdu (sinyal %d). Ayrıntılar: logs/engine.log": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The engine stopped unexpectedly (signal %d). Details: logs/engine.log"
+          }
+        }
+      }
+    },
+    "Motor beklenmedik şekilde durdu (çıkış kodu %d). Ayrıntılar: logs/engine.log": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The engine stopped unexpectedly (exit code %d). Details: logs/engine.log"
+          }
+        }
+      }
+    },
+    "Motor bulunamadı: Python ortamı yok. Uygulamayı yeniden kurmayı dene.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Engine not found: the Python environment is missing. Try reinstalling the app."
+          }
+        }
+      }
+    },
+    "Motor hatası (%@).": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Engine error (%@)."
+          }
+        }
+      }
+    },
+    "Motor hatası (HTTP %ld)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Engine error (HTTP %ld)"
+          }
+        }
+      }
+    },
+    "Motor hazır olunca deneyebilirsin.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can try it once the engine is ready."
+          }
+        }
+      }
+    },
+    "Motor meşgul — biraz sonra tekrar dene.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The engine is busy — try again in a moment."
+          }
+        }
+      }
+    },
+    "Motor çalışmıyor": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Engine not running"
+          }
+        }
+      }
+    },
+    "Motor çalışmıyor: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Engine not running: %@"
+          }
+        }
+      }
+    },
+    "Motor çalışıyor": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Engine running"
+          }
+        }
+      }
+    },
+    "Motora ulaşılamadı: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't reach the engine: %@"
+          }
+        }
+      }
+    },
+    "Motordan beklenmeyen yanıt": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unexpected response from the engine"
+          }
+        }
+      }
+    },
+    "Motorla bağlantı kesildi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lost connection to the engine."
+          }
+        }
+      }
+    },
+    "Otomatik (Türkçe + English)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatic (Turkish + English)"
+          }
+        }
+      }
+    },
+    "Panel açılır; bir şey söyle, sonra sus.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The panel opens; say something, then stop talking."
+          }
+        }
+      }
+    },
+    "Panoya kopyalandı": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copied to clipboard"
+          }
+        }
+      }
+    },
+    "RAM: %@ kullanılabilir / %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RAM: %@ available / %@"
+          }
+        }
+      }
+    },
+    "Ses efektleri": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sound effects"
+          }
+        }
+      }
+    },
+    "Sessizlik süresi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Silence duration"
+          }
+        }
+      }
+    },
+    "Seçili model henüz indirilmedi; dikte için önce indirmen gerekiyor.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The selected model isn’t downloaded yet; download it before dictating."
+          }
+        }
+      }
+    },
+    "Seçili model indirilmemiş.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The selected model isn't downloaded."
+          }
+        }
+      }
+    },
+    "Sil": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete"
+          }
+        }
+      }
+    },
+    "Sistem Ayarları › Gizlilik ve Güvenlik › Mikrofon bölümünde Dikte'yi aç, sonra bu pencereye dön.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn on Dikte in System Settings › Privacy & Security › Microphone, then come back to this window."
+          }
+        }
+      }
+    },
+    "Sistem Ayarları'nda onay bekliyor.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waiting for approval in System Settings."
+          }
+        }
+      }
+    },
+    "Sistem Ayarları'nı aç": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open System Settings"
+          }
+        }
+      }
+    },
+    "Sistem varsayılanı": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "System default"
+          }
+        }
+      }
+    },
+    "Son diktenin üzerinden bu kadar zaman geçince model bellekten boşaltılır. İndirmeler, sonrasında diskte bu kadar yer kalmayacaksa başlamaz.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The model is unloaded from memory this long after the last dictation. Downloads won’t start if less than this much disk space would remain."
+          }
+        }
+      }
+    },
+    "Son metin": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Final text"
+          }
+        }
+      }
+    },
+    "Sonuç yok": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No Results"
+          }
+        }
+      }
+    },
+    "Sorun sürerse Dikte'yi yeniden başlat.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "If the problem persists, restart Dikte."
+          }
+        }
+      }
+    },
+    "Sınırsız": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unlimited"
+          }
+        }
+      }
+    },
+    "Tekrar dene": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try again"
+          }
+        }
+      }
+    },
+    "Tekrar dene; sorun sürerse Dikte'yi yeniden başlat.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try again; if the problem persists, restart Dikte."
+          }
+        }
+      }
+    },
+    "Terim": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Term"
+          }
+        }
+      }
+    },
+    "Terim ekle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add Term"
+          }
+        }
+      }
+    },
+    "Terimi düzenle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit Term"
+          }
+        }
+      }
+    },
+    "Terimler": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Terms"
+          }
+        }
+      }
+    },
+    "Terimlerde ara": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search Terms"
+          }
+        }
+      }
+    },
+    "Tüm geçmiş silinsin mi?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete all history?"
+          }
+        }
+      }
+    },
+    "Tümünü sil": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete All"
+          }
+        }
+      }
+    },
+    "Tümünü temizle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear All"
+          }
+        }
+      }
+    },
+    "Türkçe": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turkish"
+          }
+        }
+      }
+    },
+    "Türkçe dikte": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turkish dictation"
+          }
+        }
+      }
+    },
+    "Türkçe olarak yeniden çevir (⌘L)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transcribe again in Turkish (⌘L)"
+          }
+        }
+      }
+    },
+    "Türkçe olarak yeniden çevriliyor…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transcribing again in Turkish…"
+          }
+        }
+      }
+    },
+    "Türkçe ve İngilizce için en iyi sonucu veren model.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The model that gives the best results for Turkish and English."
+          }
+        }
+      }
+    },
+    "Vazgeç": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel"
+          }
+        }
+      }
+    },
+    "Vazgeçer; hiçbir şey kopyalanmaz.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancels; nothing is copied."
+          }
+        }
+      }
+    },
+    "Virgülle ayır. Bunlar doğru sayılır, değiştirilmez.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Separate with commas. These count as correct and aren’t changed."
+          }
+        }
+      }
+    },
+    "Virgülle ayır. Model bunlardan birini yazarsa terimle değiştirilir.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Separate with commas. If the model writes one of these, it’s replaced with the term."
+          }
+        }
+      }
+    },
+    "Yeni terim": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New Term"
+          }
+        }
+      }
+    },
+    "Yeniden başlat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restart"
+          }
+        }
+      }
+    },
+    "Yeniden çevrilemedi.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't transcribe again."
+          }
+        }
+      }
+    },
+    "Yer açmak için indirilmiş bir modeli silebilirsin:": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To free up space, you can delete a downloaded model:"
+          }
+        }
+      }
+    },
+    "Yetersiz alan: en az %@ daha yer açmalısın (en az %@ boş kalmalı).": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not enough space: free up at least %@ more (at least %@ must stay free)."
+          }
+        }
+      }
+    },
+    "Yükle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Load"
+          }
+        }
+      }
+    },
+    "Yükleniyor…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loading…"
+          }
+        }
+      }
+    },
+    "bellekte · önce boşalt": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "in memory · unload first"
+          }
+        }
+      }
+    },
+    "düzeltilir": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "fixed"
+          }
+        }
+      }
+    },
+    "eklenen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "added"
+          }
+        }
+      }
+    },
+    "kabul": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "accepted"
+          }
+        }
+      }
+    },
+    "kayıt": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "entries"
+          }
+        }
+      }
+    },
+    "kopyalandı": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "copied"
+          }
+        }
+      }
+    },
+    "kopyalanmadı": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "not copied"
+          }
+        }
+      }
+    },
+    "silinen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "removed"
+          }
+        }
+      }
+    },
+    "ya da": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "or"
+          }
+        }
+      }
+    },
+    "«%@» → «%@» terimlere eklensin mi?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add “%@” → “%@” to terms?"
+          }
+        }
+      }
+    },
+    "· %@ sonra boşaltılacak": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "· unloads in %@"
+          }
+        }
+      }
+    },
+    "· ilk diktede seçili model yüklenir": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "· the selected model loads on first dictation"
+          }
+        }
+      }
+    },
+    "· otomatik boşaltma kapalı": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "· automatic unloading off"
+          }
+        }
+      }
+    },
+    "Çevir": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transcribe"
+          }
+        }
+      }
+    },
+    "Çevriliyor…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transcribing…"
+          }
+        }
+      }
+    },
+    "Çıkış": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quit Dikte"
+          }
+        }
+      }
+    },
+    "Önerilen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recommended"
+          }
+        }
+      }
+    },
+    "Özel": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Custom"
+          }
+        }
+      }
+    },
+    "ör. %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "e.g. %@"
+          }
+        }
+      }
+    },
+    "İlk diktede belleğe yüklenir.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loads into memory on first dictation."
+          }
+        }
+      }
+    },
+    "İndir": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Download"
+          }
+        }
+      }
+    },
+    "İndiriliyor %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Downloading %@"
+          }
+        }
+      }
+    },
+    "İndirilmedi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not Downloaded"
+          }
+        }
+      }
+    },
+    "İndirilmiş dosyaları da silinir.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Its downloaded files will also be deleted."
+          }
+        }
+      }
+    },
+    "İndirme arka planda sürecek; bu arada devam edebilirsin.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The download continues in the background; you can go on in the meantime."
+          }
+        }
+      }
+    },
+    "İndirme bitince dikte bu modeli kullanır.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dictation will use this model once the download finishes."
+          }
+        }
+      }
+    },
+    "İndirme duraklatıldı": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Download paused"
+          }
+        }
+      }
+    },
+    "İngilizce dikte": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "English dictation"
+          }
+        }
+      }
+    },
+    "İngilizce olarak yeniden çevir (⌘L)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transcribe again in English (⌘L)"
+          }
+        }
+      }
+    },
+    "İngilizce olarak yeniden çevriliyor…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transcribing again in English…"
+          }
+        }
+      }
+    },
+    "İstersen modeli daha sonra Modeller bölümünden de indirebilirsin.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can also download the model later in the Models tab."
+          }
+        }
+      }
+    },
+    "İzin ver": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow"
+          }
+        }
+      }
+    },
+    "İzin vermeden de devam edebilirsin; dikte için mikrofon izni gerekecek.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can continue without it; dictation will need microphone access."
+          }
+        }
+      }
+    },
+    "Şimdi boşalt": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unload Now"
+          }
+        }
+      }
+    },
+    "Şimdilik atla": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skip for now"
+          }
+        }
+      }
+    },
+    "“%@” eklendi. Kullanmak için indir.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%@” added. Download it to use it."
+          }
+        }
+      }
+    },
+    "“%@” için kayıt bulunamadı.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No entries found for “%@”."
+          }
+        }
+      }
+    },
+    "“%@” listeden kaldırılsın mı?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove “%@” from the list?"
+          }
+        }
+      }
+    },
+    "“%@” silinsin mi?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete “%@”?"
+          }
+        }
+      }
+    },
+    "“%@” terimi silinsin mi?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete the term “%@”?"
+          }
+        }
+      }
+    },
+    "“İzin ver”e bastığında macOS sana soracak.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOS will ask you when you click “Allow”."
           }
         }
       }
     }
   },
-  "version" : "1.0"
+  "version": "1.0"
 }

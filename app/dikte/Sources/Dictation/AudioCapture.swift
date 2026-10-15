@@ -9,8 +9,11 @@ nonisolated final class AudioCapture: @unchecked Sendable {
     /// Samples per waveform level: 512 at 16 kHz = 32 ms ≈ 30 levels/s.
     static let levelWindow = 512
 
-    struct CaptureError: LocalizedError {
-        var errorDescription: String?
+    /// Shown via `DictationController` (which localizes it; this class is not on the main actor).
+    enum CaptureError: Error {
+        case noDevice
+        case startFailed(String)
+        case tooManyRestarts
     }
 
     /// Input devices for the Settings picker. `uid` is the AVCaptureDevice uniqueID
@@ -87,7 +90,7 @@ nonisolated final class AudioCapture: @unchecked Sendable {
         }
         let format = input.outputFormat(forBus: 0)
         guard format.sampleRate > 0, format.channelCount > 0 else {
-            throw CaptureError(errorDescription: "Mikrofon bulunamadı.")
+            throw CaptureError.noDevice
         }
         converter = nil
         levelCarry = []
@@ -100,7 +103,7 @@ nonisolated final class AudioCapture: @unchecked Sendable {
             try engine.start()
         } catch {
             input.removeTap(onBus: 0)
-            throw CaptureError(errorDescription: "Mikrofon açılamadı: \(error.localizedDescription)")
+            throw CaptureError.startFailed(error.localizedDescription)
         }
     }
 
@@ -111,7 +114,7 @@ nonisolated final class AudioCapture: @unchecked Sendable {
         engine.stop()
         restarts += 1
         do {
-            guard restarts <= 3 else { throw CaptureError() }
+            guard restarts <= 3 else { throw CaptureError.tooManyRestarts }
             try configure()
         } catch {
             stop()

@@ -66,10 +66,12 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
-            Section("Dikte") {
-                KeyboardShortcuts.Recorder("Dikte kısayolu", name: .dictate)
+            languageSection
+
+            Section(L("Dikte")) {
+                KeyboardShortcuts.Recorder(L("Dikte kısayolu"), name: .dictate)
                 microphonePicker
-                LabeledContent("Sessizlik süresi") {
+                LabeledContent(L("Sessizlik süresi")) {
                     HStack {
                         Slider(value: $settings.silenceSeconds, in: 1...10, step: 0.5)
                             .frame(maxWidth: 220)
@@ -78,63 +80,64 @@ struct SettingsView: View {
                             .frame(width: 48, alignment: .trailing)
                     }
                 }
-                .help("Konuşma bittikten sonra bu kadar sessizlik olunca kayıt kendiliğinden biter.")
-                Toggle("Ses efektleri", isOn: $settings.soundsEnabled)
+                .help(L("Konuşma bittikten sonra bu kadar sessizlik olunca kayıt kendiliğinden biter."))
+                Toggle(L("Ses efektleri"), isOn: $settings.soundsEnabled)
             }
 
             Section {
-                LabeledContent("Modelin boşta kalma süresi") {
+                LabeledContent(L("Modelin boşta kalma süresi")) {
                     Stepper(value: $settings.idleUnloadMinutes, in: 0...60) {
-                        Text(settings.idleUnloadMinutes == 0 ? "Hiç" : "\(settings.idleUnloadMinutes) dk")
+                        Text(settings.idleUnloadMinutes == 0
+                             ? L("Hiç") : L("%@ dk", Fmt.int(settings.idleUnloadMinutes)))
                             .monospacedDigit()
                     }
                 }
-                LabeledContent("En az boş disk alanı") {
+                LabeledContent(L("En az boş disk alanı")) {
                     Stepper(value: $settings.minFreeDiskGB, in: 1...100) {
-                        Text("\(settings.minFreeDiskGB) GB").monospacedDigit()
+                        Text(verbatim: "\(Fmt.int(settings.minFreeDiskGB)) GB").monospacedDigit()
                     }
                 }
             } header: {
-                Text("Model ve bellek")
+                Text(L("Model ve bellek"))
             } footer: {
                 Text(settings.idleUnloadMinutes == 0
-                     ? "Model, sen boşaltana kadar bellekte kalır."
-                     : "Son diktenin üzerinden bu kadar zaman geçince model bellekten boşaltılır. İndirmeler, sonrasında diskte bu kadar yer kalmayacaksa başlamaz.")
+                     ? L("Model, sen boşaltana kadar bellekte kalır.")
+                     : L("Son diktenin üzerinden bu kadar zaman geçince model bellekten boşaltılır. İndirmeler, sonrasında diskte bu kadar yer kalmayacaksa başlamaz."))
                     .font(.caption).foregroundStyle(.secondary)
             }
 
             Section {
-                LabeledContent("Geçmiş sınırı") {
+                LabeledContent(L("Geçmiş sınırı")) {
                     HStack(spacing: 6) {
                         if settings.historyLimit == 0 {
-                            Text("Sınırsız").foregroundStyle(.secondary)
+                            Text(L("Sınırsız")).foregroundStyle(.secondary)
                         }
-                        TextField("", value: $settings.historyLimit, format: .number.locale(Fmt.tr))
+                        TextField("", value: $settings.historyLimit, format: .number.locale(Fmt.locale))
                             .labelsHidden()
                             .multilineTextAlignment(.trailing)
                             .frame(width: 64)
                         Stepper("", value: $settings.historyLimit, in: 0...100_000, step: 10)
                             .labelsHidden()
-                        Text("kayıt")
+                        Text(L("kayıt"))
                     }
                 }
             } header: {
-                Text("Geçmiş")
+                Text(L("Geçmiş"))
             } footer: {
-                Text("0 = Sınırsız. Sınır aşılınca en eski kayıtlar silinir.")
+                Text(L("0 = Sınırsız. Sınır aşılınca en eski kayıtlar silinir."))
                     .font(.caption).foregroundStyle(.secondary)
             }
 
-            Section("Genel") {
-                Toggle("Açılışta başlat", isOn: Binding(
+            Section(L("Genel")) {
+                Toggle(L("Açılışta başlat"), isOn: Binding(
                     get: { loginStatus == .enabled || loginStatus == .requiresApproval },
                     set: setLaunchAtLogin
                 ))
                 if loginStatus == .requiresApproval {
                     HStack {
-                        Text("Sistem Ayarları'nda onay bekliyor.").foregroundStyle(.secondary)
+                        Text(L("Sistem Ayarları'nda onay bekliyor.")).foregroundStyle(.secondary)
                         Spacer()
-                        Button("Giriş Öğeleri'ni aç") { SMAppService.openSystemSettingsLoginItems() }
+                        Button(L("Giriş Öğeleri'ni aç")) { SMAppService.openSystemSettingsLoginItems() }
                     }
                     .font(.callout)
                 }
@@ -155,15 +158,36 @@ struct SettingsView: View {
         .onAppear(perform: refreshLoginStatus)
     }
 
+    private var languageSection: some View {
+        Section {
+            Picker(L("Arayüz dili"), selection: $settings.uiLanguage) {
+                ForEach(AppLanguage.allCases) { lang in
+                    Text(lang.nativeName).tag(lang)
+                }
+            }
+            Picker(L("Dikte dili"), selection: $settings.dictationLanguage) {
+                ForEach(DictationLanguage.allCases, id: \.self) { lang in
+                    Text(lang.title).tag(lang)
+                }
+            }
+        } header: {
+            // Bilingual on purpose: findable after switching to a language one can't read.
+            Text(verbatim: "Dil / Language")
+        } footer: {
+            Text(settings.dictationLanguage.hint)
+                .font(.caption).foregroundStyle(.secondary)
+        }
+    }
+
     private var microphonePicker: some View {
-        Picker("Mikrofon", selection: $settings.microphoneUID) {
-            Text("Sistem varsayılanı").tag(String?.none)
+        Picker(L("Mikrofon"), selection: $settings.microphoneUID) {
+            Text(L("Sistem varsayılanı")).tag(String?.none)
             if !microphones.isEmpty { Divider() }
             ForEach(microphones) { mic in
                 Text(mic.name).tag(Optional(mic.uid))
             }
             if let uid = settings.microphoneUID, !microphones.contains(where: { $0.uid == uid }) {
-                Text("Bağlı olmayan mikrofon").tag(Optional(uid))
+                Text(L("Bağlı olmayan mikrofon")).tag(Optional(uid))
             }
         }
     }
@@ -174,7 +198,7 @@ struct SettingsView: View {
             Text((dataDir.path as NSString).abbreviatingWithTildeInPath)
                 .lineLimit(1).truncationMode(.middle)
                 .textSelection(.enabled)
-            Button("Finder'da göster") { NSWorkspace.shared.open(dataDir) }
+            Button(L("Finder'da göster")) { NSWorkspace.shared.open(dataDir) }
                 .buttonStyle(.link)
             Spacer(minLength: 12)
             Circle().fill(engineStatus.display.color).frame(width: 8, height: 8)
@@ -199,9 +223,28 @@ struct SettingsView: View {
             try launchAtLogin.setEnabled(on)
             loginError = nil
         } catch {
-            loginError = (on ? "Açılışta başlatma açılamadı: " : "Açılışta başlatma kapatılamadı: ")
-                + error.localizedDescription
+            loginError = on
+                ? L("Açılışta başlatma açılamadı: %@", error.localizedDescription)
+                : L("Açılışta başlatma kapatılamadı: %@", error.localizedDescription)
         }
         refreshLoginStatus()
+    }
+}
+
+extension DictationLanguage {
+    var title: String {
+        switch self {
+        case .auto: L("Otomatik (Türkçe + English)")
+        case .tr: L("Türkçe")
+        case .en: L("English")
+        }
+    }
+
+    var hint: String {
+        switch self {
+        case .auto: L("Her diktede dil algılanır; panelde TR/EN düğmesiyle değiştirebilirsin.")
+        case .tr: L("Her dikte Türkçe olarak yazıya çevrilir.")
+        case .en: L("Her dikte İngilizce olarak yazıya çevrilir.")
+        }
     }
 }

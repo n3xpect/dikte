@@ -2,6 +2,10 @@ import Foundation
 
 /// Learning step after Shift+Enter: finds words the user corrected in the text area that look like
 /// term fixes (e.g. «cage» → «cache»). Pure logic, no state.
+///
+/// Turkish results: a replacement counts when it is spelled like a term (English/software look).
+/// English results: everything looks like that, so only replacements by an existing term
+/// (its spelling or an accepted spelling, case-insensitive) count.
 enum FixLearning {
     static let maxSuggestions = 3
     /// Longest phrase (in words) on either side of a replacement that still counts as a fix.
@@ -14,7 +18,8 @@ enum FixLearning {
         var key: String
     }
 
-    static func suggestions(original: String, edited: String, terms: [Term]) -> [FixSuggestion] {
+    static func suggestions(original: String, edited: String, terms: [Term],
+                            language: String = "tr") -> [FixSuggestion] {
         var known = Set<String>()
         for t in terms {
             known.insert(fold(t.term))
@@ -25,7 +30,8 @@ enum FixLearning {
         for hunk in hunks(tokens(original), tokens(edited)) {
             guard (1...maxPhraseWords).contains(hunk.wrong.count),
                   (1...maxPhraseWords).contains(hunk.right.count),
-                  let s = candidate(wrong: hunk.wrong.map(\.core), right: hunk.right.map(\.core), known: known)
+                  let s = candidate(wrong: hunk.wrong.map(\.core), right: hunk.right.map(\.core), known: known,
+                                    knownOnly: language == "en")
             else { continue }
             let id = fold(s.wrong) + "→" + fold(s.right)
             guard seen.insert(id).inserted else { continue }
@@ -91,7 +97,8 @@ enum FixLearning {
 
     // MARK: - Is this replacement a term fix?
 
-    static func candidate(wrong: [String], right: [String], known: Set<String>) -> FixSuggestion? {
+    static func candidate(wrong: [String], right: [String], known: Set<String>,
+                          knownOnly: Bool = false) -> FixSuggestion? {
         var w = wrong, r = right
         // Turkish suffixes after an apostrophe ("branch'i") — compare and store stems only.
         let (wStem, wSuffix) = splitApostrophe(w[w.count - 1])
@@ -107,6 +114,7 @@ enum FixLearning {
         guard !wk.isEmpty, !rk.isEmpty, wk != rk else { return nil }   // case / punctuation / suffix only
         guard !known.contains(wk) else { return nil }   // swapping one term for another is a content edit
         if known.contains(rk) { return FixSuggestion(wrong: wrongText, right: rightText) }
+        if knownOnly { return nil }
         if w.count == 1, r.count == 1, isSuffixChange(wk, rk) { return nil }
         guard looksLikeTerm(rightText, replacing: wrongText) else { return nil }
         return FixSuggestion(wrong: wrongText, right: rightText)
@@ -159,8 +167,9 @@ enum FixLearning {
 enum DictationSelfCheck {
     @discardableResult
     static func run() -> [String] {
-        let terms = [Term(term: "Kubernetes"), Term(term: "branch", fix: ["brenç"]), Term(term: "Redis")]
-        let cases: [(String, String, [String])] = [
+        let terms = [Term(term: "Kubernetes"), Term(term: "branch", fix: ["brenç"]), Term(term: "Redis"),
+                     Term(term: "Node.js", accept: ["NodeJS"])]
+        let tr: [(String, String, [String])] = [
             ("Redis cage temizle", "Redis cache temizle", ["cage→cache"]),
             ("branch'ı merge et", "branch'i merge et", []),
             ("Merhaba dünya nasılsın", "Merhaba, dünya. Nasılsın?", []),
@@ -178,12 +187,28 @@ enum DictationSelfCheck {
             ("a cage b keş c kaş d dök e", "a cache b cash c crash d dock e", ["cage→cache", "keş→cash", "kaş→crash"]),
             ("", "", []),
         ]
+        // English results: only replacements by a known term spelling (case-insensitive).
+        let en: [(String, String, [String])] = [
+            ("clear the redis cage", "clear the Redis cache", []),
+            ("I want to go home", "I need to go home", []),
+            ("deploy it to cooper netties", "deploy it to Kubernetes", ["cooper netties→Kubernetes"]),
+            ("merge the brunch first", "merge the branch first", ["brunch→branch"]),
+            ("the brunch's tests fail", "the branch's tests fail", ["brunch→branch"]),
+            ("restart readies now", "restart REDIS now", ["readies→REDIS"]),
+            ("install note js", "install NodeJS", ["note js→NodeJS"]),
+            ("Redis is down", "Postgres is down", []),
+            ("open a pull request", "open a new pull request", []),
+            ("get hub actions fail", "GitHub actions fail", []),
+            ("", "", []),
+        ]
         var failures: [String] = []
-        for (original, edited, expected) in cases {
-            let got = FixLearning.suggestions(original: original, edited: edited, terms: terms)
-                .map { "\($0.wrong)→\($0.right)" }
-            if got != expected {
-                failures.append("«\(original)» → «\(edited)»: beklenen \(expected), gelen \(got)")
+        for (language, cases) in [("tr", tr), ("en", en)] {
+            for (original, edited, expected) in cases {
+                let got = FixLearning.suggestions(original: original, edited: edited, terms: terms, language: language)
+                    .map { "\($0.wrong)→\($0.right)" }
+                if got != expected {
+                    failures.append("[\(language)] «\(original)» → «\(edited)»: beklenen \(expected), gelen \(got)")
+                }
             }
         }
         for f in failures { print("DictationSelfCheck FAIL:", f) }

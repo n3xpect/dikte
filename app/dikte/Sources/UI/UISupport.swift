@@ -3,28 +3,43 @@ import SwiftUI
 
 // Shared formatting, colors and small views for the main window.
 
+/// Formatting in the UI language (`Localizer.shared.language`). Reading the language here keeps
+/// SwiftUI bodies / observation-tracked code that format values in sync with language changes.
 enum Fmt {
+    /// Turkish locale for text processing (search folding, term sorting) — not UI-language dependent.
     static let tr = Locale(identifier: "tr_TR")
     private static let gib = 1_073_741_824.0
 
-    /// "3,1 GB" (binary GB, so the "En az boş disk alanı" setting reads as a round number).
+    static var locale: Locale { Localizer.shared.language.locale }
+
+    /// "3,1 GB" / "3.1 GB" (binary GB, so the "En az boş disk alanı" setting reads as a round number).
     static func gb(_ bytes: Int64) -> String {
         let v = Double(bytes) / gib
         let digits = v >= 100 || v == v.rounded() ? 0 : 1
-        return v.formatted(.number.precision(.fractionLength(digits)).locale(tr)) + " GB"
+        return v.formatted(.number.precision(.fractionLength(digits)).locale(locale)) + Fmt.nbsp + "GB"
     }
 
-    /// "3", "3,5"
+    /// "3", "3,5" / "3.5"
     static func number(_ v: Double, maxFraction: Int = 1) -> String {
-        v.formatted(.number.precision(.fractionLength(0...maxFraction)).locale(tr))
+        v.formatted(.number.precision(.fractionLength(0...maxFraction)).locale(locale))
     }
 
-    /// Turkish percent sign goes first: "%62".
+    /// "1.234" / "1,234"
+    static func int(_ v: Int) -> String { v.formatted(.number.locale(locale)) }
+
+    /// "%62" in Turkish, "62%" in English; rounded down so 100% means done.
     static func percent(_ fraction: Double) -> String {
-        "%" + Int((fraction * 100).rounded(.down)).formatted(.number.locale(tr))
+        let whole = (fraction * 100).rounded(.down) / 100
+        return whole.formatted(.percent.precision(.fractionLength(0)).locale(locale))
     }
 
-    static func seconds(_ s: Double) -> String { number(s) + " sn" }
+    /// "3,5 sn" / "3.5 s"
+    static func seconds(_ s: Double) -> String {
+        L("%@ sn", number(s)).replacingOccurrences(of: " ", with: nbsp)
+    }
+
+    /// Keeps a number and its unit on one line.
+    static let nbsp = "\u{00A0}"
 
     /// "4:05"
     static func countdown(_ s: TimeInterval) -> String {
@@ -33,7 +48,13 @@ enum Fmt {
     }
 
     static func date(_ d: Date) -> String {
-        d.formatted(.dateTime.day().month(.abbreviated).year().hour().minute().locale(tr))
+        d.formatted(.dateTime.day().month(.abbreviated).year().hour().minute().locale(locale))
+    }
+
+    /// Count + noun with the English singular handled by a separate "1 …" key:
+    /// `count(n, one: L("1 kayıt"), other: { L("%@ kayıt", $0) })`.
+    static func count(_ n: Int, one: @autoclosure () -> String, other: (String) -> String) -> String {
+        n == 1 ? one() : other(int(n))
     }
 }
 
@@ -155,7 +176,7 @@ struct SearchField: View {
                     Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
                 }
                 .buttonStyle(.plain)
-                .help("Aramayı temizle")
+                .help(L("Aramayı temizle"))
             }
         }
         .padding(.horizontal, 8)
@@ -176,10 +197,10 @@ extension EngineStatus {
     /// Status line text and dot color for the UI.
     var display: (text: String, color: Color) {
         switch self {
-        case .running: ("Motor çalışıyor", Palette.loaded)
-        case .starting: ("Motor başlatılıyor…", Palette.loading)
-        case .stopped: ("Motor çalışmıyor", Palette.danger)
-        case .failed(let message): ("Motor çalışmıyor: \(message)", Palette.danger)
+        case .running: (L("Motor çalışıyor"), Palette.loaded)
+        case .starting: (L("Motor başlatılıyor…"), Palette.loading)
+        case .stopped: (L("Motor çalışmıyor"), Palette.danger)
+        case .failed(let message): (L("Motor çalışmıyor: %@", message), Palette.danger)
         }
     }
 }

@@ -54,14 +54,14 @@ private struct ListeningContent: View {
                 Image(systemName: "mic.fill")
                     .foregroundStyle(.red)
                     .symbolEffect(.pulse, options: .repeating, isActive: !controller.speechDetected)
-                Text(controller.speechDetected ? "Konuşma algılandı" : "Dinliyorum…")
+                Text(controller.speechDetected ? L("Konuşma algılandı") : L("Dinliyorum…"))
                     .font(.headline)
                 Spacer(minLength: 8)
                 if controller.modelLoading { ModelLoadingBadge() }
             }
             WaveformView(levels: controller.levels, active: controller.speechDetected)
                 .frame(height: 44)
-            HintText("**Enter**: bitir · **Esc**: vazgeç")
+            HintText(L("**Enter**: bitir · **Esc**: vazgeç"))
         }
     }
 }
@@ -73,10 +73,10 @@ private struct TranscribingContent: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 10) {
                 ProgressView().controlSize(.small)
-                Text(modelLoading ? "Model hazırlanıyor…" : "Çevriliyor…").font(.headline)
+                Text(modelLoading ? L("Model hazırlanıyor…") : L("Çevriliyor…")).font(.headline)
                 Spacer(minLength: 0)
             }
-            HintText("**Esc**: vazgeç")
+            HintText(L("**Esc**: vazgeç"))
         }
     }
 }
@@ -86,17 +86,113 @@ private struct EditingContent: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            DictationTextView(text: $controller.text)
+            DictationTextView(text: $controller.text, isEditable: !controller.retranscribing)
                 .background {
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
                         .fill(Color(nsColor: .textBackgroundColor).opacity(0.55))
                 }
                 .overlay {
+                    if controller.retranscribing { RetranscribingOverlay(target: controller.otherLanguage) }
+                }
+                .overlay {
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
                         .strokeBorder(.primary.opacity(0.1), lineWidth: 1)
                 }
-            HintText("**Shift+Enter**: kopyala · **Enter**: yeni satır · **Esc**: kapat")
+            if let error = controller.languageError {
+                Label(error, systemImage: "exclamationmark.triangle.fill")
+                    .font(.callout)
+                    .foregroundStyle(.orange)
+            }
+            if controller.confirmingLanguageSwitch {
+                ConfirmSwitchRow(controller: controller)
+            } else {
+                HStack(alignment: .center, spacing: 8) {
+                    if controller.retranscribing {
+                        HintText(L("**Esc**: vazgeç"))
+                    } else if controller.canSwitchLanguage {
+                        HintText(L("**Shift+Enter**: kopyala · **Enter**: yeni satır · **⌘L**: dil · **Esc**: kapat"))
+                    } else {
+                        HintText(L("**Shift+Enter**: kopyala · **Enter**: yeni satır · **Esc**: kapat"))
+                    }
+                    Spacer(minLength: 8)
+                    LanguageBadge(controller: controller)
+                }
+            }
         }
+    }
+}
+
+/// Detected language ("TR" / "EN"); click = transcribe again in the other language (⌘L).
+private struct LanguageBadge: View {
+    let controller: DictationController
+
+    var body: some View {
+        let enabled = controller.canSwitchLanguage && !controller.retranscribing
+        Button { controller.switchLanguage() } label: {
+            HStack(spacing: 4) {
+                Text(verbatim: controller.language.uppercased())
+                    .font(.caption.weight(.semibold))
+                if controller.canSwitchLanguage {
+                    Image(systemName: "arrow.left.arrow.right")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background(.quaternary, in: .capsule)
+            .contentShape(.capsule)
+        }
+        .buttonStyle(.plain)
+        .disabled(!enabled)
+        .help(help)
+        .accessibilityLabel(controller.language == "en" ? L("Dil: İngilizce") : L("Dil: Türkçe"))
+    }
+
+    private var help: String {
+        guard controller.canSwitchLanguage else { return L("Bu kayıt yeniden çevrilemez") }
+        return controller.otherLanguage == "en"
+            ? L("İngilizce olarak yeniden çevir (⌘L)")
+            : L("Türkçe olarak yeniden çevir (⌘L)")
+    }
+}
+
+/// Covers the text area while the recording is transcribed again.
+private struct RetranscribingOverlay: View {
+    let target: String
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(Color(nsColor: .windowBackgroundColor).opacity(0.88))
+            HStack(spacing: 8) {
+                ProgressView().controlSize(.small)
+                Text(target == "en" ? L("İngilizce olarak yeniden çevriliyor…") : L("Türkçe olarak yeniden çevriliyor…"))
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+}
+
+/// The user edited the text; switching language would replace it.
+private struct ConfirmSwitchRow: View {
+    let controller: DictationController
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundStyle(.orange)
+            Text(L("Düzenlemen kaybolacak — yine de çevir?"))
+                .font(.callout)
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 8)
+            Button(L("Vazgeç")) { controller.cancelLanguageSwitch() }
+            Button(L("Çevir")) { controller.switchLanguage() }
+                .buttonStyle(.borderedProminent)
+        }
+        .controlSize(.small)
     }
 }
 
@@ -105,22 +201,22 @@ private struct SuggestionsContent: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Label("Panoya kopyalandı", systemImage: "checkmark.circle.fill")
+            Label(L("Panoya kopyalandı"), systemImage: "checkmark.circle.fill")
                 .font(.headline)
                 .foregroundStyle(.green)
             ForEach(controller.suggestions) { s in
                 HStack(spacing: 8) {
-                    Text("«\(s.wrong)» → «\(s.right)» terimlere eklensin mi?")
+                    Text(L("«%@» → «%@» terimlere eklensin mi?", s.wrong, s.right))
                         .lineLimit(2)
                         .fixedSize(horizontal: false, vertical: true)
                     Spacer(minLength: 8)
-                    Button("Ekle") { controller.acceptSuggestion(s) }
+                    Button(L("Ekle")) { controller.acceptSuggestion(s) }
                         .buttonStyle(.borderedProminent)
-                    Button("Geç") { controller.skipSuggestion(s) }
+                    Button(L("Geç")) { controller.skipSuggestion(s) }
                 }
                 .controlSize(.small)
             }
-            HintText("**Esc**: hepsini geç")
+            HintText(L("**Esc**: hepsini geç"))
         }
     }
 }
@@ -146,7 +242,7 @@ private struct FailedContent: View {
             }
             if !controller.isNotice {
                 HStack {
-                    HintText("**Esc**: kapat")
+                    HintText(L("**Esc**: kapat"))
                     Spacer(minLength: 8)
                     if let action = controller.failureAction {
                         Button(action.title) { controller.performFailureAction() }
@@ -161,11 +257,12 @@ private struct FailedContent: View {
 // MARK: - Pieces
 
 private struct HintText: View {
-    let text: LocalizedStringKey
-    init(_ text: LocalizedStringKey) { self.text = text }
+    /// Already localized; `**bold**` marks the keys.
+    let text: String
+    init(_ text: String) { self.text = text }
 
     var body: some View {
-        Text(text)
+        Text((try? AttributedString(markdown: text)) ?? AttributedString(text))
             .font(.caption)
             .foregroundStyle(.secondary)
     }
@@ -175,7 +272,7 @@ private struct ModelLoadingBadge: View {
     var body: some View {
         HStack(spacing: 6) {
             ProgressView().controlSize(.mini)
-            Text("Model hazırlanıyor…").font(.caption)
+            Text(L("Model hazırlanıyor…")).font(.caption)
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 3)
@@ -251,6 +348,8 @@ private struct VisualEffectBackground: NSViewRepresentable {
 /// by `DictationPanelController` before they reach it.
 struct DictationTextView: NSViewRepresentable {
     @Binding var text: String
+    /// Off while the text is being replaced (re-transcription).
+    var isEditable = true
     var minHeight: CGFloat = 64
     var maxHeight: CGFloat = 260
 
@@ -281,6 +380,7 @@ struct DictationTextView: NSViewRepresentable {
         tv.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: .greatestFiniteMagnitude)
         tv.textContainer?.widthTracksTextView = true
         tv.string = text
+        tv.isEditable = isEditable
         tv.delegate = context.coordinator
 
         let scroll = NSScrollView()
@@ -294,8 +394,14 @@ struct DictationTextView: NSViewRepresentable {
 
     func updateNSView(_ scroll: NSScrollView, context: Context) {
         context.coordinator.text = $text
-        if let tv = scroll.documentView as? NSTextView, tv.string != text {
+        guard let tv = scroll.documentView as? NSTextView else { return }
+        if tv.isEditable != isEditable { tv.isEditable = isEditable }
+        if tv.string != text {
+            // Replaced from outside (new transcription): caret back to the end.
             tv.string = text
+            let end = NSRange(location: (text as NSString).length, length: 0)
+            tv.setSelectedRange(end)
+            tv.scrollRangeToVisible(end)
         }
     }
 
@@ -347,6 +453,10 @@ private final class FocusingTextView: NSTextView {
 #Preview("Model hazırlanıyor") { DictationPanelView(controller: .preview(.listeningModelLoading)).padding() }
 #Preview("Çevriliyor") { DictationPanelView(controller: .preview(.transcribing)).padding() }
 #Preview("Düzenleme") { DictationPanelView(controller: .preview(.editing)).padding() }
+#Preview("Düzenleme EN") { DictationPanelView(controller: .preview(.editingEnglish)).padding() }
+#Preview("Yeniden çevriliyor") { DictationPanelView(controller: .preview(.retranscribing)).padding() }
+#Preview("Dil değişimi onayı") { DictationPanelView(controller: .preview(.confirmSwitch)).padding() }
+#Preview("Dil hatası") { DictationPanelView(controller: .preview(.languageError)).padding() }
 #Preview("Öneriler") { DictationPanelView(controller: .preview(.suggestions)).padding() }
 #Preview("Hata") { DictationPanelView(controller: .preview(.failed)).padding() }
 #Preview("Konuşma yok") { DictationPanelView(controller: .preview(.notice)).padding() }
