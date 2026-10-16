@@ -349,7 +349,7 @@ enum UIPreviewRenderer {
         VStack(alignment: .leading, spacing: 6) {
             HStack { Text(L("Dikteyi başlat")); Spacer(); Text(verbatim: "⌥Space").foregroundStyle(.secondary) }
             Text(L("Dikteyi bitir"))
-            HStack { Text(L("Ayarlar…")); Spacer(); Text(verbatim: "⌘,").foregroundStyle(.secondary) }
+            Text(L("Ayarlar…"))
             Divider()
             ForEach([EngineStatus.starting, .stopped, .failed("Python bulunamadı.")].map(\.display.text),
                     id: \.self) {

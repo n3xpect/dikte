@@ -38,7 +38,7 @@ final class StatusItemController {
         dictate.setShortcut(for: .dictate)
         dictateItem = dictate
         menu.addItem(dictate)
-        let open = menuTarget.item(key: ",") { MainWindowController.shared.show() }
+        let open = menuTarget.item { MainWindowController.shared.show() }
         openItem = open
         menu.addItem(open)
         menu.addItem(.separator())
