@@ -5,6 +5,9 @@ import Foundation
 ///     DIKTE_DATA_DIR=/tmp/dikte-test DIKTE_ENGINE_DIR=<repo>/app/engine \
 ///       dikte.app/Contents/MacOS/dikte --selftest [file.wav] [--realtime] [--no-restart]
 ///
+/// Uses the default settings, not settings.json; for long recordings set
+/// DIKTE_SELFTEST_MAX_DURATION / DIKTE_SELFTEST_SILENCE (seconds).
+///
 /// Starts the engine, reads the /events snapshot, pushes config + default terms, checks error
 /// mapping, streams the WAV through /dictate, tests cancel and crash-restart, then stops the
 /// engine. Prints one JSON object per line to stdout and exits (0 = all checks passed).
@@ -67,6 +70,8 @@ enum SelfTest {
         var config = AppSettings().engineConfig
         config.selectedModel = env["DIKTE_SELFTEST_MODEL"] ?? config.selectedModel
         config.idleUnloadS = 900   // non-default, so config_pushed can see it in the snapshot
+        if let v = env["DIKTE_SELFTEST_MAX_DURATION"].flatMap(Double.init) { config.maxDurationS = v }
+        if let v = env["DIKTE_SELFTEST_SILENCE"].flatMap(Double.init) { config.silenceS = v }
         engine.pushConfig(config)
         let t0 = Date()
         engine.start()
