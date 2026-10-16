@@ -31,8 +31,8 @@ targets:
         CFBundleDevelopmentRegion: tr
         CFBundleLocalizations: [tr, en]
         CFBundleDisplayName: Dikte
-        CFBundleShortVersionString: "0.4.1"
-        CFBundleVersion: "8"
+        CFBundleShortVersionString: "0.4.2"
+        CFBundleVersion: "9"
         LSUIElement: true
         LSApplicationCategoryType: public.app-category.productivity
         NSMicrophoneUsageDescription: "Dikte, konuşmanı yazıya çevirmek için mikrofonu kullanır. Ses bu Mac'ten dışarı çıkmaz."
