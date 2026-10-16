@@ -129,7 +129,7 @@
   "Son diktenin üzerinden bu kadar zaman geçince model bellekten boşaltılır. İndirmeler, sonrasında diskte bu kadar yer kalmayacaksa başlamaz.": "The model is unloaded from memory this long after the last dictation. Downloads won’t start if less than this much disk space would remain.",
   "Son metin": "Final text",
   "Sonuç yok": "No Results",
-  "Sürüm %@ (%@)": "Version %@ (%@)",
+  "Sürüm %@": "Version %@",
   "Sürüm notları": "Release notes",
   "Sınırsız": "Unlimited",
   "Terim": "Term",

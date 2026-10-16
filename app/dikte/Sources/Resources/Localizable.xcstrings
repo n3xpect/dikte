@@ -331,16 +331,6 @@
         }
       }
     },
-    "Ayarlar'da başka bir mikrofon seçmeyi dene.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Try choosing another microphone in Settings."
-          }
-        }
-      }
-    },
     "Açık": {
       "localizations": {
         "en": {
@@ -1391,6 +1381,16 @@
         }
       }
     },
+    "Kayıt sayfasında başka bir mikrofon seçmeyi dene.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try choosing another microphone on the Recording page."
+          }
+        }
+      }
+    },
     "Kayıt seç": {
       "localizations": {
         "en": {
@@ -2361,12 +2361,12 @@
         }
       }
     },
-    "Sürüm %@ (%@)": {
+    "Sürüm %@": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Version %@ (%@)"
+            "value": "Version %@"
           }
         }
       }

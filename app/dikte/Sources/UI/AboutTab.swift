@@ -9,7 +9,6 @@ struct AboutTab: View {
         let selected = state.settings.settings.selectedModel
         AboutView(
             version: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?",
-            build: Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "?",
             modelLabel: state.engine.models.first { $0.id == selected }?.label ?? selected,
             engineStatus: state.engine.status,
             dataDir: Paths.dataDir
@@ -20,7 +19,6 @@ struct AboutTab: View {
 /// Hakkında: version, what Dikte is, links, model / engine / data folder.
 struct AboutView: View {
     var version: String
-    var build: String
     var modelLabel: String
     var engineStatus: EngineStatus
     var dataDir: URL
@@ -35,7 +33,7 @@ struct AboutView: View {
                         .resizable()
                         .frame(width: 80, height: 80)
                     Text(verbatim: "Dikte").font(.title2.weight(.semibold))
-                    Text(L("Sürüm %@ (%@)", version, build))
+                    Text(L("Sürüm %@", version))
                         .foregroundStyle(.secondary)
                         .textSelection(.enabled)
                     Text(L("Mac'inde çalışan Türkçe ve İngilizce dikte. Ses hiçbir yere gönderilmez."))

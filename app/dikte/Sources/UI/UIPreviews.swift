@@ -186,7 +186,7 @@ enum PreviewData {
     }
 
     static func aboutView(status: EngineStatus = .running(port: 1)) -> some View {
-        AboutView(version: "0.4.0", build: "7", modelLabel: "Whisper large-v3", engineStatus: status,
+        AboutView(version: "0.4.1", modelLabel: "Whisper large-v3", engineStatus: status,
                   dataDir: URL(fileURLWithPath: NSHomeDirectory() + "/Library/Application Support/dikte"))
     }
 
