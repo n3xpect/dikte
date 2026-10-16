@@ -88,7 +88,7 @@ async def models_and_config(eng: EngineProc, ev: Events):
     assert (await eng.req("PUT", "/config", {"silence_s": "x"}))[0] == 400
     assert (await eng.req("PUT", "/config", {"bogus": 1}))[0] == 400
     assert (await eng.req("PUT", "/config", {"terms": [{"accept": []}]}))[0] == 400
-    for bad in [{"language": "de"}, {"language": None}, {"ui_language": "auto"}]:
+    for bad in [{"language": "de"}, {"language": None}, {"ui_language": "auto"}, {"max_duration_s": 1201}]:
         st, body = await eng.req("PUT", "/config", bad)
         assert st == 400 and body["error"] == "invalid_config", (bad, body)
     cfg = {"selected_model": "large-v3", "terms": d["terms"], "silence_s": 3.0,

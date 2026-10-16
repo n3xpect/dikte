@@ -21,7 +21,7 @@ It is tuned for English software terms inside Turkish sentences (branch, commit,
 
 | Key | What it does |
 |---|---|
-| **⌥ Space** | Start dictating (press again while recording to finish) |
+| **⌥ Space** | Start dictating (press again while recording to finish); also **Start dictation** in the menu bar menu |
 | 3 s of silence / **Enter** | Stop recording and transcribe |
 | **Esc** | Cancel while recording; close the panel when editing |
 | **Enter** (while editing) | Send the text to the default target (clipboard unless you choose an app) and close the panel |
@@ -29,14 +29,20 @@ It is tuned for English software terms inside Turkish sentences (branch, commit,
 | **⌘1–9** / **↓** | Send to another app in the panel's list / pick one with the arrow keys |
 | **⌘L** / TR-EN button | Transcribe the same recording in the other language |
 
-Prefer Enter for new lines? **Settings › Text delivery › Send with** swaps the two: Shift+Enter sends, Enter adds a new line.
+Prefer Enter for new lines? **Text delivery › Send with** swaps the two: Shift+Enter sends, Enter adds a new line.
 
-The menu bar icon shows the state: green dot = model in memory, orange = loading, red = engine not running. The main window has these tabs:
+Recording stops by itself after the silence duration or at the longest recording length (2 min by default, up to 20 min); the panel shows the time as `00:42 / 02:00`.
 
-- **Settings** — interface language (English / Türkçe, switches instantly), dictation language (Automatic / Turkish / English), shortcut, microphone, silence duration, sound effects, idle unload time (the model is unloaded from memory after 5 min), minimum free disk space, history limit, launch at login.
-- **Models** — Whisper large-v3 (recommended), large-v3 turbo, and MLX Whisper models added manually from Hugging Face. The model in memory is shown in green. A download won't start if less than 10 GB would remain on disk; a model won't load if there isn't enough RAM.
+The menu bar icon shows the state: green dot = model in memory, orange = loading, red = engine not running. The main window has these pages:
+
+- **Settings** — launch at login, dictation shortcut (click and press a new one; ⓧ removes it, then dictation starts from the menu bar), interface language (English / Türkçe, switches instantly), dictation language (Automatic / Turkish / English), history limit.
+- **Recording** — microphone, silence duration, longest recording (1–20 min), sound effects.
+- **Text delivery** — default target, send key, favorites, how many other running apps the panel lists, restoring the clipboard after pasting.
+- **Permissions** — microphone and Accessibility status, with a button to grant each.
+- **Models** — Whisper large-v3 (recommended), large-v3 turbo, and MLX Whisper models added manually from Hugging Face. The model in memory is shown in green. Idle unload time (the model is unloaded from memory after 5 min) and minimum free disk space are set here: a download won't start if less than 10 GB would remain on disk; a model won't load if there isn't enough RAM.
 - **Terimler** (Terms, Turkish interface only) — the term list: accepted spellings and auto-corrected misspellings per term; search, add, edit, delete. With the English interface the tab is hidden; the terms still apply to every dictation.
-- **History** — every dictation (language, raw and corrected text, the diff between them), search, copy, delete.
+- **History** — every dictation (language, final text; when it was corrected, also the raw text and the diff), search, copy, delete.
+- **About** (bottom of the sidebar) — version, links, model, engine, data folder.
 
 The TR/EN button is meant to fix a wrongly detected language: switching a correctly detected recording to the other language translates it.
 

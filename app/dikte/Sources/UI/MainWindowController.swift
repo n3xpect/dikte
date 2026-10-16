@@ -2,10 +2,11 @@ import AppKit
 import Observation
 import SwiftUI
 
-// CONTRACT — implemented by agent "ui". Main window with tabs Ayarlar / Modeller / Terimler / Geçmiş.
+// CONTRACT — implemented by agent "ui". Main window: sidebar Ayarlar / Kayıt / Metin aktarımı / İzinler /
+// Modeller / Terimler / Geçmiş, with Hakkında pinned at the bottom.
 
 enum MainTab: String, CaseIterable, Identifiable {
-    case settings, models, terms, history
+    case settings, recording, delivery, permissions, models, terms, history, about
     var id: String { rawValue }
 }
 
@@ -13,18 +14,26 @@ extension MainTab {
     var title: String {
         switch self {
         case .settings: L("Ayarlar")
+        case .recording: L("Kayıt")
+        case .delivery: L("Metin aktarımı")
+        case .permissions: L("İzinler")
         case .models: L("Modeller")
         case .terms: L("Terimler")
         case .history: L("Geçmiş")
+        case .about: L("Hakkında")
         }
     }
 
     var symbol: String {
         switch self {
         case .settings: "gearshape"
+        case .recording: "waveform"
+        case .delivery: "paperplane"
+        case .permissions: "lock.shield"
         case .models: "cpu"
         case .terms: "character.book.closed"
         case .history: "clock.arrow.circlepath"
+        case .about: "info.circle"
         }
     }
 
@@ -35,6 +44,9 @@ extension MainTab {
     }
 
     var isVisible: Bool { Self.visible.contains(self) }
+
+    /// Sidebar list; Hakkında sits apart at the bottom.
+    static var listed: [MainTab] { visible.filter { $0 != .about } }
 }
 
 final class MainWindowController {
@@ -82,12 +94,21 @@ struct MainSplitView<Detail: View>: View {
 
     var body: some View {
         NavigationSplitView {
-            List(selection: Binding<MainTab?>(get: { tab }, set: { if let t = $0 { tab = t } })) {
-                ForEach(MainTab.visible) { t in
-                    Label(t.title, systemImage: t.symbol).tag(t)
+            VStack(spacing: 0) {
+                List(selection: selection(where: { $0 != .about })) {
+                    ForEach(MainTab.listed) { t in
+                        Label(t.title, systemImage: t.symbol).tag(t)
+                    }
                 }
+                // Hakkında: its own one-row list so it looks like the rows above but stays at the bottom.
+                Divider().padding(.horizontal, 12)
+                List(selection: selection(where: { $0 == .about })) {
+                    Label(MainTab.about.title, systemImage: MainTab.about.symbol).tag(MainTab.about)
+                }
+                .scrollDisabled(true)
+                .frame(height: 48)
             }
-            .navigationSplitViewColumnWidth(min: 160, ideal: 180, max: 220)
+            .navigationSplitViewColumnWidth(min: 170, ideal: 190, max: 230)
         } detail: {
             let shown = tab.isVisible ? tab : .settings
             detail(shown)
@@ -101,6 +122,11 @@ struct MainSplitView<Detail: View>: View {
         // System-formatted values (number fields, controls) follow the app's UI language.
         .environment(\.locale, Localizer.shared.language.locale)
     }
+
+    /// Selection for one of the two sidebar lists: shows `tab` only if it belongs there.
+    private func selection(where belongs: @escaping (MainTab) -> Bool) -> Binding<MainTab?> {
+        Binding(get: { belongs(tab) ? tab : nil }, set: { if let t = $0 { tab = t } })
+    }
 }
 
 private struct LiveMainView: View {
@@ -111,9 +137,13 @@ private struct LiveMainView: View {
         MainSplitView(tab: $navigation.tab) { tab in
             switch tab {
             case .settings: SettingsTab(state: state)
+            case .recording: RecordingTab(state: state)
+            case .delivery: DeliveryTab(state: state)
+            case .permissions: PermissionsTab(state: state)
             case .models: ModelsTab(state: state)
             case .terms: TermsTab(state: state)
             case .history: HistoryTab(state: state)
+            case .about: AboutTab(state: state)
             }
         }
     }

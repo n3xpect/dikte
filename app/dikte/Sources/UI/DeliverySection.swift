@@ -2,15 +2,11 @@ import AppKit
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// App lookup and Accessibility access for the "Metin aktarımı" section, injectable for previews.
+/// App lookup for the "Metin aktarımı" page, injectable for previews.
 struct DeliveryOptions {
     var runningApps: () -> [TargetApp]
     var resolve: (String) -> TargetApp?
     var icon: (TargetApp) -> NSImage
-    /// Read inside `body`, so an observable source keeps the status live.
-    var accessibilityTrusted: () -> Bool
-    var refreshTrust: () -> Void
-    var requestAccessibility: () -> Void
     /// Lets the user pick an app bundle; nil if cancelled.
     var chooseApp: () -> TargetApp?
 
@@ -20,9 +16,6 @@ struct DeliveryOptions {
             runningApps: { service.runningApps() },
             resolve: { service.resolve(bundleID: $0) },
             icon: { service.icon(for: $0) },
-            accessibilityTrusted: { service.accessibilityTrusted },
-            refreshTrust: { service.refreshTrust() },
-            requestAccessibility: { service.requestAccessibility() },
             chooseApp: {
                 let panel = NSOpenPanel()
                 panel.directoryURL = URL(fileURLWithPath: "/Applications", isDirectory: true)
@@ -40,8 +33,19 @@ struct DeliveryOptions {
     }
 }
 
-/// Ayarlar › Metin aktarımı: default target, send key, favourites, panel list size, clipboard restore,
-/// Accessibility permission, dismissed tips.
+/// Metin aktarımı wired to the live stores.
+struct DeliveryTab: View {
+    let state: AppState
+
+    var body: some View {
+        @Bindable var settings = state.settings
+        Form { DeliverySection(settings: $settings.settings, options: .live) }
+            .formStyle(.grouped)
+    }
+}
+
+/// Metin aktarımı sections: default target + send key, favourites, panel list size + clipboard restore.
+/// (Accessibility is on the İzinler page.)
 struct DeliverySection: View {
     @Binding var settings: AppSettings
     var options: DeliveryOptions
@@ -61,35 +65,42 @@ struct DeliverySection: View {
                 Text(L("Göndermek için"))
                 Text(L("Diğer tuş yeni satır açar."))
             }
-            favoritesRow
-            LabeledContent(L("Panelde gösterilecek diğer uygulama sayısı")) {
-                Stepper(value: $settings.deliveryOtherLimit, in: 0...9) {
-                    Text(Fmt.int(settings.deliveryOtherLimit)).monospacedDigit()
-                }
-            }
-            .help(L("Favori olmayan, çalışan uygulamalardan bu kadarı listede doğrudan görünür; gerisi katlanır."))
-            Toggle(L("Yapıştırdıktan sonra panoyu eski haline getir"), isOn: $settings.restoreClipboardAfterPaste)
-            accessibilityRow
-            LabeledContent(L("İpuçları")) {
-                Button(L("İpuçlarını yeniden göster")) { settings.dismissedTips = [] }
-                    .disabled(settings.dismissedTips.isEmpty)
-            }
         } header: {
-            Text(L("Metin aktarımı"))
+            Text(L("Varsayılan hedef"))
         } footer: {
             Text(L("Panelde %@ metni varsayılan hedefe gönderir, ⌘1…⌘9 listedeki diğer uygulamalara. Metin panoya konur ve uygulamaya ⌘V ile yapıştırılır; aktarılamazsa metin panoda kalır.",
                    settings.sendKey.symbol))
                 .font(.caption).foregroundStyle(.secondary)
         }
-        .onAppear {
-            refreshRunning()
-            options.refreshTrust()
-        }
+        .onAppear(perform: refreshRunning)
         .onReceive(NSWorkspace.shared.notificationCenter.publisher(for: NSWorkspace.didLaunchApplicationNotification)) { _ in
             refreshRunning()
         }
         .onReceive(NSWorkspace.shared.notificationCenter.publisher(for: NSWorkspace.didTerminateApplicationNotification)) { _ in
             refreshRunning()
+        }
+
+        Section {
+            favoritesRow
+        } header: {
+            Text(L("Favoriler"))
+        } footer: {
+            Text(L("Favoriler panelde varsayılan hedeften hemen sonra listelenir; çalışmıyorlarsa açılırlar."))
+                .font(.caption).foregroundStyle(.secondary)
+        }
+
+        Section {
+            LabeledContent(L("Panelde gösterilecek diğer uygulama sayısı")) {
+                Stepper(value: $settings.deliveryOtherLimit, in: 0...9) {
+                    Text(Fmt.int(settings.deliveryOtherLimit)).monospacedDigit()
+                }
+            }
+            Toggle(L("Yapıştırdıktan sonra panoyu eski haline getir"), isOn: $settings.restoreClipboardAfterPaste)
+        } header: {
+            Text(L("Liste ve pano"))
+        } footer: {
+            Text(L("Favori olmayan, çalışan uygulamalardan bu kadarı listede doğrudan görünür; gerisi katlanır."))
+                .font(.caption).foregroundStyle(.secondary)
         }
     }
 
@@ -133,15 +144,9 @@ struct DeliverySection: View {
     // MARK: Favourites
 
     private var favoritesRow: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text(L("Favoriler"))
-                Spacer()
-                addMenu
-            }
+        HStack(alignment: .top) {
             if settings.deliveryFavorites.isEmpty {
-                Text(L("Favoriler panelde varsayılan hedeften hemen sonra listelenir; çalışmıyorlarsa açılırlar."))
-                    .font(.caption).foregroundStyle(.secondary)
+                Text(L("Henüz favori yok.")).foregroundStyle(.secondary)
             } else {
                 FlowLayout(spacing: 6, lineSpacing: 6) {
                     // Uninstalled ones (bundle id as name) last.
@@ -151,6 +156,8 @@ struct DeliverySection: View {
                     }
                 }
             }
+            Spacer(minLength: 12)
+            addMenu
         }
     }
 
@@ -198,30 +205,6 @@ struct DeliverySection: View {
     private func addFavorite(_ id: String) {
         guard !settings.deliveryFavorites.contains(id) else { return }
         settings.deliveryFavorites.append(id)
-    }
-
-    // MARK: Accessibility
-
-    private var accessibilityRow: some View {
-        LabeledContent {
-            HStack(spacing: 10) {
-                if options.accessibilityTrusted() {
-                    Label(L("Verildi"), systemImage: "checkmark.circle.fill")
-                        .foregroundStyle(Palette.loadedText)
-                } else {
-                    Label {
-                        Text(L("Verilmedi"))
-                    } icon: {
-                        Image(systemName: "circle.fill").imageScale(.small)
-                    }
-                    .foregroundStyle(Palette.loading)
-                    Button(L("İzin ver…"), action: options.requestAccessibility)
-                }
-            }
-        } label: {
-            Text(L("Erişilebilirlik izni"))
-            Text(L("Uygulamaya yapıştırmak için gerekli."))
-        }
     }
 
     // MARK: Helpers

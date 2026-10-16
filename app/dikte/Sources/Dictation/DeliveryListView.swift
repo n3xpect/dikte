@@ -19,10 +19,6 @@ struct DeliveryListView: View {
                 .tracking(0.6)
                 .padding(.leading, 6)
             rowList(rows, hidden: hidden)
-            if controller.showsDeliveryTip {
-                DeliveryTipNote { controller.dismissDeliveryTip() }
-                    .padding(.top, 4)
-            }
         }
         .disabled(controller.retranscribing)
     }
@@ -221,26 +217,6 @@ private struct ShortcutChip: View {
                         .fill(.primary.opacity(0.07))
                 }
             }
-    }
-}
-
-private struct DeliveryTipNote: View {
-    let dismiss: () -> Void
-
-    var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 6) {
-            Image(systemName: "info.circle")
-                .foregroundStyle(.secondary)
-            Text(L("Bir uygulamaya tıkla ya da kısayoluna bas: metin oraya yapıştırılır. Varsayılanı Ayarlar'dan değiştirebilirsin."))
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-            Spacer(minLength: 8)
-            Button(L("Bir daha gösterme"), action: dismiss)
-                .buttonStyle(.link)
-                .focusable(false)
-        }
-        .font(.caption)
-        .padding(.horizontal, 6)
     }
 }
 

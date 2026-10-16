@@ -38,7 +38,7 @@ struct HistoryView: View {
 
     private var filtered: [HistoryEntry] {
         entries
-            .filter { TurkishSearch.matches(query, [$0.editedText, $0.rawText, modelLabel($0.model)]) }
+            .filter { TurkishSearch.matches(query, [$0.editedText, $0.raw, modelLabel($0.model)]) }
             .sorted { $0.date > $1.date }
     }
 
@@ -91,7 +91,9 @@ struct HistoryView: View {
                     .tag(entry.id)
                     .contextMenu {
                         Button(L("Kopyala")) { Clipboard.copy(entry.editedText) }
-                        Button(L("Ham metni kopyala")) { Clipboard.copy(entry.rawText) }
+                        if entry.changed {
+                            Button(L("Ham metni kopyala")) { Clipboard.copy(entry.raw) }
+                        }
                         Divider()
                         Button(L("Sil"), role: .destructive) { remove(entry.id) }
                     }
@@ -199,14 +201,12 @@ private struct HistoryDetail: View {
                     Button(L("Sil"), systemImage: "trash", role: .destructive, action: delete)
                 }
 
-                section(L("Son metin")) {
-                    Text(entry.editedText).textSelection(.enabled)
-                }
-                section(L("Değişiklikler")) {
-                    if entry.rawText == entry.editedText {
-                        Text(L("Ham çıktı değiştirilmeden kullanıldı.")).foregroundStyle(.secondary)
-                    } else {
-                        Text(WordDiff.attributed(WordDiff.diff(entry.rawText, entry.editedText)))
+                if entry.changed {
+                    section(L("Son metin")) {
+                        Text(entry.editedText).textSelection(.enabled)
+                    }
+                    section(L("Değişiklikler")) {
+                        Text(WordDiff.attributed(WordDiff.diff(entry.raw, entry.editedText)))
                             .textSelection(.enabled)
                             .lineSpacing(3)
                         HStack(spacing: 12) {
@@ -215,9 +215,18 @@ private struct HistoryDetail: View {
                         }
                         .font(.caption)
                     }
-                }
-                section(L("Ham çıktı")) {
-                    Text(entry.rawText).textSelection(.enabled).foregroundStyle(.secondary)
+                    section(L("Ham çıktı")) {
+                        Text(entry.raw).textSelection(.enabled).foregroundStyle(.secondary)
+                    }
+                } else {
+                    // Unchanged model output: one text instead of three identical boxes.
+                    VStack(alignment: .leading, spacing: 6) {
+                        section(L("Metin")) {
+                            Text(entry.editedText).textSelection(.enabled)
+                        }
+                        Text(L("Ham çıktı değiştirilmeden kullanıldı."))
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
                 }
             }
             .padding(16)

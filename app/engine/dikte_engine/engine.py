@@ -284,7 +284,7 @@ class Engine:
             if "silence_s" in body:
                 new["silence_s"] = _num(body, "silence_s", 0.3, 60)
             if "max_duration_s" in body:
-                new["max_duration_s"] = _num(body, "max_duration_s", 1, 3600)
+                new["max_duration_s"] = _num(body, "max_duration_s", 1, 1200)
             if "language" in body:
                 new["language"] = _choice(body, "language", ("auto", *LANGUAGES))
             if "ui_language" in body:

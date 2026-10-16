@@ -1,5 +1,4 @@
 import AppKit
-import AVFoundation
 import KeyboardShortcuts
 import ServiceManagement
 import SwiftUI
@@ -7,34 +6,10 @@ import SwiftUI
 /// Ayarlar wired to the live stores.
 struct SettingsTab: View {
     let state: AppState
-    @State private var microphones: [Microphone] = Microphone.all()
 
     var body: some View {
         @Bindable var settings = state.settings
-        SettingsView(
-            settings: $settings.settings,
-            microphones: microphones,
-            launchAtLogin: .system,
-            delivery: .live,
-            engineStatus: state.engine.status,
-            dataDir: Paths.dataDir
-        )
-        .onReceive(NotificationCenter.default.publisher(for: AVCaptureDevice.wasConnectedNotification)) { _ in
-            microphones = Microphone.all()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: AVCaptureDevice.wasDisconnectedNotification)) { _ in
-            microphones = Microphone.all()
-        }
-    }
-}
-
-struct Microphone: Hashable, Identifiable {
-    var uid: String
-    var name: String
-    var id: String { uid }
-
-    static func all() -> [Microphone] {
-        AudioCapture.availableMicrophones().map { Microphone(uid: $0.uid, name: $0.name) }
+        SettingsView(settings: $settings.settings, launchAtLogin: .system)
     }
 }
 
@@ -51,60 +26,22 @@ struct LaunchAtLogin {
     )
 }
 
+/// Ayarlar: Genel (launch at login, dictation shortcut), Dil / Language, Geçmiş.
 struct SettingsView: View {
     @Binding var settings: AppSettings
-    var microphones: [Microphone]
     var launchAtLogin: LaunchAtLogin
-    var delivery: DeliveryOptions
-    var engineStatus: EngineStatus
-    var dataDir: URL
+    /// Stored dictation shortcut (previews pass fixed values).
+    var loadShortcut: () -> KeyboardShortcuts.Shortcut? = { KeyboardShortcuts.getShortcut(for: .dictate) }
+    var saveShortcut: (KeyboardShortcuts.Shortcut?) -> Void = { KeyboardShortcuts.setShortcut($0, for: .dictate) }
 
     @State private var loginStatus: SMAppService.Status = .notRegistered
     @State private var loginError: String?
+    @State private var dictateShortcut: KeyboardShortcuts.Shortcut?
 
     var body: some View {
         Form {
+            generalSection
             languageSection
-
-            Section(L("Dikte")) {
-                KeyboardShortcuts.Recorder(L("Dikte kısayolu"), name: .dictate)
-                microphonePicker
-                LabeledContent(L("Sessizlik süresi")) {
-                    HStack {
-                        Slider(value: $settings.silenceSeconds, in: 1...10, step: 0.5)
-                            .frame(maxWidth: 220)
-                        Text(Fmt.seconds(settings.silenceSeconds))
-                            .monospacedDigit()
-                            .frame(width: 48, alignment: .trailing)
-                    }
-                }
-                .help(L("Konuşma bittikten sonra bu kadar sessizlik olunca kayıt kendiliğinden biter."))
-                Toggle(L("Ses efektleri"), isOn: $settings.soundsEnabled)
-            }
-
-            DeliverySection(settings: $settings, options: delivery)
-
-            Section {
-                LabeledContent(L("Modelin boşta kalma süresi")) {
-                    Stepper(value: $settings.idleUnloadMinutes, in: 0...60) {
-                        Text(settings.idleUnloadMinutes == 0
-                             ? L("Hiç") : L("%@ dk", Fmt.int(settings.idleUnloadMinutes)))
-                            .monospacedDigit()
-                    }
-                }
-                LabeledContent(L("En az boş disk alanı")) {
-                    Stepper(value: $settings.minFreeDiskGB, in: 1...100) {
-                        Text(verbatim: "\(Fmt.int(settings.minFreeDiskGB)) GB").monospacedDigit()
-                    }
-                }
-            } header: {
-                Text(L("Model ve bellek"))
-            } footer: {
-                Text(settings.idleUnloadMinutes == 0
-                     ? L("Model, sen boşaltana kadar bellekte kalır.")
-                     : L("Son diktenin üzerinden bu kadar zaman geçince model bellekten boşaltılır. İndirmeler, sonrasında diskte bu kadar yer kalmayacaksa başlamaz."))
-                    .font(.caption).foregroundStyle(.secondary)
-            }
 
             Section {
                 LabeledContent(L("Geçmiş sınırı")) {
@@ -127,33 +64,56 @@ struct SettingsView: View {
                 Text(L("0 = Sınırsız. Sınır aşılınca en eski kayıtlar silinir."))
                     .font(.caption).foregroundStyle(.secondary)
             }
-
-            Section(L("Genel")) {
-                Toggle(L("Açılışta başlat"), isOn: Binding(
-                    get: { loginStatus == .enabled || loginStatus == .requiresApproval },
-                    set: setLaunchAtLogin
-                ))
-                if loginStatus == .requiresApproval {
-                    HStack {
-                        Text(L("Sistem Ayarları'nda onay bekliyor.")).foregroundStyle(.secondary)
-                        Spacer()
-                        Button(L("Giriş Öğeleri'ni aç")) { SMAppService.openSystemSettingsLoginItems() }
-                    }
-                    .font(.callout)
-                }
-                if let loginError {
-                    Label(loginError, systemImage: "exclamationmark.triangle.fill")
-                        .foregroundStyle(Palette.danger)
-                        .font(.callout)
-                }
-            }
         }
         .formStyle(.grouped)
         .onChange(of: settings.historyLimit) { _, v in
             if v < 0 { settings.historyLimit = 0 }
         }
-        .safeAreaInset(edge: .bottom, spacing: 0) { footer }
-        .onAppear(perform: refreshLoginStatus)
+        .onAppear {
+            refreshLoginStatus()
+            dictateShortcut = loadShortcut()
+        }
+    }
+
+    private var generalSection: some View {
+        Section(L("Genel")) {
+            Toggle(L("Açılışta başlat"), isOn: Binding(
+                get: { loginStatus == .enabled || loginStatus == .requiresApproval },
+                set: setLaunchAtLogin
+            ))
+            if loginStatus == .requiresApproval {
+                HStack {
+                    Text(L("Sistem Ayarları'nda onay bekliyor.")).foregroundStyle(.secondary)
+                    Spacer()
+                    Button(L("Giriş Öğeleri'ni aç")) { SMAppService.openSystemSettingsLoginItems() }
+                }
+                .font(.callout)
+            }
+            if let loginError {
+                Label(loginError, systemImage: "exclamationmark.triangle.fill")
+                    .foregroundStyle(Palette.danger)
+                    .font(.callout)
+            }
+            LabeledContent {
+                ShortcutField(shortcut: $dictateShortcut, save: saveShortcut)
+            } label: {
+                Text(L("Dikte kısayolu"))
+                if dictateShortcut == nil {
+                    Text(L("Kısayol yok; dikteyi menü çubuğundan başlatabilirsin."))
+                }
+            }
+            if dictateShortcut == nil, let initial = KeyboardShortcuts.Name.dictate.defaultShortcut {
+                HStack {
+                    Spacer()
+                    Button(L("Varsayılana dön (%@)", initial.description)) {
+                        dictateShortcut = initial
+                        saveShortcut(initial)
+                    }
+                    .buttonStyle(.link)
+                }
+                .font(.callout)
+            }
+        }
     }
 
     private var languageSection: some View {
@@ -175,39 +135,6 @@ struct SettingsView: View {
             Text(settings.dictationLanguage.hint)
                 .font(.caption).foregroundStyle(.secondary)
         }
-    }
-
-    private var microphonePicker: some View {
-        Picker(L("Mikrofon"), selection: $settings.microphoneUID) {
-            Text(L("Sistem varsayılanı")).tag(String?.none)
-            if !microphones.isEmpty { Divider() }
-            ForEach(microphones) { mic in
-                Text(mic.name).tag(Optional(mic.uid))
-            }
-            if let uid = settings.microphoneUID, !microphones.contains(where: { $0.uid == uid }) {
-                Text(L("Bağlı olmayan mikrofon")).tag(Optional(uid))
-            }
-        }
-    }
-
-    private var footer: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "folder").foregroundStyle(.secondary)
-            Text((dataDir.path as NSString).abbreviatingWithTildeInPath)
-                .lineLimit(1).truncationMode(.middle)
-                .textSelection(.enabled)
-            Button(L("Finder'da göster")) { NSWorkspace.shared.open(dataDir) }
-                .buttonStyle(.link)
-            Spacer(minLength: 12)
-            Circle().fill(engineStatus.display.color).frame(width: 8, height: 8)
-            Text(engineStatus.display.text).lineLimit(1).truncationMode(.tail)
-        }
-        .font(.callout)
-        .foregroundStyle(.secondary)
-        .padding(.horizontal, 20)
-        .padding(.vertical, 8)
-        .background(.bar)
-        .overlay(alignment: .top) { Divider() }
     }
 
     private func refreshLoginStatus() {

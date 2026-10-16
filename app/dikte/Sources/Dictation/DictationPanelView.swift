@@ -58,6 +58,12 @@ private struct ListeningContent: View {
                     .font(.headline)
                 Spacer(minLength: 8)
                 if controller.modelLoading { ModelLoadingBadge() }
+                TimelineView(.periodic(from: controller.recordingStartedAt, by: 1)) { ctx in
+                    Text(verbatim: Fmt.recordingClock(elapsed: ctx.date.timeIntervalSince(controller.recordingStartedAt),
+                                                      limit: controller.recordingLimit))
+                        .monospacedDigit()
+                        .foregroundStyle(.secondary)
+                }
             }
             WaveformView(levels: controller.levels, active: controller.speechDetected)
                 .frame(height: 44)
@@ -473,7 +479,6 @@ private final class FocusingTextView: NSTextView {
 #Preview("Aktar: ⇧↩ gönderir") { DictationPanelView(controller: .preview(.deliveryShiftEnter)).padding() }
 #Preview("Aktar: hepsi") { DictationPanelView(controller: .preview(.deliveryExpanded)).padding() }
 #Preview("Aktar: klavyeyle seçili") { DictationPanelView(controller: .preview(.deliverySelected)).padding() }
-#Preview("Aktar: ipucu yok") { DictationPanelView(controller: .preview(.deliveryTipDismissed)).padding() }
 #Preview("Öneriler") { DictationPanelView(controller: .preview(.suggestions)).padding() }
 #Preview("Öneriler: uygulama") { DictationPanelView(controller: .preview(.suggestionsApp)).padding() }
 #Preview("Toast") {

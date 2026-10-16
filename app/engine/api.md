@@ -103,7 +103,7 @@ Common: 401 `unauthorized`, 400 `invalid_json`, 404 `unknown_model` (bad `{id}`)
   "idle_unload_s": 300,
   "min_free_bytes": 10737418240,
   "silence_s": 3.0,
-  "max_duration_s": 120,
+  "max_duration_s": 120,              // 1–1200 (the app offers whole minutes, 1–20)
   "language": "auto",                 // "auto" (Turkish or English, detected) | "tr" | "en"
   "ui_language": "tr",                // "tr" | "en": language of every `message` the engine sends
   "terms": [ { "term": "branch", "accept": ["branch"], "fix": ["brenç"] } ]

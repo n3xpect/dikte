@@ -30,6 +30,10 @@ final class DictationController {
     private(set) var speechDetected = false
     /// Recent mic levels 0…1 for the waveform (newest last).
     private(set) var levels: [Float] = []
+    /// When the current recording started and its longest allowed length (the setting when it
+    /// started), for the panel's "00:42 / 02:00" counter.
+    private(set) var recordingStartedAt = Date()
+    private(set) var recordingLimit: TimeInterval = AppSettings().maxDurationSeconds
     /// Editable text bound to the text area in `.editing`.
     var text = ""
     /// Shown on delivery when the user changed words; the text is delivered when they're resolved.
@@ -140,10 +144,6 @@ final class DictationController {
         showsAllDeliveryTargets ? 0 : deliverySource.entries(deliverySource.settings()).more.count
     }
 
-    var showsDeliveryTip: Bool {
-        !deliverySource.settings().dismissedTips.contains(Tip.deliveryList.rawValue)
-    }
-
     func deliveryIcon(for target: TargetApp) -> NSImage {
         deliverySource.icon(target)
     }
@@ -184,7 +184,7 @@ final class DictationController {
         listSelection = nil
     }
 
-    /// Key that sends to the default target (Ayarlar › Metin aktarımı).
+    /// Key that sends to the default target (Metin aktarımı page).
     var sendKey: SendKey { deliverySource.settings().sendKey }
 
     /// Since the result was shown or replaced; the send key is ignored for a moment after it.
@@ -214,12 +214,6 @@ final class DictationController {
 
     func makeDefaultTarget(_ target: TargetApp) {
         deliverySource.update { $0.deliveryDefaultApp = target.bundleID }
-    }
-
-    func dismissDeliveryTip() {
-        deliverySource.update { s in
-            if !s.dismissedTips.contains(Tip.deliveryList.rawValue) { s.dismissedTips.append(Tip.deliveryList.rawValue) }
-        }
     }
 
     /// Send key: the default row (clipboard when the list is empty).
@@ -431,6 +425,8 @@ final class DictationController {
         let gen = generation
         let front = NSWorkspace.shared.frontmostApplication
         previousApp = front == NSRunningApplication.current ? nil : front
+        recordingStartedAt = Date()
+        recordingLimit = app.settings.settings.maxDurationSeconds
         phase = .listening
         panel.show()
         if soundsEnabled { DictationSounds.start() }
@@ -495,7 +491,7 @@ final class DictationController {
             case .startFailed(let reason): L("Mikrofon açılamadı: %@", reason)
             case .tooManyRestarts, nil: L("Mikrofon açılamadı: %@", error.localizedDescription)
             }
-            fail(message, hint: L("Ayarlar'da başka bir mikrofon seçmeyi dene."))
+            fail(message, hint: L("Kayıt sayfasında başka bir mikrofon seçmeyi dene."))
         }
     }
 
@@ -755,7 +751,7 @@ extension DictationController {
     enum PreviewState: String, CaseIterable {
         case listening, listeningModelLoading, transcribing, editing, editingEnglish, retranscribing,
              confirmSwitch, languageError, deliveryApp, deliveryShiftEnter, deliveryExpanded,
-             deliveryTipDismissed, deliverySelected, suggestions, suggestionsApp, failed, notice
+             deliverySelected, suggestions, suggestionsApp, failed, notice
     }
 
     /// Controller frozen in a phase, for `#Preview` and snapshot rendering.
@@ -772,6 +768,7 @@ extension DictationController {
         case .listening:
             c.phase = .listening
             c.speechDetected = true
+            c.recordingStartedAt = Date().addingTimeInterval(-42)
         case .listeningModelLoading:
             c.phase = .listening
             c.modelLoading = true
@@ -779,7 +776,7 @@ extension DictationController {
         case .transcribing:
             c.phase = .transcribing
         case .editing, .retranscribing, .confirmSwitch, .languageError,
-             .deliveryApp, .deliveryShiftEnter, .deliveryExpanded, .deliveryTipDismissed, .deliverySelected:
+             .deliveryApp, .deliveryShiftEnter, .deliveryExpanded, .deliverySelected:
             c.phase = .editing
             c.result = DictationResult(rawText: turkish, text: turkish, fixes: [], audioSeconds: 6.1,
                                        transcribeSeconds: 0.9, model: "large-v3", language: "tr",
@@ -791,13 +788,12 @@ extension DictationController {
                 c.text = turkish.replacingOccurrences(of: "açalım", with: "hemen açalım")
                 c.confirmingLanguageSwitch = true
             case .languageError: c.languageError = L("Kayıt artık yok")
-            case .deliveryApp, .deliveryShiftEnter, .deliveryExpanded, .deliveryTipDismissed, .deliverySelected:
+            case .deliveryApp, .deliveryShiftEnter, .deliveryExpanded, .deliverySelected:
                 fake.settings.deliveryDefaultApp = PreviewDelivery.slack
                 if state == .deliveryShiftEnter { fake.settings.sendKey = .shiftEnter }
                 fake.settings.deliveryFavorites = PreviewDelivery.favorites
                 fake.settings.deliveryOtherLimit = 3
                 c.showsAllDeliveryTargets = state == .deliveryExpanded
-                if state == .deliveryTipDismissed { fake.settings.dismissedTips = [Tip.deliveryList.rawValue] }
                 if state == .deliverySelected { c.listSelection = 2 }
             default: break
             }

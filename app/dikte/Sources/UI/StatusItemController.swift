@@ -1,8 +1,9 @@
 import AppKit
+import KeyboardShortcuts
 import Observation
 
 // CONTRACT — implemented by agent "ui". NSStatusItem with state icon + menu
-// (Dikte'yi aç, Modeli şimdi boşalt, Çıkış).
+// (Dikteyi başlat/bitir, Dikte'yi aç, Modeli şimdi boşalt, Çıkış).
 final class StatusItemController {
     static let shared = StatusItemController()
     private init() {}
@@ -10,6 +11,7 @@ final class StatusItemController {
     private var item: NSStatusItem?
     private weak var state: AppState?
     private let statusLine = NSMenuItem(title: "", action: nil, keyEquivalent: "")
+    private var dictateItem: NSMenuItem?
     private var openItem: NSMenuItem?
     private var unloadItem: NSMenuItem?
     private var quitItem: NSMenuItem?
@@ -31,6 +33,11 @@ final class StatusItemController {
         let menu = NSMenu()
         menu.autoenablesItems = false
         // Titles are set in update() so they follow the UI language.
+        // Same as the shortcut, so dictation can start even with no shortcut set.
+        let dictate = menuTarget.item { [weak state] in state?.dictation.hotkeyPressed() }
+        dictate.setShortcut(for: .dictate)
+        dictateItem = dictate
+        menu.addItem(dictate)
         let open = menuTarget.item { MainWindowController.shared.show() }
         openItem = open
         menu.addItem(open)
@@ -84,6 +91,7 @@ final class StatusItemController {
             button.appearsDisabled = icon == .starting
         }
 
+        dictateItem?.title = state.dictation.phase == .listening ? L("Dikteyi bitir") : L("Dikteyi başlat")
         openItem?.title = L("Dikte'yi aç")
         unloadItem?.title = L("Modeli şimdi boşalt")
         quitItem?.title = L("Çıkış")

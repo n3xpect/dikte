@@ -42,6 +42,15 @@ enum Fmt {
     static let nbsp = "\u{00A0}"
 
     /// "4:05"
+    /// Panel counter while recording: "00:42 / 02:00" (elapsed capped at the limit).
+    static func recordingClock(elapsed: TimeInterval, limit: TimeInterval) -> String {
+        func mmss(_ t: TimeInterval) -> String {
+            let s = max(0, Int(t))
+            return String(format: "%02d:%02d", s / 60, s % 60)
+        }
+        return "\(mmss(min(elapsed, limit))) / \(mmss(limit))"
+    }
+
     static func countdown(_ s: TimeInterval) -> String {
         let total = max(0, Int(s.rounded(.up)))
         return String(format: "%d:%02d", total / 60, total % 60)

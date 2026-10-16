@@ -1,6 +1,8 @@
 #if DEBUG
 import AppKit
 import AVFoundation
+import Carbon.HIToolbox
+import KeyboardShortcuts
 import SwiftUI
 
 // Fake data, #Previews and a PNG renderer for the main window and menu bar icon.
@@ -108,7 +110,7 @@ enum PreviewData {
     static func modelsView(_ models: [ModelInfo] = allStates, system: SystemInfo? = system(freeGB: 415),
                            status: EngineStatus = .running(port: 1), selected: String = "large-v3") -> some View {
         ModelsView(status: status, models: models, system: system, selectedModel: selected,
-                   minFreeDiskGB: 10, actions: actions)
+                   idleUnloadMinutes: .constant(5), minFreeDiskGB: .constant(10), actions: actions)
     }
 
     /// Settings as a user of `language` would have them.
@@ -136,7 +138,7 @@ enum PreviewData {
                   url: URL(fileURLWithPath: "/System/Applications/Notes.app"), isRunning: false),
     ]
 
-    static func deliveryOptions(trusted: Bool = false) -> DeliveryOptions {
+    static func deliveryOptions() -> DeliveryOptions {
         DeliveryOptions(
             runningApps: { runningApps },
             resolve: { id in (runningApps + installedApps).first { $0.bundleID == id } },
@@ -146,50 +148,80 @@ enum PreviewData {
                 }
                 return NSWorkspace.shared.icon(forFile: url.path)
             },
-            accessibilityTrusted: { trusted },
-            refreshTrust: {}, requestAccessibility: {}, chooseApp: { nil })
+            chooseApp: { nil })
     }
 
-    /// Delivery settings in use: an app default, favourites (one closed, one uninstalled), tips dismissed.
+    /// Delivery settings in use: an app default, favourites (one closed, one uninstalled).
     static func deliverySettings(_ language: AppLanguage = Localizer.shared.language) -> AppSettings {
         var s = settings(language)
         s.deliveryDefaultApp = "com.todesktop.cursor"
         s.deliveryFavorites = ["com.apple.Notes", "com.todesktop.cursor", "com.apple.TextEdit", "com.example.gone"]
         s.deliveryOtherLimit = 3
-        s.dismissedTips = [Tip.deliveryList.rawValue]
         return s
     }
 
-    static func deliverySection(_ settings: AppSettings, trusted: Bool) -> some View {
-        Form { DeliverySection(settings: .constant(settings), options: deliveryOptions(trusted: trusted)) }
+    static func deliverySection(_ settings: AppSettings) -> some View {
+        Form { DeliverySection(settings: .constant(settings), options: deliveryOptions()) }
             .formStyle(.grouped)
     }
 
-    static func settingsView(_ settings: Binding<AppSettings>) -> some View {
-        SettingsView(settings: settings,
-                     microphones: [Microphone(uid: "builtin", name: "MacBook Pro Mikrofonu"),
-                                   Microphone(uid: "usb", name: "Shure MV7")],
-                     launchAtLogin: launchAtLogin,
-                     delivery: deliveryOptions(),
-                     engineStatus: .running(port: 1),
-                     dataDir: URL(fileURLWithPath: NSHomeDirectory() + "/Library/Application Support/dikte"))
+    static let defaultShortcut = KeyboardShortcuts.Name.dictate.defaultShortcut
+
+    static func settingsView(_ settings: Binding<AppSettings>,
+                             shortcut: KeyboardShortcuts.Shortcut? = defaultShortcut) -> some View {
+        SettingsView(settings: settings, launchAtLogin: launchAtLogin,
+                     loadShortcut: { shortcut }, saveShortcut: { _ in })
     }
 
-    static func historyView(selectFirst: Bool = true) -> some View {
+    static let microphones = [Microphone(uid: "builtin", name: "MacBook Pro Mikrofonu"),
+                              Microphone(uid: "usb", name: "Shure MV7")]
+
+    static func recordingView(_ settings: AppSettings = settings()) -> some View {
+        RecordingView(settings: .constant(settings), microphones: microphones)
+    }
+
+    static func permissionsView(microphone: MicPermission = .granted, trusted: Bool = false) -> some View {
+        PermissionsView(microphone: microphone, accessibilityTrusted: trusted, requestMicrophone: {},
+                        openMicrophoneSettings: {}, requestAccessibility: {})
+    }
+
+    static func aboutView(status: EngineStatus = .running(port: 1)) -> some View {
+        AboutView(version: "0.4.0", build: "7", modelLabel: "Whisper large-v3", engineStatus: status,
+                  dataDir: URL(fileURLWithPath: NSHomeDirectory() + "/Library/Application Support/dikte"))
+    }
+
+    static func historyView(select index: Int? = 0) -> some View {
         HistoryView(entries: history, modelLabel: { labels[$0] ?? $0 }, delete: { _ in }, clear: {},
-                    selection: selectFirst ? history[0].id : nil)
+                    selection: index.map { history[$0].id })
+    }
+
+    static func page(_ tab: MainTab, models: [ModelInfo] = allStates, system: SystemInfo? = system(freeGB: 415),
+                     status: EngineStatus = .running(port: 1), selected: String = "large-v3") -> some View {
+        Group {
+            switch tab {
+            case .settings: settingsView(.constant(settings()))
+            case .recording: recordingView()
+            case .delivery: deliverySection(deliverySettings())
+            case .permissions: permissionsView()
+            case .models: modelsView(models, system: system, status: status, selected: selected)
+            case .terms: TermsView(terms: terms, actions: termActions)
+            case .history: historyView()
+            case .about: aboutView(status: status)
+            }
+        }
     }
 
     static func window(_ tab: MainTab, models: [ModelInfo] = allStates, system: SystemInfo? = system(freeGB: 415),
                        status: EngineStatus = .running(port: 1), selected: String = "large-v3") -> some View {
         MainSplitView(tab: .constant(tab)) { t in
-            switch t {
-            case .settings: settingsView(.constant(settings()))
-            case .models: modelsView(models, system: system, status: status, selected: selected)
-            case .terms: TermsView(terms: terms, actions: termActions)
-            case .history: historyView()
-            }
+            page(t, models: models, system: system, status: status, selected: selected)
         }
+    }
+
+    /// Any page inside the window chrome.
+    static func window<V: View>(_ tab: MainTab, @ViewBuilder content: () -> V) -> some View {
+        let view = content()
+        return MainSplitView(tab: .constant(tab)) { _ in view }
     }
 }
 
@@ -214,9 +246,12 @@ enum PreviewData {
         .onAppear { Localizer.shared.language = .en }
         .onChange(of: settings.uiLanguage) { _, l in Localizer.shared.language = l }
 }
-#Preview("Ayarlar — Metin aktarımı") {
-    PreviewData.deliverySection(PreviewData.deliverySettings(), trusted: true).frame(width: 720, height: 640)
+#Preview("Metin aktarımı") {
+    PreviewData.window(.delivery).frame(width: 900, height: 660)
 }
+#Preview("Kayıt") { PreviewData.window(.recording).frame(width: 900, height: 560) }
+#Preview("İzinler") { PreviewData.window(.permissions).frame(width: 900, height: 560) }
+#Preview("Hakkında") { PreviewData.window(.about).frame(width: 900, height: 620) }
 #Preview("Geçmiş — English") {
     PreviewData.window(.history).frame(width: 900, height: 660)
         .onAppear { Localizer.shared.language = .en }
@@ -267,18 +302,31 @@ enum UIPreviewRenderer {
                "models-low-disk", w, 1000, dir)
         render(PreviewData.window(.models, models: [], system: nil, status: .failed("Python bulunamadı.")),
                "models-engine-failed", w, 500, dir)
-        render(PreviewData.window(.settings), "settings", w, 1300, dir)
-        render(PreviewData.window(.settings), "settings-window", w, 660, dir)
-        render(PreviewData.window(.settings), "settings-dark", w, 1300, dir, dark: true)
-        render(PreviewData.deliverySection(PreviewData.settings(), trusted: false),
-               "delivery-settings-default", 720, 560, dir)
-        render(PreviewData.deliverySection(PreviewData.deliverySettings(), trusted: true),
-               "delivery-settings", 720, 600, dir)
-        render(PreviewData.deliverySection(PreviewData.deliverySettings(), trusted: false),
-               "delivery-settings-dark", 720, 600, dir, dark: true)
-        var shiftEnter = PreviewData.deliverySettings()
-        shiftEnter.sendKey = .shiftEnter
-        render(PreviewData.deliverySection(shiftEnter, trusted: true), "delivery-settings-shift-enter", 720, 640, dir)
+        render(PreviewData.window(.settings), "settings", w, 660, dir)
+        render(PreviewData.window(.settings), "settings-dark", w, 660, dir, dark: true)
+        render(PreviewData.window(.settings) { PreviewData.settingsView(.constant(PreviewData.settings()), shortcut: nil) },
+               "settings-no-shortcut", w, 660, dir)
+        render(PreviewData.window(.recording), "recording", w, 560, dir)
+        render(PreviewData.window(.recording), "recording-dark", w, 560, dir, dark: true)
+        var longest = PreviewData.settings()
+        longest.maxDurationSeconds = 1200
+        render(PreviewData.window(.recording) { PreviewData.recordingView(longest) }, "recording-20min", w, 560, dir)
+        render(PreviewData.window(.delivery), "delivery", w, 660, dir)
+        render(PreviewData.window(.delivery), "delivery-dark", w, 660, dir, dark: true)
+        render(PreviewData.window(.delivery) { PreviewData.deliverySection(PreviewData.settings()) },
+               "delivery-default", w, 660, dir)
+        render(PreviewData.window(.permissions), "permissions-page", w, 560, dir)
+        render(PreviewData.window(.permissions) { PreviewData.permissionsView(microphone: .notDetermined) },
+               "permissions-page-not-asked", w, 560, dir)
+        render(PreviewData.window(.permissions) { PreviewData.permissionsView(microphone: .denied, trusted: true) },
+               "permissions-page-denied-dark", w, 560, dir, dark: true)
+        render(PreviewData.window(.about), "about", w, 620, dir)
+        render(PreviewData.window(.about), "about-dark", w, 620, dir, dark: true)
+        render(PreviewData.window(.history) { PreviewData.historyView(select: 4) }, "history-unchanged", w, 660, dir)
+        render(PreviewData.window(.history) { PreviewData.historyView(select: 4) }, "history-unchanged-dark", w, 660,
+               dir, dark: true)
+        render(ShortcutField(shortcut: .constant(PreviewData.defaultShortcut), save: { _ in }, startRecording: true)
+                   .padding(), "shortcut-recording", 320, 60, dir)
         renderFitting(PermissionAlertView(model: .preview(AppPermission.allCases)), "permissions-both", dir)
         renderFitting(PermissionAlertView(model: .preview([.accessibility])), "permissions-accessibility", dir)
         renderFitting(PermissionAlertView(model: .preview(AppPermission.allCases, granted: [.accessibility])),
@@ -293,12 +341,14 @@ enum UIPreviewRenderer {
                "term-editor", 440, 420, dir)
         render(TermEditor(draft: TermDraft(original: nil, term: ""), existing: [], save: { _ in }),
                "term-editor-new", 440, 420, dir)
-        render(statusMenuMock, "status-menu", 320, 330, dir)
+        render(statusMenuMock, "status-menu", 320, 380, dir)
     }
 
     /// Menu bar menu titles for each status line (NSMenu can't be drawn offscreen).
     private static var statusMenuMock: some View {
         VStack(alignment: .leading, spacing: 6) {
+            HStack { Text(L("Dikteyi başlat")); Spacer(); Text(verbatim: "⌥Space").foregroundStyle(.secondary) }
+            Text(L("Dikteyi bitir"))
             Text(L("Dikte'yi aç"))
             Divider()
             ForEach([EngineStatus.starting, .stopped, .failed("Python bulunamadı.")].map(\.display.text),
@@ -397,6 +447,43 @@ enum UIPreviewRenderer {
               "permissions: one granted")
         check(PermissionAlertModel.preview([.accessibility], granted: [.accessibility]).allGranted,
               "permissions: all granted")
+        // Longest recording: whole minutes, 1–20.
+        check(AppSettings.clampedMaxDuration(30) == 60, "max duration: 30 → 60")
+        check(AppSettings.clampedMaxDuration(140) == 120, "max duration: 140 → 120")
+        check(AppSettings.clampedMaxDuration(5000) == 1200, "max duration: 5000 → 1200")
+        check(AppSettings.clampedMaxDuration(.nan) == 120, "max duration: nan → default")
+        let decoded = try? JSONDecoder().decode(AppSettings.self, from: Data(#"{"maxDurationSeconds": 3600}"#.utf8))
+        check(decoded?.maxDurationSeconds == 1200, "max duration: decoded 3600 → 1200")
+        check(AppSettings().maxDurationSeconds == 120, "max duration: default 2 min")
+        check(Fmt.recordingClock(elapsed: 42.7, limit: 120) == "00:42 / 02:00", "clock: 00:42 / 02:00")
+        check(Fmt.recordingClock(elapsed: 0, limit: 1200) == "00:00 / 20:00", "clock: 00:00 / 20:00")
+        check(Fmt.recordingClock(elapsed: 65, limit: 120) == "01:05 / 02:00", "clock: 01:05")
+        check(Fmt.recordingClock(elapsed: 130, limit: 120) == "02:00 / 02:00", "clock: capped at limit")
+        // Shortcut recorder keys.
+        func rule(_ key: Int, _ mods: NSEvent.ModifierFlags = []) -> ShortcutRule.Outcome {
+            ShortcutRule.outcome(keyCode: key, modifiers: mods)
+        }
+        check(rule(kVK_Escape) == .cancel, "shortcut: Esc cancels")
+        check(rule(kVK_Delete) == .clear, "shortcut: ⌫ clears")
+        check(rule(kVK_ForwardDelete) == .clear, "shortcut: ⌦ clears")
+        check(rule(kVK_Space, .option) == .accept, "shortcut: ⌥Space")
+        check(rule(kVK_ANSI_D, [.control, .option]) == .accept, "shortcut: ⌃⌥D")
+        check(rule(kVK_Escape, .command) == .accept, "shortcut: ⌘Esc is a shortcut")
+        check(rule(kVK_ANSI_D) == .needsModifier, "shortcut: D alone")
+        check(rule(kVK_ANSI_D, .shift) == .needsModifier, "shortcut: ⇧D")
+        check(rule(kVK_F5) == .accept, "shortcut: F5 alone")
+        // History keeps the model output only when it differs.
+        let same = HistoryEntry(rawText: "a", editedText: "a", copied: true, model: "m", audioSeconds: 1,
+                                transcribeSeconds: 1)
+        let edited = HistoryEntry(rawText: "a", editedText: "b", copied: true, model: "m", audioSeconds: 1,
+                                  transcribeSeconds: 1)
+        check(same.compacted.rawText == nil && same.compacted.raw == "a" && !same.changed, "history: same text once")
+        check(edited.compacted.rawText == "a" && edited.changed, "history: edited keeps raw")
+        let encoded = (try? JSONEncoder().encode(same.compacted)).flatMap { String(data: $0, encoding: .utf8) } ?? ""
+        check(!encoded.contains("rawText"), "history: no rawText key when same")
+        let old = try? JSONDecoder().decode(HistoryEntry.self, from: Data(
+            #"{"id":"6F9619FF-8B86-D011-B42D-00CF4FC964FF","date":0,"rawText":"x","editedText":"x","copied":true,"model":"m","audioSeconds":1,"transcribeSeconds":1}"#.utf8))
+        check(old?.compacted.rawText == nil && old?.raw == "x", "history: old file entry compacts")
         return failures
     }
 
@@ -505,12 +592,7 @@ private struct PreviewLiveWindow: View {
 
     var body: some View {
         MainSplitView(tab: $navigation.tab) { t in
-            switch t {
-            case .settings: PreviewData.settingsView($settings)
-            case .models: PreviewData.modelsView()
-            case .terms: TermsView(terms: PreviewData.terms, actions: PreviewData.termActions)
-            case .history: PreviewData.historyView()
-            }
+            if t == .settings { PreviewData.settingsView($settings) } else { PreviewData.page(t) }
         }
     }
 }

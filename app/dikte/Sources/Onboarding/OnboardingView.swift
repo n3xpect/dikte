@@ -489,7 +489,7 @@ private struct OnboardingShortcutStep: View {
                 HStack {
                     Text(L("Dikte kısayolu")).font(.headline)
                     Spacer()
-                    KeyboardShortcuts.Recorder(for: .dictate) { shortcut = $0 }
+                    ShortcutField(shortcut: $shortcut)
                 }
                 Divider().padding(.vertical, 2)
                 Grid(alignment: .leadingFirstTextBaseline, horizontalSpacing: 14, verticalSpacing: 8) {

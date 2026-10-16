@@ -339,8 +339,6 @@ enum DictationSelfCheck {
         expect(names(c.shownDeliveryEntries).prefix(4), ["Slack", "Mail", "Notes", "Safari"], "yıldız: yeniden sırala")
         c.makeDefaultTarget(TargetApp(bundleID: "com.apple.mail", name: "Mail", url: nil, isRunning: true))
         expect(names(c.shownDeliveryEntries).first, "Mail", "varsayılan yap")
-        c.dismissDeliveryTip()
-        expect(c.showsDeliveryTip, false, "ipucunu kapat")
         expect(DictationController.preview(.editing).shownDeliveryEntries.first?.app, nil, "pano varsayılanı")
         return failures
     }

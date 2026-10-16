@@ -1,6 +1,6 @@
 [project]
 name = "dikte-engine"
-version = "0.3.1"
+version = "0.4.0"
 description = "Dikte local Turkish dictation engine (MLX STT, VAD, terms) over HTTP/WebSocket"
 requires-python = ">=3.12,<3.13"
 dependencies = [

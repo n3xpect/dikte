@@ -3,6 +3,7 @@ import Foundation
 /// settings.json — owned by the app; relevant fields are pushed to the engine via PUT /config.
 struct AppSettings: Codable, Equatable, Sendable {
     var silenceSeconds: Double = 3.0
+    /// Recording stops by itself after this long; whole minutes within `maxDurationRange`.
     var maxDurationSeconds: Double = 120
     /// AVCaptureDevice uniqueID; nil = system default input.
     var microphoneUID: String? = nil
@@ -30,11 +31,18 @@ struct AppSettings: Codable, Equatable, Sendable {
     var deliveryOtherLimit: Int = 5
     /// Put the previous clipboard contents back after pasting into an app.
     var restoreClipboardAfterPaste: Bool = true
-    /// Tips dismissed with "Bir daha gösterme" (see `Tip`).
-    var dismissedTips: [String] = []
 
     /// Catalog entries dropped in later versions; a saved selection falls back to the default.
     static let removedModels: Set<String> = ["qwen3-1.7b"]
+    /// Allowed longest recording, seconds (1–20 min; the engine accepts up to 1200 too).
+    static let maxDurationRange: ClosedRange<Double> = 60...1200
+
+    /// `seconds` rounded to whole minutes and kept within `maxDurationRange`.
+    static func clampedMaxDuration(_ seconds: Double) -> Double {
+        guard seconds.isFinite else { return AppSettings().maxDurationSeconds }
+        let minutes = (seconds / 60).rounded() * 60
+        return min(max(minutes, maxDurationRange.lowerBound), maxDurationRange.upperBound)
+    }
 
     init() {}
 
@@ -43,7 +51,8 @@ struct AppSettings: Codable, Equatable, Sendable {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         let d = AppSettings()
         silenceSeconds = try c.decodeIfPresent(Double.self, forKey: .silenceSeconds) ?? d.silenceSeconds
-        maxDurationSeconds = try c.decodeIfPresent(Double.self, forKey: .maxDurationSeconds) ?? d.maxDurationSeconds
+        maxDurationSeconds = Self.clampedMaxDuration(
+            try c.decodeIfPresent(Double.self, forKey: .maxDurationSeconds) ?? d.maxDurationSeconds)
         microphoneUID = try c.decodeIfPresent(String.self, forKey: .microphoneUID)
         launchAtLogin = try c.decodeIfPresent(Bool.self, forKey: .launchAtLogin) ?? d.launchAtLogin
         soundsEnabled = try c.decodeIfPresent(Bool.self, forKey: .soundsEnabled) ?? d.soundsEnabled
@@ -64,7 +73,6 @@ struct AppSettings: Codable, Equatable, Sendable {
         deliveryOtherLimit = try c.decodeIfPresent(Int.self, forKey: .deliveryOtherLimit) ?? d.deliveryOtherLimit
         restoreClipboardAfterPaste = try c.decodeIfPresent(Bool.self, forKey: .restoreClipboardAfterPaste)
             ?? d.restoreClipboardAfterPaste
-        dismissedTips = try c.decodeIfPresent([String].self, forKey: .dismissedTips) ?? []
     }
 
     var engineConfig: EngineConfig {
@@ -82,8 +90,8 @@ struct AppSettings: Codable, Equatable, Sendable {
 struct HistoryEntry: Codable, Identifiable, Equatable, Sendable {
     var id: UUID = UUID()
     var date: Date = Date()
-    /// Model output before term fixes.
-    var rawText: String
+    /// Model output before term fixes; nil when it equals `editedText` (stored once — see `compacted`).
+    var rawText: String?
     /// Text after term fixes and the user's edits (what was copied, or the final state on Esc).
     var editedText: String
     var copied: Bool
@@ -94,12 +102,17 @@ struct HistoryEntry: Codable, Identifiable, Equatable, Sendable {
     var language: String? = nil
     /// Bundle identifier of the app the text was pasted into (nil: clipboard only / not copied).
     var deliveredTo: String? = nil
-}
 
-/// One-off hints that can be dismissed with "Bir daha gösterme".
-enum Tip: String, CaseIterable, Sendable {
-    /// Explanation under the panel's AKTAR list.
-    case deliveryList
+    /// Model output before term fixes (the final text when nothing was changed).
+    var raw: String { rawText ?? editedText }
+    /// Whether the final text differs from the model output.
+    var changed: Bool { raw != editedText }
+    /// Same entry with the model output dropped when it equals the final text.
+    var compacted: HistoryEntry {
+        var e = self
+        if e.rawText == e.editedText { e.rawText = nil }
+        return e
+    }
 }
 
 /// Which Return sends in the panel's editing phase: `.enter` = ↩ sends, ⇧↩ new line;

@@ -411,6 +411,16 @@
         }
       }
     },
+    "Bellek ve disk": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Memory and disk"
+          }
+        }
+      }
+    },
     "Bellekte": {
       "localizations": {
         "en": {
@@ -467,26 +477,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Unknown engine error"
-          }
-        }
-      }
-    },
-    "Bir daha gösterme": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Don't show again"
-          }
-        }
-      }
-    },
-    "Bir uygulamaya tıkla ya da kısayoluna bas: metin oraya yapıştırılır. Varsayılanı Ayarlar'dan değiştirebilirsin.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Click an app or press its shortcut to paste the text there. You can change the default in Settings."
           }
         }
       }
@@ -641,16 +631,6 @@
         }
       }
     },
-    "Dikte": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dictation"
-          }
-        }
-      }
-    },
     "Dikte bu modeli kullanıyor": {
       "localizations": {
         "en": {
@@ -707,6 +687,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Dikte can use the microphone."
+          }
+        }
+      }
+    },
+    "Dikte mikrofonu yalnızca kısayola bastığında kullanır.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dikte uses the microphone only when you press the shortcut."
           }
         }
       }
@@ -787,6 +777,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Dikte uses the selected model (◉). Only one model is in memory at a time."
+          }
+        }
+      }
+    },
+    "Dikteyi başlat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start dictation"
+          }
+        }
+      }
+    },
+    "Dikteyi bitir": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finish dictation"
           }
         }
       }
@@ -901,6 +911,16 @@
         }
       }
     },
+    "Durum, izni Sistem Ayarları'nda değiştirdiğinde kendiliğinden güncellenir.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The status updates by itself when you change a permission in System Settings."
+          }
+        }
+      }
+    },
     "Düzeltilecek yazımlar": {
       "localizations": {
         "en": {
@@ -957,6 +977,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Minimum free disk space"
+          }
+        }
+      }
+    },
+    "En uzun kayıt süresi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Longest recording"
           }
         }
       }
@@ -1151,6 +1181,16 @@
         }
       }
     },
+    "Hakkında": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "About"
+          }
+        }
+      }
+    },
     "Ham metni kopyala": {
       "localizations": {
         "en": {
@@ -1207,6 +1247,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "No Dictations Yet"
+          }
+        }
+      }
+    },
+    "Henüz favori yok.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No favorites yet."
           }
         }
       }
@@ -1321,6 +1371,16 @@
         }
       }
     },
+    "Kayıt": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recording"
+          }
+        }
+      }
+    },
     "Kayıt artık yok": {
       "localizations": {
         "en": {
@@ -1337,6 +1397,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Select an Entry"
+          }
+        }
+      }
+    },
+    "Kayıt süresi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recording length"
+          }
+        }
+      }
+    },
+    "Kayıt, sessizlik süresi dolunca ya da en uzun süreye ulaşınca kendiliğinden biter.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recording stops by itself after the silence duration or when it reaches the longest recording."
           }
         }
       }
@@ -1451,6 +1531,46 @@
         }
       }
     },
+    "Kısayol yok; dikteyi menü çubuğundan başlatabilirsin.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No shortcut; you can start dictation from the menu bar."
+          }
+        }
+      }
+    },
+    "Kısayola bas…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Press shortcut…"
+          }
+        }
+      }
+    },
+    "Kısayolu sil": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove shortcut"
+          }
+        }
+      }
+    },
+    "Liste ve pano": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "List and clipboard"
+          }
+        }
+      }
+    },
     "Listeden kaldır": {
       "localizations": {
         "en": {
@@ -1471,12 +1591,32 @@
         }
       }
     },
+    "Mac'inde çalışan Türkçe ve İngilizce dikte. Ses hiçbir yere gönderilmez.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turkish and English dictation that runs on your Mac. Audio never leaves it."
+          }
+        }
+      }
+    },
     "Menüler, pencereler ve mesajlar bu dilde görünür.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Menus, windows and messages appear in this language."
+          }
+        }
+      }
+    },
+    "Metin": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Text"
           }
         }
       }
@@ -1721,22 +1861,12 @@
         }
       }
     },
-    "Model ve bellek": {
+    "Model, sen boşaltana kadar bellekte kalır. İndirmeler, sonrasında diskte bu kadar yer kalmayacaksa başlamaz.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Model and memory"
-          }
-        }
-      }
-    },
-    "Model, sen boşaltana kadar bellekte kalır.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The model stays in memory until you unload it."
+            "value": "The model stays in memory until you unload it. Downloads don't start if less than this would be left on disk."
           }
         }
       }
@@ -1797,6 +1927,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Open Models"
+          }
+        }
+      }
+    },
+    "Motor": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Engine"
           }
         }
       }
@@ -2061,6 +2201,16 @@
         }
       }
     },
+    "Ses": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sound"
+          }
+        }
+      }
+    },
     "Ses efektleri": {
       "localizations": {
         "en": {
@@ -2131,6 +2281,16 @@
         }
       }
     },
+    "Sistem Ayarları › Gizlilik ve Güvenlik › Mikrofon bölümünde Dikte'yi aç.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn on Dikte in System Settings › Privacy & Security › Microphone."
+          }
+        }
+      }
+    },
     "Sistem Ayarları'nda onay bekliyor.": {
       "localizations": {
         "en": {
@@ -2197,6 +2357,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "If the problem persists, restart Dikte."
+          }
+        }
+      }
+    },
+    "Sürüm %@ (%@)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Version %@ (%@)"
+          }
+        }
+      }
+    },
+    "Sürüm notları": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Release notes"
           }
         }
       }
@@ -2371,12 +2551,12 @@
         }
       }
     },
-    "Uygulamaya yapıştırmak için gerekli.": {
+    "Tıkla ve yeni kısayola bas. Esc vazgeçer, ⌫ siler.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Required for pasting into apps."
+            "value": "Click and press the new shortcut. Esc cancels, ⌫ removes it."
           }
         }
       }
@@ -2411,6 +2591,16 @@
         }
       }
     },
+    "Varsayılana dön (%@)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back to default (%@)"
+          }
+        }
+      }
+    },
     "Vazgeç": {
       "localizations": {
         "en": {
@@ -2427,6 +2617,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Cancels; nothing is copied."
+          }
+        }
+      }
+    },
+    "Veri klasörü": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Data folder"
           }
         }
       }
@@ -2951,26 +3151,6 @@
         }
       }
     },
-    "İpuçları": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tips"
-          }
-        }
-      }
-    },
-    "İpuçlarını yeniden göster": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Show tips again"
-          }
-        }
-      }
-    },
     "İstersen modeli daha sonra Modeller bölümünden de indirebilirsin.": {
       "localizations": {
         "en": {
@@ -3077,6 +3257,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Delete the term “%@”?"
+          }
+        }
+      }
+    },
+    "⌘, ⌥ veya ⌃ ile birlikte bas": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Press with ⌘, ⌥ or ⌃"
           }
         }
       }

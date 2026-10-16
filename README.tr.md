@@ -21,7 +21,7 @@ Türkçe cümle içindeki İngilizce yazılım terimleri (branch, commit, deploy
 
 | Tuş | Ne yapar |
 |---|---|
-| **⌥ Space** | Dikteyi başlat (kayıt sırasında tekrar basınca bitirir) |
+| **⌥ Space** | Dikteyi başlat (kayıt sırasında tekrar basınca bitirir); menü çubuğu menüsündeki **Dikteyi başlat** da aynısını yapar |
 | 3 sn sessizlik / **Enter** | Kaydı bitir ve yazıya çevir |
 | **Esc** | Kayıt sırasında vazgeç; metin ekranında paneli kapat |
 | **Enter** (metin ekranında) | Metni varsayılan hedefe gönder (bir uygulama seçmediysen pano) ve paneli kapat |
@@ -29,14 +29,20 @@ Türkçe cümle içindeki İngilizce yazılım terimleri (branch, commit, deploy
 | **⌘1–9** / **↓** | Paneldeki listeden başka bir uygulamaya gönder / ok tuşlarıyla seç |
 | **⌘L** / TR-EN düğmesi | Aynı kaydı diğer dilde yeniden çevir |
 
-Yeni satır için Enter'ı mı tercih edersin? **Ayarlar › Metin aktarımı › Göndermek için** ile ikisini değiştirebilirsin: Shift+Enter gönderir, Enter yeni satır açar.
+Yeni satır için Enter'ı mı tercih edersin? **Metin aktarımı › Göndermek için** ile ikisini değiştirebilirsin: Shift+Enter gönderir, Enter yeni satır açar.
 
-Menü çubuğundaki simge durumu gösterir: yeşil nokta model bellekte, turuncu yükleniyor, kırmızı motor çalışmıyor. Ana ekranda şu sekmeler var:
+Kayıt, sessizlik süresi dolunca ya da en uzun kayıt süresine (varsayılan 2 dk, en çok 20 dk) ulaşınca kendiliğinden biter; panel süreyi `00:42 / 02:00` olarak gösterir.
 
-- **Ayarlar** — arayüz dili (Türkçe / English, anında değişir), dikte dili (Otomatik / Türkçe / English), kısayol, mikrofon, sessizlik süresi, ses efektleri, modelin boşta kalma süresi (5 dk sonra bellekten boşaltılır), en az boş disk alanı, geçmiş sınırı, açılışta başlat.
-- **Modeller** — Whisper large-v3 (önerilen), large-v3 turbo ve Hugging Face'ten elle eklenen MLX Whisper modelleri. Bellekteki model yeşil gösterilir. İndirme sonrası diskte 10 GB'tan az yer kalacaksa indirme başlamaz; RAM yetmiyorsa model yüklenmez.
+Menü çubuğundaki simge durumu gösterir: yeşil nokta model bellekte, turuncu yükleniyor, kırmızı motor çalışmıyor. Ana ekranda şu sayfalar var:
+
+- **Ayarlar** — açılışta başlat, dikte kısayolu (tıklayıp yenisine bas; ⓧ ile silinir, o zaman dikte menü çubuğundan başlatılır), arayüz dili (Türkçe / English, anında değişir), dikte dili (Otomatik / Türkçe / English), geçmiş sınırı.
+- **Kayıt** — mikrofon, sessizlik süresi, en uzun kayıt süresi (1–20 dk), ses efektleri.
+- **Metin aktarımı** — varsayılan hedef, gönderme tuşu, favoriler, panelde listelenecek diğer uygulama sayısı, yapıştırdıktan sonra panoyu geri yükleme.
+- **İzinler** — mikrofon ve Erişilebilirlik izninin durumu, her biri için izin verme düğmesi.
+- **Modeller** — Whisper large-v3 (önerilen), large-v3 turbo ve Hugging Face'ten elle eklenen MLX Whisper modelleri. Bellekteki model yeşil gösterilir. Modelin boşta kalma süresi (5 dk sonra bellekten boşaltılır) ve en az boş disk alanı da burada: indirme sonrası diskte 10 GB'tan az yer kalacaksa indirme başlamaz; RAM yetmiyorsa model yüklenmez.
 - **Terimler** (yalnızca Türkçe arayüzde) — terim listesi: her terimin doğru kabul edilen yazımları ve otomatik düzeltilen yanlış yazımları; arama, ekleme, düzenleme, silme. Arayüz İngilizceyken sekme gizlenir; terimler yine her diktede kullanılır.
-- **Geçmiş** — tüm dikteler (dili, ham ve düzeltilmiş metin, aradaki fark), arama, kopyalama, silme.
+- **Geçmiş** — tüm dikteler (dili, son metin; düzeltildiyse ham metin ve aradaki fark da), arama, kopyalama, silme.
+- **Hakkında** (sol menünün en altında) — sürüm, bağlantılar, model, motor, veri klasörü.
 
 TR/EN düğmesi yanlış algılanan dili düzeltmek içindir: doğru algılanmış bir kaydı diğer dile çevirmek metni tercüme eder.
 

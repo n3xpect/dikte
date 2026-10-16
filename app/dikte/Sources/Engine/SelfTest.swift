@@ -156,7 +156,9 @@ enum SelfTest {
         session.send(samples: Array(samples.prefix(chunk * 5)))
         session.start()
         let t0 = Date()
-        let collector = Task { await collect(session, timeout: 180, t0: t0, print: true) }
+        // Feeding runs at ~10× real time; long recordings also take longer to transcribe.
+        let timeout = 180 + Double(samples.count) / 16000
+        let collector = Task { await collect(session, timeout: timeout, t0: t0, print: true) }
         var i = min(chunk * 5, samples.count)
         while i < samples.count {
             let end = min(i + chunk, samples.count)
@@ -248,9 +250,9 @@ enum SelfTest {
             history.add(HistoryEntry(rawText: "r\(n)", editedText: "e\(n)", copied: n == 1, model: "m",
                                      audioSeconds: 1, transcribeSeconds: 0.5))
         }
-        let trimmed = history.entries.map(\.rawText) == ["r2", "r1"]
+        let trimmed = history.entries.map(\.raw) == ["r2", "r1"]
         let reloadedHistory = HistoryStore().entries.map(\.id) == history.entries.map(\.id)
-        check(trimmed && reloadedHistory, "history_store", ["entries": history.entries.map(\.rawText)])
+        check(trimmed && reloadedHistory, "history_store", ["entries": history.entries.map(\.raw)])
         history.clear()
         history.limit = { 0 }
         for e in before.reversed() { history.add(e) }

@@ -19,13 +19,14 @@ struct ModelsTab: View {
 
     var body: some View {
         let engine = state.engine
-        let settings = state.settings
+        @Bindable var settings = state.settings
         ModelsView(
             status: engine.status,
             models: engine.models,
             system: engine.system,
             selectedModel: settings.settings.selectedModel,
-            minFreeDiskGB: settings.settings.minFreeDiskGB,
+            idleUnloadMinutes: $settings.settings.idleUnloadMinutes,
+            minFreeDiskGB: $settings.settings.minFreeDiskGB,
             actions: ModelActions(
                 select: { settings.settings.selectedModel = $0 },
                 download: engine.download,
@@ -46,7 +47,8 @@ struct ModelsView: View {
     var models: [ModelInfo]
     var system: SystemInfo?
     var selectedModel: String
-    var minFreeDiskGB: Int
+    @Binding var idleUnloadMinutes: Int
+    @Binding var minFreeDiskGB: Int
     var actions: ModelActions
 
     @State private var errors: [String: String] = [:]
@@ -66,6 +68,7 @@ struct ModelsView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
                 engineCard
+                storageCard
                 VStack(alignment: .leading, spacing: 2) {
                     Text(L("Modeller")).font(.title3.weight(.semibold))
                     Text(L("Dikte, seçili modeli (◉) kullanır. Bellekte aynı anda tek model bulunur."))
@@ -152,6 +155,39 @@ struct ModelsView: View {
             if let e = errors[Self.engineKey] {
                 Text(e).font(.callout).foregroundStyle(Palette.danger)
             }
+        }
+        .padding(14)
+        .background(RoundedRectangle(cornerRadius: 10).fill(Color(nsColor: .controlBackgroundColor)))
+        .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Color(nsColor: .separatorColor)))
+    }
+
+    // MARK: Memory and disk settings
+
+    /// Separate from the engine card so it can be changed while the engine is down.
+    private var storageCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(L("Bellek ve disk")).font(.headline)
+            HStack {
+                Text(L("Modelin boşta kalma süresi"))
+                Spacer()
+                Stepper(value: $idleUnloadMinutes, in: 0...60) {
+                    Text(idleUnloadMinutes == 0 ? L("Hiç") : L("%@ dk", Fmt.int(idleUnloadMinutes)))
+                        .monospacedDigit()
+                }
+            }
+            Divider()
+            HStack {
+                Text(L("En az boş disk alanı"))
+                Spacer()
+                Stepper(value: $minFreeDiskGB, in: 1...100) {
+                    Text(verbatim: "\(Fmt.int(minFreeDiskGB)) GB").monospacedDigit()
+                }
+            }
+            Text(idleUnloadMinutes == 0
+                 ? L("Model, sen boşaltana kadar bellekte kalır. İndirmeler, sonrasında diskte bu kadar yer kalmayacaksa başlamaz.")
+                 : L("Son diktenin üzerinden bu kadar zaman geçince model bellekten boşaltılır. İndirmeler, sonrasında diskte bu kadar yer kalmayacaksa başlamaz."))
+                .font(.caption).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .padding(14)
         .background(RoundedRectangle(cornerRadius: 10).fill(Color(nsColor: .controlBackgroundColor)))
