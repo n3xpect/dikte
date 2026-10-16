@@ -3,7 +3,7 @@ import KeyboardShortcuts
 import Observation
 
 // CONTRACT — implemented by agent "ui". NSStatusItem with state icon + menu
-// (Dikteyi başlat/bitir, Dikte'yi aç, Modeli şimdi boşalt, Çıkış).
+// (Dikteyi başlat/bitir, Ayarlar…, Modeli şimdi boşalt, Çıkış).
 final class StatusItemController {
     static let shared = StatusItemController()
     private init() {}
@@ -38,7 +38,7 @@ final class StatusItemController {
         dictate.setShortcut(for: .dictate)
         dictateItem = dictate
         menu.addItem(dictate)
-        let open = menuTarget.item { MainWindowController.shared.show() }
+        let open = menuTarget.item(key: ",") { MainWindowController.shared.show() }
         openItem = open
         menu.addItem(open)
         menu.addItem(.separator())
@@ -92,7 +92,7 @@ final class StatusItemController {
         }
 
         dictateItem?.title = state.dictation.phase == .listening ? L("Dikteyi bitir") : L("Dikteyi başlat")
-        openItem?.title = L("Dikte'yi aç")
+        openItem?.title = L("Ayarlar…")
         unloadItem?.title = L("Modeli şimdi boşalt")
         quitItem?.title = L("Çıkış")
         let line = Self.statusText(engine: engine, selected: state.settings.settings.selectedModel)

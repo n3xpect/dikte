@@ -349,7 +349,7 @@ enum UIPreviewRenderer {
         VStack(alignment: .leading, spacing: 6) {
             HStack { Text(L("Dikteyi başlat")); Spacer(); Text(verbatim: "⌥Space").foregroundStyle(.secondary) }
             Text(L("Dikteyi bitir"))
-            Text(L("Dikte'yi aç"))
+            HStack { Text(L("Ayarlar…")); Spacer(); Text(verbatim: "⌘,").foregroundStyle(.secondary) }
             Divider()
             ForEach([EngineStatus.starting, .stopped, .failed("Python bulunamadı.")].map(\.display.text),
                     id: \.self) {
@@ -416,7 +416,7 @@ enum UIPreviewRenderer {
         check(Fmt.int(1234) == "1,234", "int en: 1,234, got \(Fmt.int(1234))")
         check(Fmt.count(1, one: L("1 kayıt"), other: { L("%@ kayıt", $0) }) == "1 entry", "count en: 1 entry")
         check(Fmt.count(3, one: L("1 kayıt"), other: { L("%@ kayıt", $0) }) == "3 entries", "count en: 3 entries")
-        check(L("Dikte'yi aç") == "Open Dikte", "L en: Open Dikte")
+        check(L("Ayarlar…") == "Settings…", "L en: Settings…")
         check(ModelsView.normalizedRepo("https://huggingface.co/mlx-community/whisper-x/tree/main")
               == "mlx-community/whisper-x", "repo: url")
         check(ModelsView.normalizedRepo("org/name") == "org/name", "repo: plain")

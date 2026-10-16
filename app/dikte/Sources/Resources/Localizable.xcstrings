@@ -331,6 +331,16 @@
         }
       }
     },
+    "Ayarlar…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settings…"
+          }
+        }
+      }
+    },
     "Açık": {
       "localizations": {
         "en": {
@@ -737,16 +747,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Give Dikte microphone access and try again."
-          }
-        }
-      }
-    },
-    "Dikte'yi aç": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Open Dikte"
           }
         }
       }
