@@ -170,28 +170,40 @@ struct ModelsView: View {
             HStack {
                 Text(L("Modelin boşta kalma süresi"))
                 Spacer()
-                Stepper(value: $idleUnloadMinutes, in: 0...60) {
-                    Text(idleUnloadMinutes == 0 ? L("Hiç") : L("%@ dk", Fmt.int(idleUnloadMinutes)))
-                        .monospacedDigit()
-                }
+                stepSlider(value: $idleUnloadMinutes, in: 1...10, step: 1,
+                           label: { L("%@ dk", Fmt.int($0)) })
             }
             Divider()
             HStack {
                 Text(L("En az boş disk alanı"))
                 Spacer()
-                Stepper(value: $minFreeDiskGB, in: 1...100) {
-                    Text(verbatim: "\(Fmt.int(minFreeDiskGB)) GB").monospacedDigit()
-                }
+                stepSlider(value: $minFreeDiskGB, in: 5...20, step: 5,
+                           label: { "\(Fmt.int($0)) GB" })
             }
-            Text(idleUnloadMinutes == 0
-                 ? L("Model, sen boşaltana kadar bellekte kalır. İndirmeler, sonrasında diskte bu kadar yer kalmayacaksa başlamaz.")
-                 : L("Son diktenin üzerinden bu kadar zaman geçince model bellekten boşaltılır. İndirmeler, sonrasında diskte bu kadar yer kalmayacaksa başlamaz."))
+            Text(L("Son diktenin üzerinden bu kadar zaman geçince model bellekten boşaltılır. İndirmeler, sonrasında diskte bu kadar yer kalmayacaksa başlamaz."))
                 .font(.caption).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(14)
         .background(RoundedRectangle(cornerRadius: 10).fill(Color(nsColor: .controlBackgroundColor)))
         .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Color(nsColor: .separatorColor)))
+    }
+
+    /// Slider over a whole-number setting. Values saved before the range was narrowed (0, 30 min,
+    /// 50 GB…) are shown at the nearest end until the slider is moved.
+    private func stepSlider(value: Binding<Int>, in range: ClosedRange<Int>, step: Int,
+                            label: (Int) -> String) -> some View {
+        let shown = Binding<Double>(
+            get: { Double(min(max(value.wrappedValue, range.lowerBound), range.upperBound)) },
+            set: { value.wrappedValue = Int($0.rounded()) }
+        )
+        return HStack {
+            Slider(value: shown, in: Double(range.lowerBound)...Double(range.upperBound), step: Double(step))
+                .frame(maxWidth: 220)
+            Text(label(Int(shown.wrappedValue)))
+                .monospacedDigit()
+                .frame(width: 56, alignment: .trailing)
+        }
     }
 
     @ViewBuilder private var memoryLine: some View {
