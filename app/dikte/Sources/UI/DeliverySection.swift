@@ -93,13 +93,17 @@ struct DeliverySection: View {
                 Text(L("Otomatik gönder"))
                 Text(L("Metin panele geldikten sonra bekleme süresi dolunca varsayılan hedefe gönderilir. Bir tuşa basmak ya da tıklamak durdurur."))
             }
-            // Always shown (just disabled when off), so the value stays visible.
-            LabeledContent(L("Bekleme süresi")) {
+            // Always shown (just disabled — and visibly dimmed — when off), so the value stays visible.
+            LabeledContent {
                 HStack {
                     Slider(value: autoSendChoice, in: 0...Double(AppSettings.autoSendChoices.count - 1), step: 1)
                         .frame(maxWidth: 220)
                     AutoSendWaitLabel(seconds: settings.autoSendSeconds)
                 }
+                .dimmedWhenOff(!settings.autoSendEnabled)
+            } label: {
+                Text(L("Bekleme süresi"))
+                    .foregroundStyle(settings.autoSendEnabled ? .primary : .tertiary)
             }
             .disabled(!settings.autoSendEnabled)
             if settings.autoSendEnabled && settings.autoSendSeconds == 0 {
@@ -228,6 +232,13 @@ struct AutoSendWaitLabel: View {
         .monospacedDigit()
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Fmt.autoSendWait(seconds))
+    }
+}
+
+extension View {
+    /// A disabled control in a Form barely changes colour on macOS: fade it so "off" is obvious.
+    func dimmedWhenOff(_ off: Bool) -> some View {
+        opacity(off ? 0.4 : 1)
     }
 }
 

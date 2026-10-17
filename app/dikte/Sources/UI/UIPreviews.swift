@@ -352,6 +352,16 @@ enum UIPreviewRenderer {
         nowSettings.autoSendSeconds = 0
         render(PreviewData.window(.delivery) { PreviewData.deliverySection(nowSettings) }, "delivery-auto-send-now",
                900, 900, dir)
+        var offSettings = PreviewData.deliverySettings()
+        offSettings.autoSendEnabled = false
+        render(PreviewData.window(.delivery) { PreviewData.deliverySection(offSettings) }, "delivery-auto-send-off",
+               900, 900, dir)
+        render(PreviewData.window(.delivery) { PreviewData.deliverySection(offSettings) }, "delivery-auto-send-off-dark",
+               900, 900, dir, dark: true)
+        let offPanel = DictationController.preview(.autoSendCounting)
+        offPanel.setAutoSend(enabled: false)
+        renderFitting(AutoSendPopover(controller: offPanel), "auto-send-popover-off", dir)
+        renderFitting(AutoSendPopover(controller: offPanel), "auto-send-popover-off-dark", dir, dark: true)
     }
 
     /// Menu bar menu titles for each status line (NSMenu can't be drawn offscreen).

@@ -254,6 +254,7 @@ struct AutoSendPopover: View {
                 AutoSendWaitLabel(seconds: setting.seconds)
             }
             .disabled(!setting.enabled)
+            .dimmedWhenOff(!setting.enabled)
             if setting.enabled && setting.seconds == 0 {
                 AutoSendNowWarning()
             }
