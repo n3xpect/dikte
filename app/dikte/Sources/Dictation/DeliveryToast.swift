@@ -11,6 +11,10 @@ struct DeliveryToastContent: Equatable {
             return DeliveryToastContent(message: L("Erişilebilirlik izni gerekli — metin panoda"),
                                         asksForAccessibility: true)
         }
+        if (error as? DeliveryError) == .notReady {
+            return DeliveryToastContent(message: L("%@ açıldı ama yazı alanı hazır değildi — metin panoda (⌘V)", appName),
+                                        asksForAccessibility: false)
+        }
         return DeliveryToastContent(message: L("%@ uygulamasına aktarılamadı — metin panoda (⌘V)", appName),
                                     asksForAccessibility: false)
     }

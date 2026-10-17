@@ -283,8 +283,9 @@ enum DeliveryHint {
     /// `defaultName` nil = the default target is the clipboard (then ⌘C would only repeat the send key).
     /// `shortcuts` = highest ⌘ number shown in the list.
     /// `hasList`: there are rows to reach with ↓ from the text area.
+    /// `autoSending`: the countdown runs, so Esc only stops it.
     static func items(defaultName: String?, shortcuts: Int, canSwitchLanguage: Bool,
-                      hasList: Bool = false, sendKey: SendKey = .enter) -> [Item] {
+                      hasList: Bool = false, sendKey: SendKey = .enter, autoSending: Bool = false) -> [Item] {
         let send = Item(key: sendKey.symbol, label: defaultName ?? L("kopyala"))
         var items: [Item]
         switch sendKey {
@@ -303,7 +304,7 @@ enum DeliveryHint {
         }
         if defaultName != nil { items.append(Item(key: "⌘C", label: L("kopyala"))) }
         if canSwitchLanguage { items.append(Item(key: "⌘L", label: L("dil"))) }
-        items.append(Item(key: "Esc", label: L("kapat")))
+        items.append(Item(key: "Esc", label: autoSending ? L("durdur") : L("kapat")))
         return items
     }
 

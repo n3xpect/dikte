@@ -89,6 +89,21 @@ struct DeliverySection: View {
                 Text(L("Göndermek için"))
                 Text(L("Diğer tuş yeni satır açar."))
             }
+            Toggle(isOn: $settings.autoSendEnabled) {
+                Text(L("Otomatik gönder"))
+                Text(L("Metin panele geldikten sonra bekleme süresi dolunca varsayılan hedefe gönderilir. Bir tuşa basmak ya da tıklamak durdurur."))
+            }
+            if settings.autoSendEnabled {
+                LabeledContent(L("Bekleme süresi")) {
+                    HStack {
+                        Slider(value: autoSendSeconds, in: AppSettings.autoSendRange, step: 1)
+                            .frame(maxWidth: 220)
+                        Text(Fmt.seconds(settings.autoSendSeconds))
+                            .monospacedDigit()
+                            .frame(width: 48, alignment: .trailing)
+                    }
+                }
+            }
         } header: {
             Text(L("Gönderme"))
         } footer: {
@@ -110,6 +125,11 @@ struct DeliverySection: View {
             Text(L("Favori olmayan, çalışan uygulamalardan bu kadarı listede doğrudan görünür; gerisi katlanır."))
                 .font(.caption).foregroundStyle(.secondary)
         }
+    }
+
+    private var autoSendSeconds: Binding<Double> {
+        Binding(get: { settings.autoSendSeconds },
+                set: { settings.autoSendSeconds = AppSettings.clampedAutoSend($0) })
     }
 
     // MARK: Targets

@@ -26,6 +26,11 @@ struct AppSettings: Codable, Equatable, Sendable {
     var deliveryTargets: [String] = [AppSettings.clipboard]
     /// Panel key that sends the text to the default target; the other one inserts a new line.
     var sendKey: SendKey = .enter
+    /// After the text appears in the panel, count down `autoSendSeconds` and send it to the default
+    /// target unless the user presses a key or clicks first.
+    var autoSendEnabled: Bool = true
+    /// Whole seconds within `autoSendRange`.
+    var autoSendSeconds: Double = 3
     /// Running, non-favourite apps listed in the panel before "+ N more".
     var deliveryOtherLimit: Int = 5
     /// Put the previous clipboard contents back after pasting into an app.
@@ -37,6 +42,8 @@ struct AppSettings: Codable, Equatable, Sendable {
     static let clipboard = "clipboard"
     /// Allowed longest recording, seconds (1–20 min; the engine accepts up to 1200 too).
     static let maxDurationRange: ClosedRange<Double> = 60...1200
+    /// Allowed auto-send countdown, seconds.
+    static let autoSendRange: ClosedRange<Double> = 1...10
 
     /// `seconds` rounded to whole minutes and kept within `maxDurationRange`.
     static func clampedMaxDuration(_ seconds: Double) -> Double {
@@ -72,9 +79,19 @@ struct AppSettings: Codable, Equatable, Sendable {
             try c.decodeIfPresent([String].self, forKey: .deliveryTargets) ?? d.deliveryTargets)
         // Missing (files before 0.3.x) or unknown → Enter sends, for existing installs too.
         sendKey = (try? c.decodeIfPresent(SendKey.self, forKey: .sendKey)) ?? .enter
+        // Missing (files before 0.4.4) → on, for existing installs too.
+        autoSendEnabled = try c.decodeIfPresent(Bool.self, forKey: .autoSendEnabled) ?? d.autoSendEnabled
+        autoSendSeconds = Self.clampedAutoSend(
+            try c.decodeIfPresent(Double.self, forKey: .autoSendSeconds) ?? d.autoSendSeconds)
         deliveryOtherLimit = try c.decodeIfPresent(Int.self, forKey: .deliveryOtherLimit) ?? d.deliveryOtherLimit
         restoreClipboardAfterPaste = try c.decodeIfPresent(Bool.self, forKey: .restoreClipboardAfterPaste)
             ?? d.restoreClipboardAfterPaste
+    }
+
+    /// `seconds` rounded to whole seconds and kept within `autoSendRange`.
+    static func clampedAutoSend(_ seconds: Double) -> Double {
+        guard seconds.isFinite else { return AppSettings().autoSendSeconds }
+        return min(max(seconds.rounded(), autoSendRange.lowerBound), autoSendRange.upperBound)
     }
 
     // MARK: Delivery targets

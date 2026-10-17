@@ -281,6 +281,19 @@ enum DictationSelfCheck {
         expect(paste.message.contains("Slack"), true, "toast: uygulama adı")
         expect(DeliveryToastContent.failure(CancellationError(), appName: "X").asksForAccessibility, false,
                "toast: başka hata")
+        expect(DeliveryToastContent.failure(DeliveryError.notReady, appName: "Telegram").message.contains("Telegram"),
+               true, "toast: hazır değil")
+
+        // Auto-send countdown: stopping it, hint while it runs.
+        let counting = DictationController.preview(.autoSendCounting)
+        expect(counting.autoSendCounting, true, "geri sayım sürüyor")
+        expect(keys(counting.editingHint).last, "Esc", "geri sayım ipucu Esc")
+        expect(counting.editingHint.last?.label, L("durdur"), "geri sayımda Esc durdurur")
+        counting.stopAutoSend()
+        expect(counting.autoSend, .stopped, "durdur")
+        expect(counting.editingHint.last?.label, L("kapat"), "durunca Esc kapatır")
+        counting.stopAutoSend()
+        expect(counting.autoSend, .stopped, "ikinci durdurma etkisiz")
 
         // Preview list (Slack default, then Mail, Notes, the clipboard; 3 others visible, 3 more).
         let c = DictationController.preview(.deliveryApp)
@@ -409,6 +422,12 @@ enum DictationSelfCheck {
             expect(act(Key.up, .option, "", send, list), .moveTarget(-1), "\(m) liste ⌥↑ taşı")
             expect(act(Key.up, [.option, .shift], "", send, list), .leaveListAndPass, "\(m) liste ⌥⇧↑")
             expect(act(Key.down, .option, "", send) { $0.caretOnLastLine = true }, .pass, "\(m) metinde ⌥↓")
+            // Auto-send countdown: Esc only stops it; the send key still sends at once.
+            let counting: (inout PanelKeyAction.Context) -> Void = { $0.autoSendCounting = true }
+            expect(act(Key.escape, [], "", send, counting), .stopAutoSend, "\(m) geri sayımda Esc")
+            expect(act(ret, sendFlags, "", send, counting), .deliverDefault, "\(m) geri sayımda gönder")
+            expect(act(Key.escape, [], "", send) { $0.autoSendCounting = true; $0.hasMarkedText = true }, .pass,
+                   "\(m) geri sayımda IME Esc")
             expect(act(0, [], "a", send, list), .leaveListAndPass, "\(m) liste yazı")
             expect(act(19, .command, "2", send, list), .deliverShortcut(2), "\(m) liste ⌘2")
             // Entering the list.

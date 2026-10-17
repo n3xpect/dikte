@@ -45,6 +45,19 @@ final class DictationController {
     var listSelection: Int?
     /// Where the suggestions banner's delivery goes (nil = clipboard).
     private(set) var pendingTarget: TargetApp?
+    /// Countdown to sending the text to the default target (Metin aktarımı › Otomatik gönder).
+    private(set) var autoSend = AutoSend.off
+
+    enum AutoSend: Equatable {
+        case off
+        case counting(until: Date, total: TimeInterval)
+        /// Stopped by a key or click; sending is up to the user now.
+        case stopped
+    }
+
+    var autoSendCounting: Bool {
+        if case .counting = autoSend { true } else { false }
+    }
 
     /// Second line under the `.failed` message (how to fix it).
     private(set) var failureHint: String?
@@ -88,6 +101,7 @@ final class DictationController {
     /// When `text` was last filled in from a result (start of `.editing`, re-transcription).
     @ObservationIgnored private var editingBegan = Date.distantPast
     @ObservationIgnored private var retranscribeTask: Task<Void, Never>?
+    @ObservationIgnored private var autoSendTask: Task<Void, Never>?
     /// Bumped on every start/teardown; callbacks from older recordings are ignored.
     @ObservationIgnored private var generation = 0
     /// Audio captured before the engine session exists (engine still starting).
@@ -202,7 +216,8 @@ final class DictationController {
                                   shortcuts: rows.compactMap(\.shortcut).max() ?? 0,
                                   canSwitchLanguage: canSwitchLanguage,
                                   hasList: navigableRowCount > 0,
-                                  sendKey: sendKey)
+                                  sendKey: sendKey,
+                                  autoSending: autoSendCounting)
     }
 
     func toggleFavorite(_ target: TargetApp) {
@@ -261,6 +276,7 @@ final class DictationController {
     /// Writes history, then shows the learning banner (delivering once it's resolved) or delivers now.
     private func deliver(to target: TargetApp?) {
         guard phase == .editing, suggestions.isEmpty, !retranscribing, !deliveryPending else { return }
+        endAutoSend()
         confirmingLanguageSwitch = false
         let final = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !final.isEmpty else {
@@ -334,6 +350,7 @@ final class DictationController {
     /// If the user changed the text, the first call only asks (`confirmingLanguageSwitch`).
     func switchLanguage() {
         guard phase == .editing, suggestions.isEmpty, !retranscribing else { return }
+        stopAutoSend()
         languageError = nil
         if !confirmingLanguageSwitch, text.trimmingCharacters(in: .whitespacesAndNewlines) != shownText {
             confirmingLanguageSwitch = true
@@ -629,6 +646,39 @@ final class DictationController {
         listSelection = nil
         phase = .editing
         panel.show()
+        startAutoSend()
+    }
+
+    // MARK: - Auto-send
+
+    /// When the result appears: count down, then send to the default target.
+    private func startAutoSend() {
+        let settings = deliverySource.settings()
+        guard settings.autoSendEnabled, phase == .editing, suggestions.isEmpty, !retranscribing,
+              !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        let total = settings.autoSendSeconds
+        autoSend = .counting(until: Date().addingTimeInterval(total), total: total)
+        let gen = generation
+        autoSendTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(total))
+            guard let self, !Task.isCancelled, self.generation == gen, self.autoSendCounting else { return }
+            self.autoSendTask = nil
+            self.deliverToDefault()
+        }
+    }
+
+    /// A key press or click while counting: the panel stays, sending is up to the user.
+    func stopAutoSend() {
+        guard autoSendCounting else { return }
+        autoSendTask?.cancel()
+        autoSendTask = nil
+        autoSend = .stopped
+    }
+
+    private func endAutoSend() {
+        autoSendTask?.cancel()
+        autoSendTask = nil
+        autoSend = .off
     }
 
     /// Socket closed (or stream ended) — only an error if we were still waiting for something.
@@ -701,6 +751,7 @@ final class DictationController {
         runTask = nil
         noticeTask?.cancel()
         noticeTask = nil
+        endAutoSend()
         stopRetranscribing()
         stopCapture()
         pending = []
@@ -769,7 +820,7 @@ extension DictationController {
     enum PreviewState: String, CaseIterable {
         case listening, listeningModelLoading, transcribing, editing, editingEnglish, retranscribing,
              confirmSwitch, languageError, deliveryApp, deliveryShiftEnter, deliveryExpanded,
-             deliverySelected, suggestions, suggestionsApp, failed, notice
+             deliverySelected, autoSendCounting, autoSendStopped, suggestions, suggestionsApp, failed, notice
     }
 
     /// Controller frozen in a phase, for `#Preview` and snapshot rendering.
@@ -794,7 +845,8 @@ extension DictationController {
         case .transcribing:
             c.phase = .transcribing
         case .editing, .retranscribing, .confirmSwitch, .languageError,
-             .deliveryApp, .deliveryShiftEnter, .deliveryExpanded, .deliverySelected:
+             .deliveryApp, .deliveryShiftEnter, .deliveryExpanded, .deliverySelected,
+             .autoSendCounting, .autoSendStopped:
             c.phase = .editing
             c.result = DictationResult(rawText: turkish, text: turkish, fixes: [], audioSeconds: 6.1,
                                        transcribeSeconds: 0.9, model: "large-v3", language: "tr",
@@ -806,12 +858,15 @@ extension DictationController {
                 c.text = turkish.replacingOccurrences(of: "açalım", with: "hemen açalım")
                 c.confirmingLanguageSwitch = true
             case .languageError: c.languageError = L("Kayıt artık yok")
-            case .deliveryApp, .deliveryShiftEnter, .deliveryExpanded, .deliverySelected:
+            case .deliveryApp, .deliveryShiftEnter, .deliveryExpanded, .deliverySelected,
+                 .autoSendCounting, .autoSendStopped:
                 fake.settings.deliveryTargets = PreviewDelivery.targets
                 if state == .deliveryShiftEnter { fake.settings.sendKey = .shiftEnter }
                 fake.settings.deliveryOtherLimit = 3
                 c.showsAllDeliveryTargets = state == .deliveryExpanded
                 if state == .deliverySelected { c.listSelection = 2 }
+                if state == .autoSendCounting { c.autoSend = .counting(until: Date().addingTimeInterval(1.6), total: 3) }
+                if state == .autoSendStopped { c.autoSend = .stopped }
             default: break
             }
         case .editingEnglish:

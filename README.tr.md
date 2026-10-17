@@ -31,6 +31,8 @@ Türkçe cümle içindeki İngilizce yazılım terimleri (branch, commit, deploy
 
 Yeni satır için Enter'ı mı tercih edersin? **Metin aktarımı › Göndermek için** ile ikisini değiştirebilirsin: Shift+Enter gönderir, Enter yeni satır açar.
 
+Varsayılan olarak metin, panelde gösterilen kısa bir geri sayımdan sonra **otomatik gönderilir** (3 sn; **Metin aktarımı › Otomatik gönder** ile kapatılabilir ya da süresi değiştirilebilir). Herhangi bir tuş ya da tıklama, Esc de, geri sayımı durdurur; Enter hemen gönderir.
+
 Kayıt, sessizlik süresi dolunca ya da en uzun kayıt süresine (varsayılan 2 dk, en çok 20 dk) ulaşınca kendiliğinden biter; panel süreyi `00:42 / 02:00` olarak gösterir.
 
 Menü çubuğundaki simge durumu gösterir: yeşil nokta model bellekte, turuncu yükleniyor, kırmızı motor çalışmıyor. Ana ekranda şu sayfalar var:

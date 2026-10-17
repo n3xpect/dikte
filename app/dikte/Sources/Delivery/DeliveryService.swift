@@ -1,6 +1,7 @@
 import AppKit
 import ApplicationServices
 import Observation
+import OSLog
 import UniformTypeIdentifiers
 
 // CONTRACT — implemented by agent "delivery". Sends dictated text to the clipboard or pastes it
@@ -37,6 +38,8 @@ enum DeliveryError: Error, Equatable, Sendable {
     case appNotFound
     case launchFailed
     case activationTimeout
+    /// Launched, but nothing that takes text got focus in time.
+    case notReady
     case pasteFailed
 }
 
@@ -46,6 +49,7 @@ final class DeliveryService {
     private(set) var accessibilityTrusted = false
 
     @ObservationIgnored private var icons: [String: NSImage] = [:]
+    @ObservationIgnored private let log = Logger(subsystem: "com.mehmetcaykara.dikte", category: "delivery")
     @ObservationIgnored private var activeObserver: NSObjectProtocol?
     @ObservationIgnored private var trustPoll: Task<Void, Never>?
 
@@ -189,9 +193,21 @@ final class DeliveryService {
         copyToClipboard(text)
         let ours = pb.changeCount
 
-        let launched = try await bringToFront(bundleID)
-        // Let the target's key window take focus (longer for a fresh launch).
-        try? await Task.sleep(for: .milliseconds(launched ? 600 : 120))
+        let start = Date()
+        let launched: Bool
+        do {
+            launched = try await bringToFront(bundleID)
+        } catch {
+            log.error("deliver \(bundleID, privacy: .public): \(String(describing: error), privacy: .public)")
+            throw error
+        }
+        // Paste only once something that takes text has focus: a fresh launch (Electron apps
+        // especially) needs seconds for its window and text field. A running app is usually ready;
+        // if focus can't be told there, paste anyway as before.
+        let ready = await waitUntilReady(bundleID, timeout: launched ? 15 : 1.5)
+        log.info("deliver \(bundleID, privacy: .public): launched=\(launched) ready=\(ready) after \(Date().timeIntervalSince(start), format: .fixed(precision: 2))s")
+        if !ready && launched { throw DeliveryError.notReady }
+        try? await Task.sleep(for: .milliseconds(launched ? 250 : 120))
 
         guard let source = CGEventSource(stateID: .hidSystemState),
               let down = CGEvent(keyboardEventSource: source, virtualKey: 0x09, keyDown: true),
@@ -230,7 +246,8 @@ final class DeliveryService {
             launched = true
         }
 
-        let deadline = Date().addingTimeInterval(3)
+        // A launch can take a few seconds before the app is frontmost.
+        let deadline = Date().addingTimeInterval(launched ? 10 : 3)
         var nudged = launched
         while NSWorkspace.shared.frontmostApplication?.bundleIdentifier != bundleID {
             guard Date() < deadline else { throw DeliveryError.activationTimeout }
@@ -246,6 +263,42 @@ final class DeliveryService {
             try? await Task.sleep(for: .milliseconds(50))
         }
         return launched
+    }
+
+    /// Until the app has finished launching, is frontmost and focuses something that takes text.
+    private func waitUntilReady(_ bundleID: String, timeout: TimeInterval) async -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+        var askedForTree = false
+        while true {
+            if let app = NSRunningApplication.runningApplications(withBundleIdentifier: bundleID)
+                .first(where: { !$0.isTerminated }), app.isFinishedLaunching,
+               NSWorkspace.shared.frontmostApplication?.bundleIdentifier == bundleID {
+                let element = AXUIElementCreateApplication(app.processIdentifier)
+                if !askedForTree {
+                    // Electron / Chromium apps build their accessibility tree only when asked.
+                    AXUIElementSetAttributeValue(element, "AXManualAccessibility" as CFString, kCFBooleanTrue)
+                    askedForTree = true
+                }
+                if Self.focusesText(element) { return true }
+            }
+            guard Date() < deadline else { return false }
+            try? await Task.sleep(for: .milliseconds(150))
+        }
+    }
+
+    /// Whether the app's focused element takes typed text (a text field / area, or a settable value).
+    static func focusesText(_ app: AXUIElement) -> Bool {
+        var focused: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(app, kAXFocusedUIElementAttribute as CFString, &focused) == .success,
+              let focused, CFGetTypeID(focused) == AXUIElementGetTypeID() else { return false }
+        let element = focused as! AXUIElement
+        var role: CFTypeRef?
+        AXUIElementCopyAttributeValue(element, kAXRoleAttribute as CFString, &role)
+        if let role = role as? String,
+           [kAXTextAreaRole, kAXTextFieldRole, kAXComboBoxRole, "AXSearchField"].contains(role) { return true }
+        var settable: DarwinBoolean = false
+        return AXUIElementIsAttributeSettable(element, kAXValueAttribute as CFString, &settable) == .success
+            && settable.boolValue
     }
 
     private typealias Snapshot = [[(NSPasteboard.PasteboardType, Data)]]

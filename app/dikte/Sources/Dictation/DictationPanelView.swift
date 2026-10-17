@@ -109,6 +109,9 @@ private struct EditingContent: View {
                     .font(.callout)
                     .foregroundStyle(.orange)
             }
+            if controller.autoSend != .off {
+                AutoSendBar(controller: controller)
+            }
             if !controller.shownDeliveryEntries.isEmpty {
                 DeliveryListView(controller: controller)
             }
@@ -130,6 +133,71 @@ private struct EditingContent: View {
                 }
             }
         }
+    }
+}
+
+/// Countdown before the text goes to the default target; after a key or click, a note that it stopped.
+private struct AutoSendBar: View {
+    let controller: DictationController
+
+    var body: some View {
+        let target = controller.shownDeliveryEntries.first?.app?.name
+        let send = controller.sendKey.symbol
+        HStack(spacing: 10) {
+            switch controller.autoSend {
+            case .counting(let until, let total):
+                TimelineView(.animation(minimumInterval: 1 / 30)) { ctx in
+                    let left = max(0, until.timeIntervalSince(ctx.date))
+                    CountdownRing(progress: total > 0 ? left / total : 0, label: "\(Int(left.rounded(.up)))")
+                }
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(target.map { L("Gönderiliyor: %@", $0) } ?? L("Panoya kopyalanıyor…"))
+                        .font(.callout.weight(.medium))
+                    Text(L("Durdurmak için bir tuşa bas ya da tıkla · %@ hemen gönder", send))
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+            case .stopped, .off:
+                Image(systemName: "pause.circle")
+                    .font(.system(size: 20))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 26, height: 26)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(L("Otomatik gönderme durduruldu")).font(.callout)
+                    Text(L("%@ ile gönder ya da listeden seç", send))
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                .foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
+        .background {
+            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                .fill(controller.autoSendCounting ? Color.accentColor.opacity(0.13) : .clear)
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                .strokeBorder(controller.autoSendCounting ? Color.accentColor.opacity(0.35) : .primary.opacity(0.1))
+        }
+    }
+}
+
+private struct CountdownRing: View {
+    let progress: Double
+    let label: String
+
+    var body: some View {
+        ZStack {
+            Circle().stroke(.primary.opacity(0.12), lineWidth: 3)
+            Circle()
+                .trim(from: 0, to: progress)
+                .stroke(Color.accentColor, style: StrokeStyle(lineWidth: 3, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+            Text(verbatim: label)
+                .font(.caption.weight(.bold).monospacedDigit())
+        }
+        .frame(width: 26, height: 26)
     }
 }
 

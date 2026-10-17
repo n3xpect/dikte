@@ -46,6 +46,7 @@ final class DictationPanelController {
     private let hostingView: NSHostingView<DictationPanelView>
     private unowned let controller: DictationController
     private var keyMonitor: Any?
+    private var mouseMonitor: Any?
     private var contentHeight: CGFloat = 110
 
     init(controller: DictationController) {
@@ -103,11 +104,18 @@ final class DictationPanelController {
             guard let self, event.window === self.panel else { return event }
             return self.handleKeyDown(event) ? nil : event
         }
+        // A click anywhere in the panel stops the auto-send countdown (the click itself goes on).
+        mouseMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] event in
+            if let self, event.window === self.panel { self.controller.stopAutoSend() }
+            return event
+        }
     }
 
     private func removeKeyMonitor() {
         if let keyMonitor { NSEvent.removeMonitor(keyMonitor) }
+        if let mouseMonitor { NSEvent.removeMonitor(mouseMonitor) }
         keyMonitor = nil
+        mouseMonitor = nil
     }
 
     enum Key {
@@ -145,10 +153,13 @@ final class DictationPanelController {
                 // Layout work only for the one key that needs it.
                 caretOnLastLine: bareDown && tv.map(Self.caretOnLastLine) == true,
                 hasTextSelection: (tv?.selectedRange().length ?? 0) > 0,
-                secondsSinceEditing: controller.secondsSinceEditingBegan)
+                secondsSinceEditing: controller.secondsSinceEditingBegan,
+                autoSendCounting: controller.autoSendCounting)
             let action = PanelKeyAction.editing(keyCode: event.keyCode, flags: flags,
                                                 characters: event.charactersIgnoringModifiers?.lowercased() ?? "",
                                                 context: context)
+            // Any key stops the countdown, except one that does nothing (the double-Enter guard).
+            if action != .ignore { controller.stopAutoSend() }
             return perform(action, event: event, textView: tv, shift: flags.contains(.shift))
         case .listening, .transcribing, .failed:
             if event.keyCode == Key.escape { controller.escapePressed() }
@@ -170,6 +181,7 @@ final class DictationPanelController {
         case .switchLanguage: controller.switchLanguage()
         case .dismissSuggestions: controller.dismissSuggestions()
         case .escape: controller.escapePressed()
+        case .stopAutoSend: break   // already stopped above
         case .enterList: controller.enterList()
         case .moveList(let delta): controller.moveListSelection(by: delta)
         case .moveTarget(let delta): controller.moveSelectedTarget(by: delta)
@@ -232,6 +244,8 @@ enum PanelKeyAction: Equatable {
     case switchLanguage
     case dismissSuggestions
     case escape
+    /// Esc while the auto-send countdown runs: only stops it (a second Esc closes).
+    case stopAutoSend
     case enterList
     case moveList(Int)
     /// ⌥↑/⌥↓: moves the selected row within the user's list.
@@ -261,6 +275,7 @@ enum PanelKeyAction: Equatable {
         var caretOnLastLine = false
         var hasTextSelection = false
         var secondsSinceEditing: TimeInterval = .infinity
+        var autoSendCounting = false
     }
 
     static func isReturn(_ keyCode: UInt16) -> Bool {
@@ -279,6 +294,7 @@ enum PanelKeyAction: Equatable {
         let shiftOnly = flags.intersection(modifiers) == .shift
 
         if c.hasMarkedText { return .pass }   // IME composition owns ↩ / Esc
+        if c.autoSendCounting, isEscape { return .stopAutoSend }
         if c.suggestionsShown { return isEscape ? .dismissSuggestions : .pass }
         if command, characters == "l" { return .switchLanguage }
         if c.retranscribing {

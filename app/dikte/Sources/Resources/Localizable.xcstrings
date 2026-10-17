@@ -11,6 +11,16 @@
         }
       }
     },
+    "%@ açıldı ama yazı alanı hazır değildi — metin panoda (⌘V)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ opened, but no text field was ready — text is on the clipboard (⌘V)"
+          }
+        }
+      }
+    },
     "%@ boş · en az %@ boş kalmalı": {
       "localizations": {
         "en": {
@@ -37,6 +47,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "What you dictate with %@ appears here."
+          }
+        }
+      }
+    },
+    "%@ ile gönder ya da listeden seç": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send with %@ or pick from the list"
           }
         }
       }
@@ -407,6 +427,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Choose Another App…"
+          }
+        }
+      }
+    },
+    "Bekleme süresi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wait"
           }
         }
       }
@@ -901,6 +931,16 @@
         }
       }
     },
+    "Durdurmak için bir tuşa bas ya da tıkla · %@ hemen gönder": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Press any key or click to stop · %@ sends now"
+          }
+        }
+      }
+    },
     "Durum, izni Sistem Ayarları'nda değiştirdiğinde kendiliğinden güncellenir.": {
       "localizations": {
         "en": {
@@ -1137,6 +1177,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Open Login Items"
+          }
+        }
+      }
+    },
+    "Gönderiliyor: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sending to %@…"
           }
         }
       }
@@ -1627,6 +1677,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Text delivery"
+          }
+        }
+      }
+    },
+    "Metin panele geldikten sonra bekleme süresi dolunca varsayılan hedefe gönderilir. Bir tuşa basmak ya da tıklamak durdurur.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Once the text appears in the panel, it's sent to the default target when the wait is over. Pressing a key or clicking stops it."
           }
         }
       }
@@ -2131,6 +2191,26 @@
         }
       }
     },
+    "Otomatik gönder": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send automatically"
+          }
+        }
+      }
+    },
+    "Otomatik gönderme durduruldu": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auto-send stopped"
+          }
+        }
+      }
+    },
     "Panel açılır; bir şey söyle, sonra sus.": {
       "localizations": {
         "en": {
@@ -2177,6 +2257,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Copied to clipboard"
+          }
+        }
+      }
+    },
+    "Panoya kopyalanıyor…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copying to clipboard…"
           }
         }
       }
@@ -2797,6 +2887,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "others"
+          }
+        }
+      }
+    },
+    "durdur": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "stop"
           }
         }
       }

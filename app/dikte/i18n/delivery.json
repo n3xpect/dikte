@@ -1,5 +1,6 @@
 {
   "Başka bir uygulama seç…": "Choose Another App…",
+  "Bekleme süresi": "Wait",
   "Diğer tuş yeni satır açar.": "The other key adds a new line.",
   "Ekle…": "Add…",
   "Erişilebilirlik izni": "Accessibility permission",
@@ -10,6 +11,8 @@
   "Hedefler": "Targets",
   "Listeden çıkar": "Remove from list",
   "Metin aktarımı": "Text delivery",
+  "Metin panele geldikten sonra bekleme süresi dolunca varsayılan hedefe gönderilir. Bir tuşa basmak ya da tıklamak durdurur.": "Once the text appears in the panel, it's sent to the default target when the wait is over. Pressing a key or clicking stops it.",
+  "Otomatik gönder": "Send automatically",
   "Panelde %@ metni varsayılan hedefe gönderir, ⌘1…⌘9 listedeki diğer uygulamalara. Metin panoya konur ve uygulamaya ⌘V ile yapıştırılır; aktarılamazsa metin panoda kalır.": "In the panel, %@ sends the text to the default target and ⌘1…⌘9 to the other apps in the list. The text is put on the clipboard and pasted into the app with ⌘V; if delivery fails, the text stays on the clipboard.",
   "Panelde gösterilecek diğer uygulama sayısı": "Other apps shown in the panel",
   "Panoya kopyala": "Copy to clipboard",
