@@ -1,5 +1,8 @@
 .DS_Store
 
+# local assistant instructions (not pushed)
+CLAUDE.md
+
 # build output
 dist/
 build/
