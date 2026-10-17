@@ -189,11 +189,12 @@ struct FlowLayout: Layout {
 struct SearchField: View {
     var prompt: String
     @Binding var text: String
+    @FocusState private var focused: Bool
 
     var body: some View {
         HStack(spacing: 6) {
             Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
-            TextField(prompt, text: $text).textFieldStyle(.plain)
+            TextField(prompt, text: $text).textFieldStyle(.plain).multilineTextAlignment(.leading).focused($focused)
             if !text.isEmpty {
                 Button { text = "" } label: {
                     Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
@@ -206,6 +207,10 @@ struct SearchField: View {
         .padding(.vertical, 5)
         .background(RoundedRectangle(cornerRadius: 7).fill(Color(nsColor: .controlBackgroundColor)))
         .overlay(RoundedRectangle(cornerRadius: 7).strokeBorder(Color(nsColor: .separatorColor)))
+        // A click anywhere on the box (padding, icon) focuses the field; inside a Form row the
+        // plain TextField alone only reacts on its own text strip.
+        .contentShape(RoundedRectangle(cornerRadius: 7))
+        .onTapGesture { focused = true }
     }
 }
 
