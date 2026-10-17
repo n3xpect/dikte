@@ -98,9 +98,7 @@ struct DeliverySection: View {
                 HStack {
                     Slider(value: autoSendChoice, in: 0...Double(AppSettings.autoSendChoices.count - 1), step: 1)
                         .frame(maxWidth: 220)
-                    Text(Fmt.autoSendWait(settings.autoSendSeconds))
-                        .monospacedDigit()
-                        .frame(width: 48, alignment: .trailing)
+                    AutoSendWaitLabel(seconds: settings.autoSendSeconds)
                 }
             }
             .disabled(!settings.autoSendEnabled)
@@ -212,6 +210,24 @@ struct DeliverySection: View {
 
     private func refreshRunning() {
         running = options.runningApps()
+    }
+}
+
+/// The wait next to its slider: one line, as wide as the longest choice ("Right away" in English),
+/// so the slider doesn't move or wrap as the value changes.
+struct AutoSendWaitLabel: View {
+    let seconds: Double
+
+    var body: some View {
+        ZStack(alignment: .trailing) {
+            ForEach(AppSettings.autoSendChoices, id: \.self) { Text(Fmt.autoSendWait($0)).hidden() }
+            Text(Fmt.autoSendWait(seconds))
+        }
+        .lineLimit(1)
+        .fixedSize()
+        .monospacedDigit()
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Fmt.autoSendWait(seconds))
     }
 }
 

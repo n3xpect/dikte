@@ -251,9 +251,7 @@ struct AutoSendPopover: View {
                                       set: { controller.setAutoSendSeconds(choices[min(max(Int($0.rounded()), 0),
                                                                                        choices.count - 1)]) }),
                        in: 0...Double(choices.count - 1), step: 1)
-                Text(Fmt.autoSendWait(setting.seconds))
-                    .monospacedDigit()
-                    .frame(width: 44, alignment: .trailing)
+                AutoSendWaitLabel(seconds: setting.seconds)
             }
             .disabled(!setting.enabled)
             if setting.enabled && setting.seconds == 0 {
