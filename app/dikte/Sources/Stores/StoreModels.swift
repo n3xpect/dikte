@@ -29,8 +29,8 @@ struct AppSettings: Codable, Equatable, Sendable {
     /// After the text appears in the panel, count down `autoSendSeconds` and send it to the default
     /// target unless the user presses a key or clicks first.
     var autoSendEnabled: Bool = true
-    /// Whole seconds within `autoSendRange`.
-    var autoSendSeconds: Double = 3
+    /// Steps of `autoSendStep` within `autoSendRange`.
+    var autoSendSeconds: Double = 30
     /// Running, non-favourite apps listed in the panel before "+ N more".
     var deliveryOtherLimit: Int = 5
     /// Put the previous clipboard contents back after pasting into an app.
@@ -42,8 +42,9 @@ struct AppSettings: Codable, Equatable, Sendable {
     static let clipboard = "clipboard"
     /// Allowed longest recording, seconds (1–20 min; the engine accepts up to 1200 too).
     static let maxDurationRange: ClosedRange<Double> = 60...1200
-    /// Allowed auto-send countdown, seconds.
-    static let autoSendRange: ClosedRange<Double> = 1...10
+    /// Allowed auto-send countdown, seconds, in steps of `autoSendStep`.
+    static let autoSendRange: ClosedRange<Double> = 30...60
+    static let autoSendStep: Double = 5
 
     /// `seconds` rounded to whole minutes and kept within `maxDurationRange`.
     static func clampedMaxDuration(_ seconds: Double) -> Double {
@@ -88,10 +89,11 @@ struct AppSettings: Codable, Equatable, Sendable {
             ?? d.restoreClipboardAfterPaste
     }
 
-    /// `seconds` rounded to whole seconds and kept within `autoSendRange`.
+    /// `seconds` rounded to a step and kept within `autoSendRange`.
     static func clampedAutoSend(_ seconds: Double) -> Double {
         guard seconds.isFinite else { return AppSettings().autoSendSeconds }
-        return min(max(seconds.rounded(), autoSendRange.lowerBound), autoSendRange.upperBound)
+        let stepped = (seconds / autoSendStep).rounded() * autoSendStep
+        return min(max(stepped, autoSendRange.lowerBound), autoSendRange.upperBound)
     }
 
     // MARK: Delivery targets

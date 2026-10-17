@@ -93,17 +93,17 @@ struct DeliverySection: View {
                 Text(L("Otomatik gönder"))
                 Text(L("Metin panele geldikten sonra bekleme süresi dolunca varsayılan hedefe gönderilir. Bir tuşa basmak ya da tıklamak durdurur."))
             }
-            if settings.autoSendEnabled {
-                LabeledContent(L("Bekleme süresi")) {
-                    HStack {
-                        Slider(value: autoSendSeconds, in: AppSettings.autoSendRange, step: 1)
-                            .frame(maxWidth: 220)
-                        Text(Fmt.seconds(settings.autoSendSeconds))
-                            .monospacedDigit()
-                            .frame(width: 48, alignment: .trailing)
-                    }
+            // Always shown (just disabled when off), so the value stays visible.
+            LabeledContent(L("Bekleme süresi")) {
+                HStack {
+                    Slider(value: autoSendSeconds, in: AppSettings.autoSendRange, step: AppSettings.autoSendStep)
+                        .frame(maxWidth: 220)
+                    Text(Fmt.seconds(settings.autoSendSeconds))
+                        .monospacedDigit()
+                        .frame(width: 48, alignment: .trailing)
                 }
             }
+            .disabled(!settings.autoSendEnabled)
         } header: {
             Text(L("Gönderme"))
         } footer: {

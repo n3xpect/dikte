@@ -65,8 +65,11 @@ private struct ListeningContent: View {
                         .foregroundStyle(.secondary)
                 }
             }
-            WaveformView(levels: controller.levels, active: controller.speechDetected)
-                .frame(height: 44)
+            HStack(alignment: .center, spacing: 10) {
+                WaveformView(levels: controller.levels, active: controller.speechDetected)
+                    .frame(height: 44)
+                AutoSendButton(controller: controller)
+            }
             HintText(L("**Enter**: bitir · **Esc**: vazgeç"))
         }
     }
@@ -92,7 +95,11 @@ private struct EditingContent: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            DictationTextView(text: $controller.text, isEditable: !controller.retranscribing)
+            DictationTextView(text: $controller.text, isEditable: !controller.retranscribing,
+                              cornerExclusion: AutoSendButton.textExclusion)
+                .overlay(alignment: .topTrailing) {
+                    AutoSendButton(controller: controller).padding(6)
+                }
                 .background {
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
                         .fill(Color(nsColor: .textBackgroundColor).opacity(0.55))
@@ -180,6 +187,77 @@ private struct AutoSendBar: View {
             RoundedRectangle(cornerRadius: 9, style: .continuous)
                 .strokeBorder(controller.autoSendCounting ? Color.accentColor.opacity(0.35) : .primary.opacity(0.1))
         }
+    }
+}
+
+/// ⏱ with the wait (or "—" when off); click opens on/off + wait, the Metin aktarımı setting itself.
+private struct AutoSendButton: View {
+    let controller: DictationController
+    @State private var open = false
+
+    static let height: CGFloat = 22
+    /// Text-container corner left free under the button over the text area (button + margins
+    /// minus the text view's inset).
+    static let textExclusion = CGSize(width: 56, height: 22)
+
+    var body: some View {
+        let setting = controller.autoSendSetting
+        Button { open.toggle() } label: {
+            HStack(spacing: 3) {
+                Image(systemName: "timer")
+                Text(verbatim: setting.enabled ? "\(Int(setting.seconds))" : "—")
+                    .monospacedDigit()
+            }
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(setting.enabled ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.secondary))
+            .padding(.horizontal, 7)
+            .frame(height: Self.height)
+            .background {
+                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .fill(setting.enabled ? Color.accentColor.opacity(0.14) : Color.primary.opacity(0.05))
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .strokeBorder(setting.enabled ? Color.accentColor.opacity(0.45) : .primary.opacity(0.12))
+            }
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .focusable(false)
+        .help(L("Otomatik gönder"))
+        .accessibilityLabel(L("Otomatik gönder"))
+        .popover(isPresented: $open, arrowEdge: .bottom) {
+            AutoSendPopover(controller: controller)
+        }
+    }
+}
+
+/// Inside ⏱: the same switch and wait as Ayarlar › Metin aktarımı.
+struct AutoSendPopover: View {
+    let controller: DictationController
+
+    var body: some View {
+        let setting = controller.autoSendSetting
+        VStack(alignment: .leading, spacing: 10) {
+            Toggle(L("Otomatik gönder"), isOn: Binding(get: { setting.enabled },
+                                                       set: { controller.setAutoSend(enabled: $0) }))
+                .toggleStyle(.switch)
+                .font(.callout.weight(.semibold))
+            HStack {
+                Slider(value: Binding(get: { setting.seconds }, set: { controller.setAutoSendSeconds($0) }),
+                       in: AppSettings.autoSendRange, step: AppSettings.autoSendStep)
+                Text(Fmt.seconds(setting.seconds))
+                    .monospacedDigit()
+                    .frame(width: 44, alignment: .trailing)
+            }
+            .disabled(!setting.enabled)
+            Text(L("Metin geldikten sonra bu kadar beklenir, sonra varsayılan hedefe gönderilir. Ayarlar › Metin aktarımı ile aynı ayar."))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(12)
+        .frame(width: 260)
     }
 }
 
@@ -438,6 +516,8 @@ struct DictationTextView: NSViewRepresentable {
     var isEditable = true
     var minHeight: CGFloat = 64
     var maxHeight: CGFloat = 260
+    /// Kept free of text in the top-right corner (for a button over it), in text-container points.
+    var cornerExclusion: CGSize = .zero
 
     static let font = NSFont.systemFont(ofSize: 15)
     static let inset = NSSize(width: 6, height: 8)
@@ -465,6 +545,7 @@ struct DictationTextView: NSViewRepresentable {
         tv.autoresizingMask = [.width]
         tv.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: .greatestFiniteMagnitude)
         tv.textContainer?.widthTracksTextView = true
+        tv.cornerExclusion = cornerExclusion
         tv.string = text
         tv.isEditable = isEditable
         tv.delegate = context.coordinator
@@ -498,10 +579,17 @@ struct DictationTextView: NSViewRepresentable {
         storage.addLayoutManager(layout)
         let container = NSTextContainer(size: NSSize(width: max(width - 2 * Self.inset.width, 10),
                                                      height: .greatestFiniteMagnitude))
+        container.exclusionPaths = Self.exclusionPaths(containerWidth: container.size.width, corner: cornerExclusion)
         layout.addTextContainer(container)
         layout.ensureLayout(for: container)
         let height = layout.usedRect(for: container).height + 2 * Self.inset.height
         return CGSize(width: width, height: min(max(height.rounded(.up), minHeight), maxHeight))
+    }
+
+    static func exclusionPaths(containerWidth: CGFloat, corner: CGSize) -> [NSBezierPath] {
+        guard corner.width > 0, corner.height > 0, containerWidth > corner.width else { return [] }
+        return [NSBezierPath(rect: NSRect(x: containerWidth - corner.width, y: 0,
+                                          width: corner.width, height: corner.height))]
     }
 
     final class Coordinator: NSObject, NSTextViewDelegate {
@@ -517,6 +605,18 @@ struct DictationTextView: NSViewRepresentable {
 
 private final class FocusingTextView: NSTextView {
     private var focusOnAttach = true
+    var cornerExclusion: CGSize = .zero { didSet { updateExclusion() } }
+
+    override func setFrameSize(_ newSize: NSSize) {
+        super.setFrameSize(newSize)
+        updateExclusion()
+    }
+
+    private func updateExclusion() {
+        guard let container = textContainer else { return }
+        let paths = DictationTextView.exclusionPaths(containerWidth: container.size.width, corner: cornerExclusion)
+        if container.exclusionPaths != paths { container.exclusionPaths = paths }
+    }
 
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()

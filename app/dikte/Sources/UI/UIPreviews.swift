@@ -343,6 +343,8 @@ enum UIPreviewRenderer {
         render(TermEditor(draft: TermDraft(original: nil, term: ""), existing: [], save: { _ in }),
                "term-editor-new", 440, 420, dir)
         render(statusMenuMock, "status-menu", 320, 380, dir)
+        renderFitting(AutoSendPopover(controller: .preview(.autoSendCounting)), "auto-send-popover", dir)
+        renderFitting(AutoSendPopover(controller: .preview(.autoSendCounting)), "auto-send-popover-dark", dir, dark: true)
     }
 
     /// Menu bar menu titles for each status line (NSMenu can't be drawn offscreen).

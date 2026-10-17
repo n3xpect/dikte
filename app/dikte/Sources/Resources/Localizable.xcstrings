@@ -1681,6 +1681,16 @@
         }
       }
     },
+    "Metin geldikten sonra bu kadar beklenir, sonra varsayılan hedefe gönderilir. Ayarlar › Metin aktarımı ile aynı ayar.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "After the text appears, Dikte waits this long, then sends it to the default target. Same setting as Settings › Text delivery."
+          }
+        }
+      }
+    },
     "Metin panele geldikten sonra bekleme süresi dolunca varsayılan hedefe gönderilir. Bir tuşa basmak ya da tıklamak durdurur.": {
       "localizations": {
         "en": {

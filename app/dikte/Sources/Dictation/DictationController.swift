@@ -667,6 +667,20 @@ final class DictationController {
         }
     }
 
+    /// The auto-send setting, shown and changed from the panel's ⏱ (same as Metin aktarımı).
+    var autoSendSetting: (enabled: Bool, seconds: Double) {
+        let s = deliverySource.settings()
+        return (s.autoSendEnabled, s.autoSendSeconds)
+    }
+
+    func setAutoSend(enabled: Bool) {
+        deliverySource.update { $0.autoSendEnabled = enabled }
+    }
+
+    func setAutoSendSeconds(_ seconds: Double) {
+        deliverySource.update { $0.autoSendSeconds = AppSettings.clampedAutoSend(seconds) }
+    }
+
     /// A key press or click while counting: the panel stays, sending is up to the user.
     func stopAutoSend() {
         guard autoSendCounting else { return }
@@ -865,7 +879,7 @@ extension DictationController {
                 fake.settings.deliveryOtherLimit = 3
                 c.showsAllDeliveryTargets = state == .deliveryExpanded
                 if state == .deliverySelected { c.listSelection = 2 }
-                if state == .autoSendCounting { c.autoSend = .counting(until: Date().addingTimeInterval(1.6), total: 3) }
+                if state == .autoSendCounting { c.autoSend = .counting(until: Date().addingTimeInterval(17.5), total: 30) }
                 if state == .autoSendStopped { c.autoSend = .stopped }
             default: break
             }
