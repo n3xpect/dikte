@@ -282,30 +282,52 @@ enum DictationSelfCheck {
         expect(DeliveryToastContent.failure(CancellationError(), appName: "X").asksForAccessibility, false,
                "toast: başka hata")
 
-        // Preview list (Slack default, Notes + Mail favourites, 3 others visible, 3 more).
+        // Preview list (Slack default, then Mail, Notes, the clipboard; 3 others visible, 3 more).
         let c = DictationController.preview(.deliveryApp)
         let names = { (entries: [DeliveryEntry]) in entries.map { $0.app?.name ?? "pano" } }
-        expect(names(c.shownDeliveryEntries), ["Slack", "Mail", "Notes", "Calendar", "Finder", "Messages"], "liste")
+        expect(names(c.shownDeliveryEntries), ["Slack", "Mail", "Notes", "pano", "Calendar", "Finder", "Messages"],
+               "liste")
         expect(c.hiddenDeliveryCount, 3, "+N")
-        expect(c.shownDeliveryEntries.map { $0.shortcut ?? 0 }, [0, 1, 2, 3, 4, 5], "kısayollar")
-        expect(keys(c.editingHint), ["↩", "⇧↩", "↓", "⌘1–5", "⌘C", "⌘L", "Esc"], "düzenleme ipucu")
+        expect(c.shownDeliveryEntries.map { $0.shortcut ?? 0 }, [0, 1, 2, 3, 4, 5, 6], "kısayollar")
+        expect(keys(c.editingHint), ["↩", "⇧↩", "↓", "⌘1–6", "⌘C", "⌘L", "Esc"], "düzenleme ipucu")
         let shiftPanel = DictationController.preview(.deliveryShiftEnter)
         expect(shiftPanel.sendKey, .shiftEnter, "önizleme ⇧↩")
-        expect(keys(shiftPanel.editingHint), ["Enter", "↓", "⇧↩", "⌘1–5", "⌘C", "⌘L", "Esc"], "düzenleme ipucu ⇧↩")
-        // ↑/↓ navigation: 6 rows + "+3 more" = 7 slots.
-        expect(c.navigableRowCount, 7, "↓ satır sayısı")
+        expect(keys(shiftPanel.editingHint), ["Enter", "↓", "⇧↩", "⌘1–6", "⌘C", "⌘L", "Esc"], "düzenleme ipucu ⇧↩")
+        // ↑/↓ navigation: 7 rows + "+3 more" = 8 slots.
+        expect(c.navigableRowCount, 8, "↓ satır sayısı")
         expect(c.enterList(), true, "↓ listeye gir")
         expect(c.listSelection, 0, "↓ ilk satır")
-        expect(keys(c.editingHint), ["↑↓", "↩", "Esc"], "liste ipucu")
+        expect(keys(c.editingHint), ["↑↓", "⌥↑↓", "↩", "Esc"], "liste ipucu (taşınabilir)")
+        // ⌥↑/⌥↓: the selected row moves and stays selected; at the top it becomes the default.
+        c.listSelection = 2
+        c.moveSelectedTarget(by: -1)
+        expect(names(c.shownDeliveryEntries).prefix(4), ["Slack", "Notes", "Mail", "pano"], "⌥↑ taşı")
+        expect(c.listSelection, 1, "⌥↑ seçim izler")
+        c.moveSelectedTarget(by: -1)
+        expect(c.shownDeliveryEntries.first?.app?.name, "Notes", "⌥↑ en üste: varsayılan")
+        expect(c.shownDeliveryEntries.first?.role, .defaultTarget, "en üstteki varsayılan")
+        expect(c.listSelection, 0, "⌥↑ seçim en üstte")
+        c.moveSelectedTarget(by: -1)
+        expect(c.listSelection, 0, "⌥↑ en üstte durur")
+        c.moveSelectedTarget(by: 3)
+        expect(names(c.shownDeliveryEntries).prefix(4), ["Slack", "Mail", "pano", "Notes"], "⌥↓ üç kez")
+        expect(c.listSelection, 3, "⌥↓ seçim izler")
+        c.moveSelectedTarget(by: 1)
+        expect(c.listSelection, 3, "⌥↓ listenin sonunda durur (diğer uygulamalara geçmez)")
+        c.listSelection = 4
+        expect(keys(c.editingHint), ["↑↓", "↩", "Esc"], "liste ipucu (diğer uygulama)")
+        c.moveSelectedTarget(by: -1)
+        expect(names(c.shownDeliveryEntries)[4], "Calendar", "diğer uygulama taşınmaz")
+        c.listSelection = 0
         c.moveListSelection(by: 10)
-        expect(c.listSelection, 6, "↓ son satırda durur")
+        expect(c.listSelection, 7, "↓ son satırda durur")
         c.moveListSelection(by: -1)
-        expect(c.listSelection, 5, "↑")
-        c.listSelection = 6
+        expect(c.listSelection, 6, "↑")
+        c.listSelection = 7
         c.activateListSelection()
         expect(c.showsAllDeliveryTargets, true, "↩ +N listeyi açar")
-        expect(c.listSelection, 6, "↩ +N sonrası seçim yerinde")
-        expect(c.navigableRowCount, 9, "açılmış liste satır sayısı")
+        expect(c.listSelection, 7, "↩ +N sonrası seçim yerinde")
+        expect(c.navigableRowCount, 10, "açılmış liste satır sayısı")
         c.listSelection = 0
         c.moveListSelection(by: -1)
         expect(c.listSelection, nil, "↑ ilk satırdan metne döner")
@@ -333,12 +355,15 @@ enum DictationSelfCheck {
         tv.setSelectedRange(NSRange(location: 0, length: 3))
         expect(DictationPanelController.caretOnLastLine(tv), false, "seçim varken")
         c.showsAllDeliveryTargets = true
-        expect(c.shownDeliveryEntries.count, 9, "genişletilmiş liste")
+        expect(c.shownDeliveryEntries.count, 10, "genişletilmiş liste")
         expect(c.hiddenDeliveryCount, 0, "genişletilmiş +N")
         c.toggleFavorite(TargetApp(bundleID: "com.apple.Safari", name: "Safari", url: nil, isRunning: true))
-        expect(names(c.shownDeliveryEntries).prefix(4), ["Slack", "Mail", "Notes", "Safari"], "yıldız: yeniden sırala")
-        c.makeDefaultTarget(TargetApp(bundleID: "com.apple.mail", name: "Mail", url: nil, isRunning: true))
+        expect(names(c.shownDeliveryEntries).prefix(5), ["Slack", "Mail", "pano", "Notes", "Safari"],
+               "yıldız: listenin sonuna")
+        if let mail = c.shownDeliveryEntries.first(where: { $0.app?.name == "Mail" }) { c.makeDefaultTarget(mail) }
         expect(names(c.shownDeliveryEntries).first, "Mail", "varsayılan yap")
+        if let clip = c.shownDeliveryEntries.first(where: { $0.app == nil }) { c.makeDefaultTarget(clip) }
+        expect(c.shownDeliveryEntries.first?.app == nil, true, "pano varsayılan yapılabilir")
         expect(DictationController.preview(.editing).shownDeliveryEntries.first?.app, nil, "pano varsayılanı")
         return failures
     }
@@ -380,6 +405,10 @@ enum DictationSelfCheck {
             expect(act(Key.down, [], "", send, list), .moveList(1), "\(m) liste ↓")
             expect(act(Key.up, [], "", send, list), .moveList(-1), "\(m) liste ↑")
             expect(act(Key.escape, [], "", send, list), .leaveList, "\(m) liste Esc")
+            expect(act(Key.down, .option, "", send, list), .moveTarget(1), "\(m) liste ⌥↓ taşı")
+            expect(act(Key.up, .option, "", send, list), .moveTarget(-1), "\(m) liste ⌥↑ taşı")
+            expect(act(Key.up, [.option, .shift], "", send, list), .leaveListAndPass, "\(m) liste ⌥⇧↑")
+            expect(act(Key.down, .option, "", send) { $0.caretOnLastLine = true }, .pass, "\(m) metinde ⌥↓")
             expect(act(0, [], "a", send, list), .leaveListAndPass, "\(m) liste yazı")
             expect(act(19, .command, "2", send, list), .deliverShortcut(2), "\(m) liste ⌘2")
             // Entering the list.

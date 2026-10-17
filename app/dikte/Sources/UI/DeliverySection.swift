@@ -44,31 +44,31 @@ struct DeliveryTab: View {
     }
 }
 
-/// Metin aktarımı sections: default target + send key, favourites, panel list size + clipboard restore.
-/// (Accessibility is on the İzinler page.)
+/// Metin aktarımı sections: the targets in the user's order (the first is the default), send key,
+/// panel list size + clipboard restore. (Accessibility is on the İzinler page.)
 struct DeliverySection: View {
     @Binding var settings: AppSettings
     var options: DeliveryOptions
 
     @State private var running: [TargetApp] = []
 
-    private enum Choice: Hashable { case clipboard, app(String), choose }
-
     var body: some View {
         Section {
-            defaultPicker
-            Picker(selection: $settings.sendKey) {
-                ForEach(SendKey.allCases, id: \.self) { key in
-                    Text(verbatim: key.name).tag(key)
+            VStack(spacing: 0) {
+                ForEach(targetRows) { row in
+                    TargetRow(row: row, icon: row.app.map(options.icon),
+                              move: { settings.moveTarget(row.id, by: $0) },
+                              remove: { settings.deliveryTargets.removeAll { $0 == row.id } })
                 }
-            } label: {
-                Text(L("Göndermek için"))
-                Text(L("Diğer tuş yeni satır açar."))
+            }
+            HStack {
+                Spacer()
+                addMenu
             }
         } header: {
-            Text(L("Varsayılan hedef"))
+            Text(L("Hedefler"))
         } footer: {
-            Text(L("Panelde %@ metni varsayılan hedefe gönderir, ⌘1…⌘9 listedeki diğer uygulamalara. Metin panoya konur ve uygulamaya ⌘V ile yapıştırılır; aktarılamazsa metin panoda kalır.",
+            Text(L("Sürükleyerek sırala. En üstteki varsayılan hedeftir (%@); altındakiler sırayla ⌘1, ⌘2… ile gönderilir. Çalışmayan uygulamalar açılır.",
                    settings.sendKey.symbol))
                 .font(.caption).foregroundStyle(.secondary)
         }
@@ -81,11 +81,19 @@ struct DeliverySection: View {
         }
 
         Section {
-            favoritesRow
+            Picker(selection: $settings.sendKey) {
+                ForEach(SendKey.allCases, id: \.self) { key in
+                    Text(verbatim: key.name).tag(key)
+                }
+            } label: {
+                Text(L("Göndermek için"))
+                Text(L("Diğer tuş yeni satır açar."))
+            }
         } header: {
-            Text(L("Favoriler"))
+            Text(L("Gönderme"))
         } footer: {
-            Text(L("Favoriler panelde varsayılan hedeften hemen sonra listelenir; çalışmıyorlarsa açılırlar."))
+            Text(L("Panelde %@ metni varsayılan hedefe gönderir, ⌘1…⌘9 listedeki diğer uygulamalara. Metin panoya konur ve uygulamaya ⌘V ile yapıştırılır; aktarılamazsa metin panoda kalır.",
+                   settings.sendKey.symbol))
                 .font(.caption).foregroundStyle(.secondary)
         }
 
@@ -104,107 +112,43 @@ struct DeliverySection: View {
         }
     }
 
-    // MARK: Default target
+    // MARK: Targets
 
-    private var defaultPicker: some View {
-        Picker(L("Varsayılan hedef"), selection: Binding<Choice>(
-            get: { settings.deliveryDefaultApp.map(Choice.app) ?? .clipboard },
-            set: { choice in
-                switch choice {
-                case .clipboard: settings.deliveryDefaultApp = nil
-                case .app(let id): settings.deliveryDefaultApp = id
-                case .choose: if let app = options.chooseApp() { settings.deliveryDefaultApp = app.bundleID }
-                }
+    /// The targets with the key each gets in the panel: the first installed one the send key,
+    /// the next ones ⌘1…⌘9; apps that aren't installed are skipped there, so they get none.
+    private var targetRows: [TargetRow.Model] {
+        var shown = 0
+        return settings.deliveryTargets.enumerated().map { i, id in
+            let app = id == AppSettings.clipboard ? nil : app(for: id)
+            let installed = app.map(isInstalled) ?? true
+            let isDefault = installed && shown == 0
+            var key: String?
+            if installed {
+                key = isDefault ? settings.sendKey.symbol : shown <= 9 ? "⌘\(shown)" : nil
+                shown += 1
             }
-        )) {
-            Label {
-                Text(L("Panoya kopyala"))
-            } icon: {
-                Image(systemName: "doc.on.clipboard")
-            }
-            .tag(Choice.clipboard)
-            Divider()
-            ForEach(defaultCandidates) { app in
-                appLabel(app).tag(Choice.app(app.bundleID))
-            }
-            if !defaultCandidates.isEmpty { Divider() }
-            Text(L("Başka bir uygulama seç…")).tag(Choice.choose)
-        }
-    }
-
-    /// Favourites + running apps (+ the current default if it is neither), A–Z.
-    private var defaultCandidates: [TargetApp] {
-        var ids = settings.deliveryFavorites + running.map(\.bundleID)
-        if let id = settings.deliveryDefaultApp { ids.append(id) }
-        var seen: Set<String> = []
-        let apps = ids.filter { seen.insert($0).inserted }.map { app(for: $0) }
-        return sortedByName(apps)
-    }
-
-    // MARK: Favourites
-
-    private var favoritesRow: some View {
-        HStack(alignment: .top) {
-            if settings.deliveryFavorites.isEmpty {
-                Text(L("Henüz favori yok.")).foregroundStyle(.secondary)
-            } else {
-                FlowLayout(spacing: 6, lineSpacing: 6) {
-                    // Uninstalled ones (bundle id as name) last.
-                    let apps = sortedByName(settings.deliveryFavorites.map { app(for: $0) })
-                    ForEach(apps.filter(isInstalled) + apps.filter { !isInstalled($0) }) { app in
-                        favoriteChip(app)
-                    }
-                }
-            }
-            Spacer(minLength: 12)
-            addMenu
+            return TargetRow.Model(id: id, app: app, installed: installed, key: key, isDefault: isDefault,
+                                   isFirst: i == 0)
         }
     }
 
     private var addMenu: some View {
         Menu(L("Ekle…")) {
-            let candidates = sortedByName(running.filter { !settings.deliveryFavorites.contains($0.bundleID) })
+            let candidates = sortedByName(running.filter { !settings.deliveryTargets.contains($0.bundleID) })
             ForEach(candidates) { app in
-                Button { addFavorite(app.bundleID) } label: { appLabel(app) }
+                Button { addTarget(app.bundleID) } label: { appLabel(app) }
             }
             if !candidates.isEmpty { Divider() }
             Button(L("Başka bir uygulama seç…")) {
-                if let app = options.chooseApp() { addFavorite(app.bundleID) }
+                if let app = options.chooseApp() { addTarget(app.bundleID) }
             }
         }
         .fixedSize()
     }
 
-    private func favoriteChip(_ app: TargetApp) -> some View {
-        let installed = isInstalled(app)
-        return HStack(spacing: 5) {
-            Image(nsImage: options.icon(app))
-                .resizable()
-                .frame(width: 16, height: 16)
-                .opacity(installed ? 1 : 0.4)
-            Text(app.name)
-                .foregroundStyle(installed ? .primary : .secondary)
-            if !installed {
-                Text(L("yüklü değil")).font(.caption).foregroundStyle(.secondary)
-            }
-            Button {
-                settings.deliveryFavorites.removeAll { $0 == app.bundleID }
-            } label: {
-                Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
-            }
-            .buttonStyle(.plain)
-            .help(L("Favorilerden çıkar"))
-        }
-        .padding(.leading, 7)
-        .padding(.trailing, 5)
-        .padding(.vertical, 4)
-        .background(Capsule().fill(Color(nsColor: .controlBackgroundColor)))
-        .overlay(Capsule().strokeBorder(Color(nsColor: .separatorColor)))
-    }
-
-    private func addFavorite(_ id: String) {
-        guard !settings.deliveryFavorites.contains(id) else { return }
-        settings.deliveryFavorites.append(id)
+    private func addTarget(_ id: String) {
+        guard !settings.deliveryTargets.contains(id) else { return }
+        settings.deliveryTargets.append(id)
     }
 
     // MARK: Helpers
@@ -242,5 +186,113 @@ struct DeliverySection: View {
 
     private func refreshRunning() {
         running = options.runningApps()
+    }
+}
+
+/// One row of the Hedefler list: ≡ handle, icon, name, the key it gets in the panel, ⓧ for apps.
+private struct TargetRow: View {
+    struct Model: Identifiable {
+        var id: String
+        /// nil = "Panoya kopyala".
+        var app: TargetApp?
+        var installed: Bool
+        var key: String?
+        var isDefault: Bool
+        var isFirst: Bool
+    }
+
+    static let height: CGFloat = 34
+
+    let row: Model
+    let icon: NSImage?
+    /// Moves the row by that many places; false when it can't go further.
+    let move: (Int) -> Bool
+    let remove: () -> Void
+
+    @State private var dragging = false
+    @State private var dragOffset: CGFloat = 0
+    @State private var consumed: CGFloat = 0
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "line.3.horizontal")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .frame(width: 18, height: Self.height)
+                .contentShape(.rect)
+                .gesture(
+                    DragGesture(minimumDistance: 2, coordinateSpace: .global)
+                        .onChanged { value in
+                            dragging = true
+                            let h = Self.height
+                            var dy = value.translation.height - consumed
+                            while dy > h / 2, move(1) { consumed += h; dy -= h }
+                            while dy < -h / 2, move(-1) { consumed -= h; dy += h }
+                            dragOffset = dy
+                        }
+                        .onEnded { _ in
+                            dragging = false
+                            dragOffset = 0
+                            consumed = 0
+                        }
+                )
+                .help(L("Sıralamak için sürükle"))
+            iconView
+            Text(row.app?.name ?? L("Panoya kopyala"))
+                .foregroundStyle(row.installed ? .primary : .secondary)
+                .lineLimit(1)
+            if !row.installed {
+                Text(L("yüklü değil")).font(.caption).foregroundStyle(.secondary)
+            }
+            if row.isDefault {
+                Text(L("Varsayılan"))
+                    .font(.caption2.weight(.medium))
+                    .foregroundStyle(Color.accentColor)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 1)
+                    .background(Color.accentColor.opacity(0.15), in: .capsule)
+            }
+            Spacer(minLength: 8)
+            Text(verbatim: row.key ?? "")
+                .font(.caption.weight(.medium).monospacedDigit())
+                .foregroundStyle(row.isDefault ? Color.accentColor : .secondary)
+                .frame(width: 34, height: 20)
+                .background {
+                    if row.key != nil {
+                        RoundedRectangle(cornerRadius: 5, style: .continuous).fill(.primary.opacity(0.07))
+                    }
+                }
+            Button(action: remove) {
+                Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
+            .help(L("Listeden çıkar"))
+            .opacity(row.app == nil ? 0 : 1)
+            .disabled(row.app == nil)
+        }
+        .frame(height: Self.height)
+        .background {
+            if dragging {
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(Color(nsColor: .controlBackgroundColor))
+                    .shadow(color: .black.opacity(0.25), radius: 6, y: 2)
+            }
+        }
+        .overlay(alignment: .top) { if !dragging && !row.isFirst { Divider().opacity(0.6) } }
+        .offset(y: dragOffset)
+        .zIndex(dragging ? 1 : 0)
+    }
+
+    @ViewBuilder private var iconView: some View {
+        if let icon {
+            Image(nsImage: icon)
+                .resizable()
+                .frame(width: 18, height: 18)
+                .opacity(row.installed ? 1 : 0.4)
+        } else {
+            Image(systemName: "doc.on.clipboard")
+                .foregroundStyle(.secondary)
+                .frame(width: 18, height: 18)
+        }
     }
 }

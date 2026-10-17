@@ -26,7 +26,7 @@ Türkçe cümle içindeki İngilizce yazılım terimleri (branch, commit, deploy
 | **Esc** | Kayıt sırasında vazgeç; metin ekranında paneli kapat |
 | **Enter** (metin ekranında) | Metni varsayılan hedefe gönder (bir uygulama seçmediysen pano) ve paneli kapat |
 | **Shift+Enter** | Yeni satır |
-| **⌘1–9** / **↓** | Paneldeki listeden başka bir uygulamaya gönder / ok tuşlarıyla seç |
+| **⌘1–9** / **↓** | Paneldeki listeden başka bir hedefe gönder / ok tuşlarıyla seç (**⌥↑ / ⌥↓** taşır) |
 | **⌘L** / TR-EN düğmesi | Aynı kaydı diğer dilde yeniden çevir |
 
 Yeni satır için Enter'ı mı tercih edersin? **Metin aktarımı › Göndermek için** ile ikisini değiştirebilirsin: Shift+Enter gönderir, Enter yeni satır açar.
@@ -37,7 +37,7 @@ Menü çubuğundaki simge durumu gösterir: yeşil nokta model bellekte, turuncu
 
 - **Ayarlar** — açılışta başlat, dikte kısayolu (tıklayıp yenisine bas; ⓧ ile silinir, o zaman dikte menü çubuğundan başlatılır), arayüz dili (Türkçe / English, anında değişir), dikte dili (Otomatik / Türkçe / English), geçmiş sınırı.
 - **Kayıt** — mikrofon, sessizlik süresi, en uzun kayıt süresi (1–20 dk), ses efektleri.
-- **Metin aktarımı** — varsayılan hedef, gönderme tuşu, favoriler, panelde listelenecek diğer uygulama sayısı, yapıştırdıktan sonra panoyu geri yükleme.
+- **Metin aktarımı** — hedeflerin (uygulamalar ve Panoya kopyala) senin sıranla: burada ya da panelde ≡ tutamağından sürükle; en üstteki varsayılandır (Enter), altındakiler ⌘1, ⌘2… alır. Ayrıca gönderme tuşu, panelde listelenecek diğer uygulama sayısı, yapıştırdıktan sonra panoyu geri yükleme.
 - **İzinler** — mikrofon ve Erişilebilirlik izninin durumu, her biri için izin verme düğmesi.
 - **Modeller** — Whisper large-v3 (önerilen), large-v3 turbo ve Hugging Face'ten elle eklenen MLX Whisper modelleri. Bellekteki model yeşil gösterilir. Modelin boşta kalma süresi (5 dk sonra bellekten boşaltılır) ve en az boş disk alanı da burada: indirme sonrası diskte 10 GB'tan az yer kalacaksa indirme başlamaz; RAM yetmiyorsa model yüklenmez.
 - **Terimler** (yalnızca Türkçe arayüzde) — terim listesi: her terimin doğru kabul edilen yazımları ve otomatik düzeltilen yanlış yazımları; arama, ekleme, düzenleme, silme. Arayüz İngilizceyken sekme gizlenir; terimler yine her diktede kullanılır.

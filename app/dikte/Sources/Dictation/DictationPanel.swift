@@ -172,6 +172,7 @@ final class DictationPanelController {
         case .escape: controller.escapePressed()
         case .enterList: controller.enterList()
         case .moveList(let delta): controller.moveListSelection(by: delta)
+        case .moveTarget(let delta): controller.moveSelectedTarget(by: delta)
         case .activateList: controller.activateListSelection()
         case .leaveList: controller.leaveList()
         case .leaveListAndPass:
@@ -233,6 +234,8 @@ enum PanelKeyAction: Equatable {
     case escape
     case enterList
     case moveList(Int)
+    /// ⌥↑/⌥↓: moves the selected row within the user's list.
+    case moveTarget(Int)
     case activateList
     case leaveList
     /// Typing while a row is selected: back to the text, which gets the key.
@@ -285,10 +288,13 @@ enum PanelKeyAction: Equatable {
         }
         if c.confirmingLanguageSwitch, isReturn, !shift { return .switchLanguage }
         // ↑/↓ list navigation: ↓ on the text's last line enters the AKTAR list; there ↑/↓ move,
-        // ↩ delivers, ⇧↩ does nothing, Esc (or typing) hands the keys back to the text.
+        // ⌥↑/⌥↓ reorder, ↩ delivers, ⇧↩ does nothing, Esc (or typing) hands the keys back to the text.
         if c.listSelected {
+            let optionOnly = flags.intersection(modifiers) == .option
             if bare && keyCode == Key.down { return .moveList(1) }
             if bare && keyCode == Key.up { return .moveList(-1) }
+            if optionOnly && keyCode == Key.down { return .moveTarget(1) }
+            if optionOnly && keyCode == Key.up { return .moveTarget(-1) }
             if isEscape { return .leaveList }
             if isReturn && bare { return .activateList }
             if isReturn && shift { return .ignore }

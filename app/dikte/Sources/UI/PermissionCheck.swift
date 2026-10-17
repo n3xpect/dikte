@@ -43,8 +43,7 @@ enum PermissionCheck {
                         settings: AppSettings) -> [AppPermission] {
         var out: [AppPermission] = []
         if microphone == .denied || microphone == .restricted { out.append(.microphone) }
-        let hasTargetApp = settings.deliveryDefaultApp != nil || !settings.deliveryFavorites.isEmpty
-        if !accessibilityTrusted && hasTargetApp { out.append(.accessibility) }
+        if !accessibilityTrusted && settings.hasTargetApp { out.append(.accessibility) }
         return out
     }
 
@@ -93,7 +92,7 @@ enum PermissionCheck {
                     // Also satisfied once no target app is set up any more (it's only needed then).
                     let s = state.settings.settings
                     return delivery.accessibilityTrusted
-                        || (s.deliveryDefaultApp == nil && s.deliveryFavorites.isEmpty)
+                        || !s.hasTargetApp
                 }
             },
             open: { permission in

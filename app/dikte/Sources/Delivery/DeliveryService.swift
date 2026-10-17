@@ -17,14 +17,19 @@ struct TargetApp: Identifiable, Equatable, Sendable {
 
 /// A row of the panel's AKTAR list.
 struct DeliveryEntry: Identifiable, Equatable, Sendable {
+    /// `defaultTarget` = first of the user's list, `favorite` = the rest of it (both can be
+    /// reordered), `other` = running apps that aren't in the list.
     enum Role: Sendable { case defaultTarget, favorite, other }
-    /// nil = "Panoya kopyala" (only ever the default row).
+    /// nil = "Panoya kopyala".
     var app: TargetApp?
     var role: Role
     var isFavorite: Bool
     /// ⌘1…⌘9 for non-default rows in display order (nil beyond 9); the default row uses the send key.
     var shortcut: Int?
-    var id: String { app?.bundleID ?? "clipboard" }
+    /// Its `AppSettings.deliveryTargets` entry (bundle id or `AppSettings.clipboard`).
+    var id: String { app?.bundleID ?? AppSettings.clipboard }
+    /// In the user's list, so it can be moved.
+    var isMovable: Bool { role != .other }
 }
 
 enum DeliveryError: Error, Equatable, Sendable {
@@ -101,6 +106,11 @@ final class DeliveryService {
         return TargetApp(bundleID: bundleID, name: Self.bundleName(url), url: url, isRunning: false)
     }
 
+    /// Display name of an installed app; nil if it isn't installed.
+    static func installedName(_ bundleID: String) -> String? {
+        NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID).map(bundleName)
+    }
+
     func icon(for app: TargetApp) -> NSImage {
         if let cached = icons[app.bundleID] { return cached }
         let url = app.url ?? NSWorkspace.shared.urlForApplication(withBundleIdentifier: app.bundleID)
@@ -110,11 +120,11 @@ final class DeliveryService {
         return image
     }
 
-    /// AKTAR rows per the agreed order: default (app or clipboard) → favourites (A–Z, UI locale)
-    /// → other running apps (A–Z), `settings.deliveryOtherLimit` of them visible; the rest in `more`.
+    /// AKTAR rows: the user's targets in their order (the first is the default) → other running
+    /// apps (A–Z, UI locale), `settings.deliveryOtherLimit` of them visible; the rest in `more`.
     func entries(for settings: AppSettings) -> (visible: [DeliveryEntry], more: [DeliveryEntry]) {
         let running = runningApps()
-        return Self.entries(defaultApp: settings.deliveryDefaultApp, favorites: settings.deliveryFavorites,
+        return Self.entries(targets: settings.deliveryTargets,
                             running: running, locale: Localizer.shared.language.locale,
                             limit: settings.deliveryOtherLimit) { id in
             guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: id) else { return nil }
@@ -123,40 +133,33 @@ final class DeliveryService {
     }
 
     /// Pure ordering behind `entries(for:)`. `running` apps win over `resolve` (installed apps,
-    /// nil = not installed). Uninstalled defaults fall back to the clipboard row, uninstalled
-    /// favourites are skipped.
-    static func entries(defaultApp: String?, favorites: [String], running: [TargetApp], locale: Locale,
+    /// nil = not installed). Targets that aren't installed are skipped, so the next one can become
+    /// the default.
+    static func entries(targets: [String], running: [TargetApp], locale: Locale,
                         limit: Int, resolve: (String) -> TargetApp?)
         -> (visible: [DeliveryEntry], more: [DeliveryEntry]) {
         var runningByID: [String: TargetApp] = [:]
         for app in running where runningByID[app.bundleID] == nil { runningByID[app.bundleID] = app }
         func lookup(_ id: String) -> TargetApp? { runningByID[id] ?? resolve(id) }
-        func sorted(_ apps: [TargetApp]) -> [TargetApp] {
-            apps.sorted {
-                switch $0.name.compare($1.name, options: [.caseInsensitive, .numeric], locale: locale) {
-                case .orderedAscending: true
-                case .orderedDescending: false
-                case .orderedSame: $0.bundleID < $1.bundleID
-                }
+
+        var used: Set<String> = []
+        var visible: [DeliveryEntry] = []
+        for id in AppSettings.normalizedTargets(targets) where used.insert(id).inserted {
+            let role: DeliveryEntry.Role = visible.isEmpty ? .defaultTarget : .favorite
+            if id == AppSettings.clipboard {
+                visible.append(DeliveryEntry(app: nil, role: role, isFavorite: false, shortcut: nil))
+            } else if let app = lookup(id) {
+                visible.append(DeliveryEntry(app: app, role: role, isFavorite: true, shortcut: nil))
             }
         }
 
-        let favoriteIDs = Set(favorites)
-        let defaultTarget = defaultApp.flatMap(lookup)
-        var used: Set<String> = defaultTarget.map { [$0.bundleID] } ?? []
-
-        let defaultEntry = DeliveryEntry(app: defaultTarget, role: .defaultTarget,
-                                         isFavorite: defaultTarget.map { favoriteIDs.contains($0.bundleID) } ?? false,
-                                         shortcut: nil)
-
-        var favoriteApps: [TargetApp] = []
-        for id in favorites where used.insert(id).inserted {
-            if let app = lookup(id) { favoriteApps.append(app) }
+        let others = running.filter { used.insert($0.bundleID).inserted }.sorted {
+            switch $0.name.compare($1.name, options: [.caseInsensitive, .numeric], locale: locale) {
+            case .orderedAscending: true
+            case .orderedDescending: false
+            case .orderedSame: $0.bundleID < $1.bundleID
+            }
         }
-        let others = sorted(running.filter { used.insert($0.bundleID).inserted })
-
-        var visible = [defaultEntry]
-        visible += sorted(favoriteApps).map { DeliveryEntry(app: $0, role: .favorite, isFavorite: true, shortcut: nil) }
         let shown = max(0, limit)
         visible += others.prefix(shown).map { DeliveryEntry(app: $0, role: .other, isFavorite: false, shortcut: nil) }
         let more = others.dropFirst(shown).map { DeliveryEntry(app: $0, role: .other, isFavorite: false, shortcut: nil) }

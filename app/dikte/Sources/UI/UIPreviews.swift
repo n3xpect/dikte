@@ -151,11 +151,12 @@ enum PreviewData {
             chooseApp: { nil })
     }
 
-    /// Delivery settings in use: an app default, favourites (one closed, one uninstalled).
+    /// Delivery settings in use: an app first (default), closed and uninstalled apps, the clipboard
+    /// in the middle.
     static func deliverySettings(_ language: AppLanguage = Localizer.shared.language) -> AppSettings {
         var s = settings(language)
-        s.deliveryDefaultApp = "com.todesktop.cursor"
-        s.deliveryFavorites = ["com.apple.Notes", "com.todesktop.cursor", "com.apple.TextEdit", "com.example.gone"]
+        s.deliveryTargets = ["com.todesktop.cursor", "com.apple.Notes", AppSettings.clipboard,
+                             "com.example.gone", "com.apple.TextEdit"]
         s.deliveryOtherLimit = 3
         return s
     }
@@ -429,9 +430,9 @@ enum UIPreviewRenderer {
         // Launch permission check.
         let plain = AppSettings()
         var withApp = AppSettings()
-        withApp.deliveryDefaultApp = "com.tinyspeck.slackmacgap"
+        withApp.deliveryTargets = ["com.tinyspeck.slackmacgap", AppSettings.clipboard]
         var withFavorite = AppSettings()
-        withFavorite.deliveryFavorites = ["com.apple.Notes"]
+        withFavorite.deliveryTargets = [AppSettings.clipboard, "com.apple.Notes"]
         func missing(_ mic: AVAuthorizationStatus, _ trusted: Bool, _ s: AppSettings) -> [AppPermission] {
             PermissionCheck.missing(microphone: mic, accessibilityTrusted: trusted, settings: s)
         }

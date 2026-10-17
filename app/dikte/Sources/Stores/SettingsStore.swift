@@ -22,7 +22,14 @@ final class SettingsStore {
 
     init() {
         url = Paths.settingsFile
-        if let loaded = StoreJSON.load(AppSettings.self, from: url) {
+        if var loaded = StoreJSON.load(AppSettings.self, from: url) {
+            if let legacy = Self.legacyDelivery(at: url) {
+                // Before 0.4.3: a default app + favourites shown A–Z; keep what the panel showed.
+                loaded.deliveryTargets = AppSettings.migratedTargets(
+                    defaultApp: legacy.defaultApp, favorites: legacy.favorites,
+                    locale: loaded.uiLanguage.locale, name: DeliveryService.installedName)
+                StoreJSON.save(loaded, to: url)
+            }
             settings = loaded
         } else {
             StoreJSON.save(settings, to: url)
@@ -32,6 +39,17 @@ final class SettingsStore {
         ) { [weak self] _ in
             MainActor.assumeIsolated { self?.flush() }
         }
+    }
+
+    /// The old delivery keys of a file without `deliveryTargets`; nil if there is nothing to convert.
+    private static func legacyDelivery(at url: URL) -> (defaultApp: String?, favorites: [String])? {
+        guard let data = try? Data(contentsOf: url),
+              let dict = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              dict["deliveryTargets"] == nil else { return nil }
+        let defaultApp = dict["deliveryDefaultApp"] as? String
+        let favorites = dict["deliveryFavorites"] as? [String] ?? []
+        guard defaultApp != nil || !favorites.isEmpty else { return nil }
+        return (defaultApp, favorites)
     }
 
     /// Write pending changes now.

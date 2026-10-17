@@ -20,13 +20,12 @@ struct AppSettings: Codable, Equatable, Sendable {
     var dictationLanguage: DictationLanguage = .auto
     /// Fresh installs show the welcome flow until this is set.
     var onboardingCompleted: Bool = false
-    /// Default delivery target (the send key): nil = copy to the clipboard only, else an app
-    /// bundle identifier the text is pasted into.
-    var deliveryDefaultApp: String? = nil
+    /// Delivery targets in the user's order: app bundle identifiers and `AppSettings.clipboard`
+    /// (always there exactly once). The first is the default (send key), the next ones get ⌘1… in
+    /// the panel. Apps here are the "favourites" (★).
+    var deliveryTargets: [String] = [AppSettings.clipboard]
     /// Panel key that sends the text to the default target; the other one inserts a new line.
     var sendKey: SendKey = .enter
-    /// Favourite target apps (bundle identifiers); shown after the default, alphabetically.
-    var deliveryFavorites: [String] = []
     /// Running, non-favourite apps listed in the panel before "+ N more".
     var deliveryOtherLimit: Int = 5
     /// Put the previous clipboard contents back after pasting into an app.
@@ -34,6 +33,8 @@ struct AppSettings: Codable, Equatable, Sendable {
 
     /// Catalog entries dropped in later versions; a saved selection falls back to the default.
     static let removedModels: Set<String> = ["qwen3-1.7b"]
+    /// The "Panoya kopyala" entry of `deliveryTargets` (bundle identifiers always contain a dot).
+    static let clipboard = "clipboard"
     /// Allowed longest recording, seconds (1–20 min; the engine accepts up to 1200 too).
     static let maxDurationRange: ClosedRange<Double> = 60...1200
 
@@ -66,13 +67,84 @@ struct AppSettings: Codable, Equatable, Sendable {
         uiLanguage = try c.decodeIfPresent(AppLanguage.self, forKey: .uiLanguage) ?? .tr
         dictationLanguage = try c.decodeIfPresent(DictationLanguage.self, forKey: .dictationLanguage) ?? .tr
         onboardingCompleted = try c.decodeIfPresent(Bool.self, forKey: .onboardingCompleted) ?? true
-        deliveryDefaultApp = try c.decodeIfPresent(String.self, forKey: .deliveryDefaultApp)
+        // Files before 0.4.3 keep a default app + favourites instead; SettingsStore converts them.
+        deliveryTargets = Self.normalizedTargets(
+            try c.decodeIfPresent([String].self, forKey: .deliveryTargets) ?? d.deliveryTargets)
         // Missing (files before 0.3.x) or unknown → Enter sends, for existing installs too.
         sendKey = (try? c.decodeIfPresent(SendKey.self, forKey: .sendKey)) ?? .enter
-        deliveryFavorites = try c.decodeIfPresent([String].self, forKey: .deliveryFavorites) ?? []
         deliveryOtherLimit = try c.decodeIfPresent(Int.self, forKey: .deliveryOtherLimit) ?? d.deliveryOtherLimit
         restoreClipboardAfterPaste = try c.decodeIfPresent(Bool.self, forKey: .restoreClipboardAfterPaste)
             ?? d.restoreClipboardAfterPaste
+    }
+
+    // MARK: Delivery targets
+
+    /// The send key's target: an app bundle identifier or `clipboard`.
+    var defaultTarget: String { deliveryTargets.first ?? Self.clipboard }
+    /// Whether any app is a target (pasting into it needs Accessibility).
+    var hasTargetApp: Bool { deliveryTargets.contains { $0 != Self.clipboard } }
+
+    /// Without duplicates, with `clipboard` exactly once (appended if missing).
+    static func normalizedTargets(_ targets: [String]) -> [String] {
+        var seen: Set<String> = []
+        var out = targets.filter { !$0.isEmpty && seen.insert($0).inserted }
+        if !seen.contains(clipboard) { out.append(clipboard) }
+        return out
+    }
+
+    /// Order for a pre-0.4.3 file, as its panel showed it: the default (app or clipboard), then the
+    /// favourites A–Z by `name` (bundle id if unknown). With an app default the clipboard goes last,
+    /// so the ⌘ numbers stay the same.
+    static func migratedTargets(defaultApp: String?, favorites: [String], locale: Locale,
+                                name: (String) -> String?) -> [String] {
+        var seen: Set<String> = defaultApp.map { [$0] } ?? []
+        let favs = favorites.filter { $0 != clipboard && seen.insert($0).inserted }
+            .map { (id: $0, name: name($0) ?? $0) }
+            .sorted {
+                switch $0.name.compare($1.name, options: [.caseInsensitive, .numeric], locale: locale) {
+                case .orderedAscending: true
+                case .orderedDescending: false
+                case .orderedSame: $0.id < $1.id
+                }
+            }
+            .map(\.id)
+        if let defaultApp { return [defaultApp] + favs + [clipboard] }
+        return [clipboard] + favs
+    }
+
+    /// Moves `id` one place per step towards `delta`'s sign, past entries in `among` only (the
+    /// panel skips apps that aren't installed). False when it is already at that end.
+    @discardableResult
+    mutating func moveTarget(_ id: String, by delta: Int, among visible: Set<String>? = nil) -> Bool {
+        guard delta != 0, var i = deliveryTargets.firstIndex(of: id) else { return false }
+        var moved = false
+        for _ in 0..<abs(delta) {
+            let step = delta > 0 ? 1 : -1
+            var j = i + step
+            while deliveryTargets.indices.contains(j), let v = visible, !v.contains(deliveryTargets[j]) { j += step }
+            guard deliveryTargets.indices.contains(j) else { break }
+            deliveryTargets.remove(at: i)
+            deliveryTargets.insert(id, at: j)
+            i = j
+            moved = true
+        }
+        return moved
+    }
+
+    /// Puts `id` first (adding it if it isn't a target yet): it becomes the default.
+    mutating func makeDefaultTarget(_ id: String) {
+        deliveryTargets.removeAll { $0 == id }
+        deliveryTargets.insert(id, at: 0)
+    }
+
+    /// ★: removes an app from the targets, or adds it at the end.
+    mutating func toggleTarget(_ id: String) {
+        guard id != Self.clipboard else { return }
+        if deliveryTargets.contains(id) {
+            deliveryTargets.removeAll { $0 == id }
+        } else {
+            deliveryTargets.append(id)
+        }
     }
 
     var engineConfig: EngineConfig {

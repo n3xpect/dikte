@@ -4,6 +4,8 @@ import SwiftUI
 /// AKTAR list under the text area: default target, favourites, other running apps, "+ N more".
 struct DeliveryListView: View {
     static let rowHeight: CGFloat = 28
+    /// Space for the drag handle, kept on every row so the names line up.
+    static let handleWidth: CGFloat = 12
     /// More rows than this scroll instead of growing the panel.
     static let maxRows = 12
 
@@ -26,7 +28,12 @@ struct DeliveryListView: View {
     @ViewBuilder private func rowList(_ rows: [DeliveryEntry], hidden: Int) -> some View {
         let stack = VStack(spacing: 0) {
             ForEach(Array(rows.enumerated()), id: \.element.id) { i, entry in
+                // A line between the user's list and the other running apps.
+                let firstOther = entry.role == .other && i > 0 && rows[i - 1].isMovable
                 DeliveryRow(entry: entry, controller: controller, selected: controller.listSelection == i)
+                    .overlay(alignment: .top) {
+                        if firstOther { Divider().padding(.leading, 6 + DeliveryListView.handleWidth + 6) }
+                    }
                     .id(i)
             }
             if hidden > 0 {
@@ -58,11 +65,16 @@ private struct DeliveryRow: View {
     /// Keyboard selection (↑/↓): accent ring + stronger fill, distinct from the default's tint.
     var selected = false
     @State private var hovering = false
+    /// Handle drag: the row follows the pointer and swaps places every half row.
+    @State private var dragging = false
+    @State private var dragOffset: CGFloat = 0
+    @State private var consumed: CGFloat = 0
 
     private var isDefault: Bool { entry.role == .defaultTarget }
 
     var body: some View {
         HStack(spacing: 6) {
+            handle
             Button { controller.deliver(entry) } label: {
                 HStack(spacing: 8) {
                     ShortcutChip(text: chipText)
@@ -119,17 +131,49 @@ private struct DeliveryRow: View {
                     .strokeBorder(Color.accentColor, lineWidth: 2)
             }
         }
+        .shadow(color: .black.opacity(dragging ? 0.25 : 0), radius: 6, y: 2)
+        .offset(y: dragOffset)
+        .zIndex(dragging ? 1 : 0)
         .onHover { hovering = $0 }
         .contextMenu {
+            if !isDefault {
+                Button(L("Varsayılan yap")) { controller.makeDefaultTarget(entry) }
+            }
             if let app = entry.app {
-                if !isDefault {
-                    Button(L("Varsayılan yap")) { controller.makeDefaultTarget(app) }
-                }
                 Button(entry.isFavorite ? L("Favorilerden çıkar") : L("Favorilere ekle")) {
                     controller.toggleFavorite(app)
                 }
             }
         }
+    }
+
+    /// ≡ on rows of the user's list, shown on hover / selection; dragging it reorders.
+    private var handle: some View {
+        Image(systemName: "line.3.horizontal")
+            .font(.system(size: 10, weight: .semibold))
+            .foregroundStyle(.secondary)
+            .frame(width: DeliveryListView.handleWidth, height: DeliveryListView.rowHeight)
+            .contentShape(.rect)
+            .opacity(entry.isMovable && (hovering || dragging || selected) ? 1 : 0)
+            .allowsHitTesting(entry.isMovable)
+            .gesture(
+                DragGesture(minimumDistance: 2, coordinateSpace: .global)
+                    .onChanged { value in
+                        dragging = true
+                        let h = DeliveryListView.rowHeight
+                        var dy = value.translation.height - consumed
+                        while dy > h / 2, controller.moveTarget(entry, by: 1) { consumed += h; dy -= h }
+                        while dy < -h / 2, controller.moveTarget(entry, by: -1) { consumed -= h; dy += h }
+                        dragOffset = dy
+                    }
+                    .onEnded { _ in
+                        dragging = false
+                        dragOffset = 0
+                        consumed = 0
+                    }
+            )
+            .help(L("Sıralamak için sürükle"))
+            .accessibilityHidden(true)
     }
 
     private var chipText: String? {
@@ -157,6 +201,7 @@ private struct DeliveryRow: View {
 
     private var background: Color {
         if selected { return Color.accentColor.opacity(0.22) }
+        if dragging { return Color(nsColor: .windowBackgroundColor) }
         if isDefault { return Color.blue.opacity(hovering ? 0.2 : 0.12) }
         return hovering ? Color.primary.opacity(0.07) : .clear
     }
@@ -171,6 +216,7 @@ private struct MoreRow: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 8) {
+                Color.clear.frame(width: DeliveryListView.handleWidth - 2)
                 ShortcutChip(text: nil)
                 Image(systemName: "ellipsis.circle")
                     .font(.system(size: 13))
@@ -258,10 +304,11 @@ enum DeliveryHint {
         return items
     }
 
-    /// While a row is selected with the arrow keys.
-    static func listItems() -> [Item] {
-        [Item(key: "↑↓", label: L("seç")), Item(key: "↩", label: L("aktar")),
-         Item(key: "Esc", label: L("metne dön"))]
+    /// While a row is selected with the arrow keys; `canMove`: it is in the user's list.
+    static func listItems(canMove: Bool = false) -> [Item] {
+        var items = [Item(key: "↑↓", label: L("seç"))]
+        if canMove { items.append(Item(key: "⌥↑↓", label: L("taşı"))) }
+        return items + [Item(key: "↩", label: L("aktar")), Item(key: "Esc", label: L("metne dön"))]
     }
 
     /// Keys bold; labels (app names included) are plain text, never parsed as markdown.

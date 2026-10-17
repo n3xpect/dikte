@@ -10,6 +10,7 @@
   "Favorilerden çıkar": "Remove from favorites",
   "Favorilere ekle": "Add to favorites",
   "Panoya kopyala": "Copy to clipboard",
+  "Sıralamak için sürükle": "Drag to reorder",
   "Varsayılan": "Default",
   "Varsayılan yap": "Make default",
   "aktar": "send",
@@ -20,6 +21,7 @@
   "liste": "list",
   "metne dön": "back to text",
   "seç": "select",
+  "taşı": "move",
   "yeni satır": "new line",
   "İzin ver": "Allow"
 }

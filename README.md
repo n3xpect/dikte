@@ -26,7 +26,7 @@ It is tuned for English software terms inside Turkish sentences (branch, commit,
 | **Esc** | Cancel while recording; close the panel when editing |
 | **Enter** (while editing) | Send the text to the default target (clipboard unless you choose an app) and close the panel |
 | **Shift+Enter** | New line |
-| **⌘1–9** / **↓** | Send to another app in the panel's list / pick one with the arrow keys |
+| **⌘1–9** / **↓** | Send to another target in the panel's list / pick one with the arrow keys (**⌥↑ / ⌥↓** moves it) |
 | **⌘L** / TR-EN button | Transcribe the same recording in the other language |
 
 Prefer Enter for new lines? **Text delivery › Send with** swaps the two: Shift+Enter sends, Enter adds a new line.
@@ -37,7 +37,7 @@ The menu bar icon shows the state: green dot = model in memory, orange = loading
 
 - **Settings** — launch at login, dictation shortcut (click and press a new one; ⓧ removes it, then dictation starts from the menu bar), interface language (English / Türkçe, switches instantly), dictation language (Automatic / Turkish / English), history limit.
 - **Recording** — microphone, silence duration, longest recording (1–20 min), sound effects.
-- **Text delivery** — default target, send key, favorites, how many other running apps the panel lists, restoring the clipboard after pasting.
+- **Text delivery** — your targets (apps and Copy to clipboard) in your order: drag them by ≡ here or in the panel; the top one is the default (Enter), the ones below get ⌘1, ⌘2…. Also the send key, how many other running apps the panel lists, restoring the clipboard after pasting.
 - **Permissions** — microphone and Accessibility status, with a button to grant each.
 - **Models** — Whisper large-v3 (recommended), large-v3 turbo, and MLX Whisper models added manually from Hugging Face. The model in memory is shown in green. Idle unload time (the model is unloaded from memory after 5 min) and minimum free disk space are set here: a download won't start if less than 10 GB would remain on disk; a model won't load if there isn't enough RAM.
 - **Terimler** (Terms, Turkish interface only) — the term list: accepted spellings and auto-corrected misspellings per term; search, add, edit, delete. With the English interface the tab is hidden; the terms still apply to every dictation.

@@ -192,7 +192,10 @@ final class DictationController {
 
     /// Key hints for the editing phase (default target name, ⌘ numbers actually shown).
     var editingHint: [DeliveryHint.Item] {
-        if listSelection != nil { return DeliveryHint.listItems() }
+        if let i = listSelection {
+            let rows = shownDeliveryEntries
+            return DeliveryHint.listItems(canMove: i < rows.count && rows[i].isMovable)
+        }
         let rows = shownDeliveryEntries
         let defaultRow = rows.first { $0.role == .defaultTarget }
         return DeliveryHint.items(defaultName: defaultRow?.app?.name,
@@ -203,17 +206,32 @@ final class DictationController {
     }
 
     func toggleFavorite(_ target: TargetApp) {
-        deliverySource.update { s in
-            if let i = s.deliveryFavorites.firstIndex(of: target.bundleID) {
-                s.deliveryFavorites.remove(at: i)
-            } else {
-                s.deliveryFavorites.append(target.bundleID)
-            }
-        }
+        deliverySource.update { $0.toggleTarget(target.bundleID) }
     }
 
-    func makeDefaultTarget(_ target: TargetApp) {
-        deliverySource.update { $0.deliveryDefaultApp = target.bundleID }
+    /// Context menu "Varsayılan yap": to the top of the list.
+    func makeDefaultTarget(_ entry: DeliveryEntry) {
+        deliverySource.update { $0.makeDefaultTarget(entry.id) }
+    }
+
+    /// Moves a row of the user's list past `delta` shown rows of it (drag or ⌥↑/⌥↓); the first
+    /// row is the default. False when it can't move further.
+    @discardableResult
+    func moveTarget(_ entry: DeliveryEntry, by delta: Int) -> Bool {
+        guard entry.isMovable else { return false }
+        let shown = Set(shownDeliveryEntries.filter(\.isMovable).map(\.id))
+        var moved = false
+        deliverySource.update { moved = $0.moveTarget(entry.id, by: delta, among: shown) }
+        return moved
+    }
+
+    /// ⌥↑/⌥↓ on the selected row; the selection follows it.
+    func moveSelectedTarget(by delta: Int) {
+        let rows = shownDeliveryEntries
+        guard let i = listSelection, i < rows.count else { return }
+        let id = rows[i].id
+        guard moveTarget(rows[i], by: delta) else { return }
+        listSelection = shownDeliveryEntries.firstIndex { $0.id == id } ?? i
     }
 
     /// Send key: the default row (clipboard when the list is empty).
@@ -789,9 +807,8 @@ extension DictationController {
                 c.confirmingLanguageSwitch = true
             case .languageError: c.languageError = L("Kayıt artık yok")
             case .deliveryApp, .deliveryShiftEnter, .deliveryExpanded, .deliverySelected:
-                fake.settings.deliveryDefaultApp = PreviewDelivery.slack
+                fake.settings.deliveryTargets = PreviewDelivery.targets
                 if state == .deliveryShiftEnter { fake.settings.sendKey = .shiftEnter }
-                fake.settings.deliveryFavorites = PreviewDelivery.favorites
                 fake.settings.deliveryOtherLimit = 3
                 c.showsAllDeliveryTargets = state == .deliveryExpanded
                 if state == .deliverySelected { c.listSelection = 2 }
@@ -824,17 +841,15 @@ extension DictationController {
 }
 
 /// Fake AKTAR data for previews: its own settings (the real store is never touched) and a fixed
-/// set of apps, ordered like the real list so star / "Varsayılan yap" re-sort live in `#Preview`.
+/// set of apps, ordered by the real `DeliveryService.entries` so star / "Varsayılan yap" / moves
+/// re-sort live in `#Preview`.
 @Observable
 final class PreviewDelivery {
     static let slack = "com.tinyspeck.slackmacgap"
-    static let favorites = ["com.apple.Notes", "com.apple.mail"]
+    /// Slack (default), Mail, Notes, then the clipboard.
+    static let targets = [slack, "com.apple.mail", "com.apple.Notes", AppSettings.clipboard]
 
-    var settings: AppSettings = {
-        var s = AppSettings()
-        s.deliveryFavorites = []
-        return s
-    }()
+    var settings = AppSettings()
 
     let apps: [TargetApp] = [
         ("com.tinyspeck.slackmacgap", "Slack", true), ("com.apple.Notes", "Notes", false),
@@ -852,19 +867,9 @@ final class PreviewDelivery {
     }
 
     private func entries(_ s: AppSettings) -> (visible: [DeliveryEntry], more: [DeliveryEntry]) {
-        let byName: (TargetApp, TargetApp) -> Bool = { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
-        let defaultApp = s.deliveryDefaultApp.flatMap { id in apps.first { $0.bundleID == id } }
-        let rest = apps.filter { $0.bundleID != defaultApp?.bundleID }
-        let favorites = rest.filter { s.deliveryFavorites.contains($0.bundleID) }.sorted(by: byName)
-        let others = rest.filter { $0.isRunning && !s.deliveryFavorites.contains($0.bundleID) }.sorted(by: byName)
-        var listed = favorites.map { DeliveryEntry(app: $0, role: .favorite, isFavorite: true, shortcut: nil) }
-            + others.map { DeliveryEntry(app: $0, role: .other, isFavorite: false, shortcut: nil) }
-        for i in listed.indices where i < 9 { listed[i].shortcut = i + 1 }
-        let cut = favorites.count + min(others.count, s.deliveryOtherLimit)
-        let head = DeliveryEntry(app: defaultApp, role: .defaultTarget,
-                                 isFavorite: defaultApp.map { s.deliveryFavorites.contains($0.bundleID) } ?? false,
-                                 shortcut: nil)
-        return ([head] + listed.prefix(cut), Array(listed.dropFirst(cut)))
+        DeliveryService.entries(targets: s.deliveryTargets, running: apps.filter(\.isRunning),
+                                locale: Localizer.shared.language.locale, limit: s.deliveryOtherLimit,
+                                resolve: { id in self.apps.first { $0.bundleID == id } })
     }
 
     /// The installed app's icon, or a coloured letter tile when it isn't installed.
