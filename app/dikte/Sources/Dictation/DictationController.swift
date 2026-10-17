@@ -45,6 +45,8 @@ final class DictationController {
     var listSelection: Int?
     /// Where the suggestions banner's delivery goes (nil = clipboard).
     private(set) var pendingTarget: TargetApp?
+    /// The chosen target presses Return after pasting (its "Uygulamada da gönder" setting).
+    private var pendingSubmit = false
     /// Countdown to sending the text to the default target (Metin aktarımı › Otomatik gönder).
     private(set) var autoSend = AutoSend.off
 
@@ -277,6 +279,7 @@ final class DictationController {
     private func deliver(to chosen: TargetApp?) {
         guard phase == .editing, suggestions.isEmpty, !retranscribing, !deliveryPending else { return }
         let target = resolvingLastApp(chosen)
+        pendingSubmit = chosen.map { app.settings.settings.submitTargets.contains($0.bundleID) } ?? false
         endAutoSend()
         confirmingLanguageSwitch = false
         let final = text.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -320,9 +323,10 @@ final class DictationController {
         close()
         let delivery = app.delivery
         let restore = app.settings.settings.restoreClipboardAfterPaste
+        let submit = pendingSubmit
         Task {
             do {
-                try await delivery.deliver(final, to: target.bundleID, restoreClipboard: restore)
+                try await delivery.deliver(final, to: target.bundleID, restoreClipboard: restore, submit: submit)
             } catch {
                 let content = DeliveryToastContent.failure(error, appName: target.name)
                 self.toast.show(content) {

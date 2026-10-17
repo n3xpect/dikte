@@ -2701,6 +2701,16 @@
         }
       }
     },
+    "Uygulamada da gönder": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Also send in the app"
+          }
+        }
+      }
+    },
     "Varsayılan": {
       "localizations": {
         "en": {

@@ -191,7 +191,7 @@ final class DeliveryService {
     /// Put `text` on the clipboard, bring `bundleID` to the front (launching it if needed), paste
     /// with ⌘V and — if `restoreClipboard` — restore the previous clipboard afterwards. On failure
     /// the text stays on the clipboard.
-    func deliver(_ text: String, to bundleID: String, restoreClipboard: Bool) async throws {
+    func deliver(_ text: String, to bundleID: String, restoreClipboard: Bool, submit: Bool = false) async throws {
         refreshTrust()
         guard accessibilityTrusted else {
             copyToClipboard(text)
@@ -227,6 +227,18 @@ final class DeliveryService {
         up.flags = .maskCommand
         down.post(tap: .cghidEventTap)
         up.post(tap: .cghidEventTap)
+
+        if submit {
+            // Let the app take the paste first, then press Return so it sends the text.
+            try? await Task.sleep(for: .milliseconds(200))
+            if let ret = CGEvent(keyboardEventSource: source, virtualKey: 0x24, keyDown: true),
+               let retUp = CGEvent(keyboardEventSource: source, virtualKey: 0x24, keyDown: false) {
+                ret.flags = []
+                retUp.flags = []
+                ret.post(tap: .cghidEventTap)
+                retUp.post(tap: .cghidEventTap)
+            }
+        }
 
         guard restoreClipboard else { return }
         // The target reads the pasteboard while handling ⌘V; restore only afterwards and only

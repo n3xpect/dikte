@@ -57,6 +57,7 @@ struct DeliverySection: View {
             VStack(spacing: 0) {
                 ForEach(targetRows) { row in
                     TargetRow(row: row, icon: row.app.map(options.icon),
+                              submit: submitBinding(row.id),
                               move: { settings.moveTarget(row.id, by: $0) },
                               remove: { settings.deliveryTargets.removeAll { $0 == row.id } })
                 }
@@ -158,6 +159,16 @@ struct DeliverySection: View {
             return TargetRow.Model(id: id, app: app, installed: installed, key: key, isDefault: isDefault,
                                    isFirst: i == 0)
         }
+    }
+
+    private func submitBinding(_ id: String) -> Binding<Bool> {
+        Binding(
+            get: { settings.submitTargets.contains(id) },
+            set: { on in
+                settings.submitTargets.removeAll { $0 == id }
+                if on { settings.submitTargets.append(id) }
+            }
+        )
     }
 
     private var addMenu: some View {
@@ -276,6 +287,7 @@ private struct TargetRow: View {
 
     let row: Model
     let icon: NSImage?
+    @Binding var submit: Bool
     /// Moves the row by that many places; false when it can't go further.
     let move: (Int) -> Bool
     let remove: () -> Void
@@ -324,6 +336,13 @@ private struct TargetRow: View {
                     .background(Color.accentColor.opacity(0.15), in: .capsule)
             }
             Spacer(minLength: 8)
+            if row.app != nil {
+                Toggle(L("Uygulamada da gönder"), isOn: $submit)
+                    .toggleStyle(.checkbox)
+                    .controlSize(.small)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
             Text(verbatim: row.key ?? "")
                 .font(.caption.weight(.medium).monospacedDigit())
                 .foregroundStyle(row.isDefault ? Color.accentColor : .secondary)

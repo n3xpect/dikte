@@ -24,6 +24,9 @@ struct AppSettings: Codable, Equatable, Sendable {
     /// (always there exactly once). The first is the default (send key), the next ones get ⌘1… in
     /// the panel. Apps here are the "favourites" (★).
     var deliveryTargets: [String] = [AppSettings.clipboard]
+    /// Targets (from `deliveryTargets`) that get Return pressed after the text is pasted, so the
+    /// app sends it right away.
+    var submitTargets: [String] = []
     /// Panel key that sends the text to the default target; the other one inserts a new line.
     var sendKey: SendKey = .enter
     /// After the text appears in the panel, count down `autoSendSeconds` and send it to the default
@@ -80,6 +83,7 @@ struct AppSettings: Codable, Equatable, Sendable {
         // Files before 0.4.3 keep a default app + favourites instead; SettingsStore converts them.
         deliveryTargets = Self.normalizedTargets(
             try c.decodeIfPresent([String].self, forKey: .deliveryTargets) ?? d.deliveryTargets)
+        submitTargets = try c.decodeIfPresent([String].self, forKey: .submitTargets) ?? d.submitTargets
         // Missing (files before 0.3.x) or unknown → Enter sends, for existing installs too.
         sendKey = (try? c.decodeIfPresent(SendKey.self, forKey: .sendKey)) ?? .enter
         // Missing (files before 0.4.4) → on, for existing installs too.
