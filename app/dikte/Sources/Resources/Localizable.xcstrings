@@ -1941,6 +1941,16 @@
         }
       }
     },
+    "Model: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Model: %@"
+          }
+        }
+      }
+    },
     "Model: %@ · %@": {
       "localizations": {
         "en": {

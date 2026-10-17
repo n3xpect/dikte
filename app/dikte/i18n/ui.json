@@ -105,6 +105,7 @@
   "Model listesi için motorun çalışması gerekiyor.": "The engine must be running to list models.",
   "Model seçilmedi": "No model selected",
   "Model, sen boşaltana kadar bellekte kalır. İndirmeler, sonrasında diskte bu kadar yer kalmayacaksa başlamaz.": "The model stays in memory until you unload it. Downloads don't start if less than this would be left on disk.",
+  "Model: %@": "Model: %@",
   "Model: %@ · %@": "Model: %@ · %@",
   "Modeli şimdi boşalt": "Unload Model Now",
   "Modelin boşta kalma süresi": "Unload idle model after",
