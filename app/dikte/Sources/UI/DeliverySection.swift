@@ -96,9 +96,9 @@ struct DeliverySection: View {
             // Always shown (just disabled when off), so the value stays visible.
             LabeledContent(L("Bekleme süresi")) {
                 HStack {
-                    Slider(value: autoSendSeconds, in: AppSettings.autoSendRange, step: AppSettings.autoSendStep)
+                    Slider(value: autoSendChoice, in: 0...Double(AppSettings.autoSendChoices.count - 1), step: 1)
                         .frame(maxWidth: 220)
-                    Text(Fmt.seconds(settings.autoSendSeconds))
+                    Text(Fmt.autoSendWait(settings.autoSendSeconds))
                         .monospacedDigit()
                         .frame(width: 48, alignment: .trailing)
                 }
@@ -127,9 +127,11 @@ struct DeliverySection: View {
         }
     }
 
-    private var autoSendSeconds: Binding<Double> {
-        Binding(get: { settings.autoSendSeconds },
-                set: { settings.autoSendSeconds = AppSettings.clampedAutoSend($0) })
+    /// The slider moves over the choices (3 s … 5 min), not seconds.
+    private var autoSendChoice: Binding<Double> {
+        let choices = AppSettings.autoSendChoices
+        return Binding(get: { Double(choices.firstIndex(of: settings.autoSendSeconds) ?? 1) },
+                       set: { settings.autoSendSeconds = choices[min(max(Int($0.rounded()), 0), choices.count - 1)] })
     }
 
     // MARK: Targets

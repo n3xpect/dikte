@@ -155,7 +155,7 @@ private struct AutoSendBar: View {
             case .counting(let until, let total):
                 TimelineView(.animation(minimumInterval: 1 / 30)) { ctx in
                     let left = max(0, until.timeIntervalSince(ctx.date))
-                    CountdownRing(progress: total > 0 ? left / total : 0, label: "\(Int(left.rounded(.up)))")
+                    CountdownRing(progress: total > 0 ? left / total : 0, label: Fmt.countdownLabel(left))
                 }
                 VStack(alignment: .leading, spacing: 1) {
                     Text(target.map { L("Gönderiliyor: %@", $0) } ?? L("Panoya kopyalanıyor…"))
@@ -198,14 +198,14 @@ private struct AutoSendButton: View {
     static let height: CGFloat = 22
     /// Text-container corner left free under the button over the text area (button + margins
     /// minus the text view's inset).
-    static let textExclusion = CGSize(width: 56, height: 22)
+    static let textExclusion = CGSize(width: 74, height: 22)
 
     var body: some View {
         let setting = controller.autoSendSetting
         Button { open.toggle() } label: {
             HStack(spacing: 3) {
                 Image(systemName: "timer")
-                Text(verbatim: setting.enabled ? "\(Int(setting.seconds))" : "—")
+                Text(verbatim: setting.enabled ? Fmt.autoSendWait(setting.seconds) : "—")
                     .monospacedDigit()
             }
             .font(.caption.weight(.semibold))
@@ -244,9 +244,13 @@ struct AutoSendPopover: View {
                 .toggleStyle(.switch)
                 .font(.callout.weight(.semibold))
             HStack {
-                Slider(value: Binding(get: { setting.seconds }, set: { controller.setAutoSendSeconds($0) }),
-                       in: AppSettings.autoSendRange, step: AppSettings.autoSendStep)
-                Text(Fmt.seconds(setting.seconds))
+                // Over the choices (3 s … 5 min), not seconds.
+                let choices = AppSettings.autoSendChoices
+                Slider(value: Binding(get: { Double(choices.firstIndex(of: setting.seconds) ?? 1) },
+                                      set: { controller.setAutoSendSeconds(choices[min(max(Int($0.rounded()), 0),
+                                                                                       choices.count - 1)]) }),
+                       in: 0...Double(choices.count - 1), step: 1)
+                Text(Fmt.autoSendWait(setting.seconds))
                     .monospacedDigit()
                     .frame(width: 44, alignment: .trailing)
             }
@@ -273,7 +277,7 @@ private struct CountdownRing: View {
                 .stroke(Color.accentColor, style: StrokeStyle(lineWidth: 3, lineCap: .round))
                 .rotationEffect(.degrees(-90))
             Text(verbatim: label)
-                .font(.caption.weight(.bold).monospacedDigit())
+                .font((label.count > 2 ? Font.system(size: 8.5) : .caption).weight(.bold).monospacedDigit())
         }
         .frame(width: 26, height: 26)
     }

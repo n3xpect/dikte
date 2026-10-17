@@ -42,6 +42,19 @@ enum Fmt {
     static let nbsp = "\u{00A0}"
 
     /// "4:05"
+    /// Auto-send wait: "3 sn", "30 sn", "1 dk", "5 dk".
+    static func autoSendWait(_ seconds: Double) -> String {
+        seconds >= 60 && seconds.truncatingRemainder(dividingBy: 60) == 0
+            ? L("%@ dk", int(Int(seconds / 60))).replacingOccurrences(of: " ", with: nbsp)
+            : self.seconds(seconds)
+    }
+
+    /// Countdown in the panel: "18", or "4:59" from a minute up.
+    static func countdownLabel(_ left: TimeInterval) -> String {
+        let s = Int(left.rounded(.up))
+        return s >= 60 ? String(format: "%d:%02d", s / 60, s % 60) : "\(s)"
+    }
+
     /// Panel counter while recording: "00:42 / 02:00" (elapsed capped at the limit).
     static func recordingClock(elapsed: TimeInterval, limit: TimeInterval) -> String {
         func mmss(_ t: TimeInterval) -> String {
