@@ -6,6 +6,7 @@ struct DeliveryListView: View {
     static let rowHeight: CGFloat = 28
     /// Space for the drag handle, kept on every row so the names line up.
     static let handleWidth: CGFloat = 12
+    private static let moreRowID = "+more"
     /// More rows than this scroll instead of growing the panel.
     static let maxRows = 12
 
@@ -34,13 +35,15 @@ struct DeliveryListView: View {
                     .overlay(alignment: .top) {
                         if firstOther { Divider().padding(.leading, 6 + DeliveryListView.handleWidth + 6) }
                     }
-                    .id(i)
+                    // By target, not position: a row that moves while dragged keeps its identity
+                    // (and the drag gesture).
+                    .id(entry.id)
             }
             if hidden > 0 {
                 MoreRow(count: hidden, selected: controller.listSelection == rows.count) {
                     controller.showsAllDeliveryTargets = true
                 }
-                .id(rows.count)
+                .id(Self.moreRowID)
             }
         }
         let count = rows.count + (hidden > 0 ? 1 : 0)
@@ -50,7 +53,7 @@ struct DeliveryListView: View {
                     .scrollIndicators(.automatic)
                     .frame(height: CGFloat(Self.maxRows) * Self.rowHeight)
                     .onChange(of: controller.listSelection) { _, i in
-                        if let i { proxy.scrollTo(i) }
+                        if let i { proxy.scrollTo(i < rows.count ? rows[i].id : Self.moreRowID) }
                     }
             }
         } else {
