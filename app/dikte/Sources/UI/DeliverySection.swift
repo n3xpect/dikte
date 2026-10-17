@@ -167,6 +167,12 @@ struct DeliverySection: View {
                 Button { addTarget(app.bundleID) } label: { appLabel(app) }
             }
             if !candidates.isEmpty { Divider() }
+            if !settings.deliveryTargets.contains(AppSettings.lastApp) {
+                Button { addTarget(AppSettings.lastApp) } label: {
+                    Label(L("Son kullanılan uygulama"), systemImage: "arrow.uturn.backward.circle")
+                }
+                Divider()
+            }
             Button(L("Başka bir uygulama seç…")) {
                 if let app = options.chooseApp() { addTarget(app.bundleID) }
             }
@@ -198,12 +204,13 @@ struct DeliverySection: View {
 
     /// Running app, installed app, or a placeholder for one that is no longer installed.
     private func app(for id: String) -> TargetApp {
-        running.first { $0.bundleID == id }
+        if id == AppSettings.lastApp { return .lastApp }
+        return running.first { $0.bundleID == id }
             ?? options.resolve(id)
             ?? TargetApp(bundleID: id, name: id, url: nil, isRunning: false)
     }
 
-    private func isInstalled(_ app: TargetApp) -> Bool { app.url != nil || app.isRunning }
+    private func isInstalled(_ app: TargetApp) -> Bool { app.isLastApp || app.url != nil || app.isRunning }
 
     private func sortedByName(_ apps: [TargetApp]) -> [TargetApp] {
         let locale = Fmt.locale

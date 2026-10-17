@@ -40,6 +40,9 @@ struct AppSettings: Codable, Equatable, Sendable {
     static let removedModels: Set<String> = ["qwen3-1.7b"]
     /// The "Panoya kopyala" entry of `deliveryTargets` (bundle identifiers always contain a dot).
     static let clipboard = "clipboard"
+    /// The "Son kullanılan uygulama" entry: whichever app was in front when dictation started
+    /// (resolved when sending; not a bundle identifier, there is no dot in it).
+    static let lastApp = "lastApp"
     /// Allowed longest recording, seconds (1–20 min; the engine accepts up to 1200 too).
     static let maxDurationRange: ClosedRange<Double> = 60...1200
     /// The auto-send waits offered: 0 = right away (the text isn't shown), 3 s, 30 s, 1, 3, 5 min.

@@ -17,6 +17,7 @@
   "Panelde %@ metni varsayılan hedefe gönderir, ⌘1…⌘9 listedeki diğer uygulamalara. Metin panoya konur ve uygulamaya ⌘V ile yapıştırılır; aktarılamazsa metin panoda kalır.": "In the panel, %@ sends the text to the default target and ⌘1…⌘9 to the other apps in the list. The text is put on the clipboard and pasted into the app with ⌘V; if delivery fails, the text stays on the clipboard.",
   "Panelde gösterilecek diğer uygulama sayısı": "Other apps shown in the panel",
   "Panoya kopyala": "Copy to clipboard",
+  "Son kullanılan uygulama": "Last used app",
   "Seç": "Choose",
   "Sürükleyerek sırala. En üstteki varsayılan hedeftir (%@); altındakiler sırayla ⌘1, ⌘2… ile gönderilir. Çalışmayan uygulamalar açılır.": "Drag to reorder. The top one is the default target (%@); the ones below are sent with ⌘1, ⌘2… in order. Apps that aren't running are opened.",
   "Verildi": "Granted",

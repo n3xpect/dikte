@@ -14,6 +14,10 @@ struct TargetApp: Identifiable, Equatable, Sendable {
     var url: URL?
     var isRunning: Bool
     var id: String { bundleID }
+    /// The "Son kullanılan uygulama" target, not an app yet.
+    var isLastApp: Bool { bundleID == AppSettings.lastApp }
+    static let lastApp = TargetApp(bundleID: AppSettings.lastApp, name: L("Son kullanılan uygulama"),
+                                   url: nil, isRunning: false)
 }
 
 /// A row of the panel's AKTAR list.
@@ -116,6 +120,10 @@ final class DeliveryService {
     }
 
     func icon(for app: TargetApp) -> NSImage {
+        if app.isLastApp {
+            return NSImage(systemSymbolName: "arrow.uturn.backward.circle", accessibilityDescription: nil)
+                ?? NSWorkspace.shared.icon(for: .applicationBundle)
+        }
         if let cached = icons[app.bundleID] { return cached }
         let url = app.url ?? NSWorkspace.shared.urlForApplication(withBundleIdentifier: app.bundleID)
         guard let url else { return NSWorkspace.shared.icon(for: .applicationBundle) }
@@ -152,6 +160,8 @@ final class DeliveryService {
             let role: DeliveryEntry.Role = visible.isEmpty ? .defaultTarget : .favorite
             if id == AppSettings.clipboard {
                 visible.append(DeliveryEntry(app: nil, role: role, isFavorite: false, shortcut: nil))
+            } else if id == AppSettings.lastApp {
+                visible.append(DeliveryEntry(app: .lastApp, role: role, isFavorite: false, shortcut: nil))
             } else if let app = lookup(id) {
                 visible.append(DeliveryEntry(app: app, role: role, isFavorite: true, shortcut: nil))
             }

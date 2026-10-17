@@ -108,7 +108,7 @@ private struct DeliveryRow: View {
             }
             .buttonStyle(.plain)
             .focusable(false)
-            if let app = entry.app {
+            if let app = entry.app, !app.isLastApp {
                 Button { controller.toggleFavorite(app) } label: {
                     Image(systemName: entry.isFavorite ? "star.fill" : "star")
                         .font(.system(size: 12))
@@ -142,7 +142,7 @@ private struct DeliveryRow: View {
             if !isDefault {
                 Button(L("Varsayılan yap")) { controller.makeDefaultTarget(entry) }
             }
-            if let app = entry.app {
+            if let app = entry.app, !app.isLastApp {
                 Button(entry.isFavorite ? L("Favorilerden çıkar") : L("Favorilere ekle")) {
                     controller.toggleFavorite(app)
                 }

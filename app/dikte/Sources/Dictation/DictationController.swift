@@ -274,8 +274,9 @@ final class DictationController {
     }
 
     /// Writes history, then shows the learning banner (delivering once it's resolved) or delivers now.
-    private func deliver(to target: TargetApp?) {
+    private func deliver(to chosen: TargetApp?) {
         guard phase == .editing, suggestions.isEmpty, !retranscribing, !deliveryPending else { return }
+        let target = resolvingLastApp(chosen)
         endAutoSend()
         confirmingLanguageSwitch = false
         let final = text.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -297,6 +298,15 @@ final class DictationController {
         } else {
             suggestions = found
         }
+    }
+
+    /// "Son kullanılan uygulama" → the app that was in front when dictation started; the clipboard
+    /// (nil) when there was none (Dikte itself, or it has quit since).
+    private func resolvingLastApp(_ target: TargetApp?) -> TargetApp? {
+        guard let target, target.isLastApp else { return target }
+        guard let previous = previousApp, !previous.isTerminated, let id = previous.bundleIdentifier else { return nil }
+        return app.delivery.resolve(bundleID: id)
+            ?? TargetApp(bundleID: id, name: previous.localizedName ?? id, url: previous.bundleURL, isRunning: true)
     }
 
     /// Closes the panel; for an app target pastes there (no re-activating the previous app).

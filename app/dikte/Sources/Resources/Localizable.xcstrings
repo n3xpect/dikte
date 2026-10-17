@@ -1361,16 +1361,6 @@
         }
       }
     },
-    "Hiç": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Never"
-          }
-        }
-      }
-    },
     "Hugging Face'ten model ekle": {
       "localizations": {
         "en": {
@@ -1951,16 +1941,6 @@
         }
       }
     },
-    "Model, sen boşaltana kadar bellekte kalır. İndirmeler, sonrasında diskte bu kadar yer kalmayacaksa başlamaz.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The model stays in memory until you unload it. Downloads don't start if less than this would be left on disk."
-          }
-        }
-      }
-    },
     "Model: %@ · %@": {
       "localizations": {
         "en": {
@@ -2447,6 +2427,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "The model is unloaded from memory this long after the last dictation. Downloads won’t start if less than this much disk space would remain."
+          }
+        }
+      }
+    },
+    "Son kullanılan uygulama": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last used app"
           }
         }
       }
