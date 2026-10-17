@@ -9,6 +9,7 @@
   "Gönderme": "Sending",
   "Göndermek için": "Send with",
   "Hedefler": "Targets",
+  "Hemen: metin gösterilmeden gönderilir; durdurma şansı yoktur.": "Right away: the text is sent without being shown; there's no chance to stop it.",
   "Listeden çıkar": "Remove from list",
   "Metin aktarımı": "Text delivery",
   "Metin panele geldikten sonra bekleme süresi dolunca varsayılan hedefe gönderilir. Bir tuşa basmak ya da tıklamak durdurur.": "Once the text appears in the panel, it's sent to the default target when the wait is over. Pressing a key or clicking stops it.",

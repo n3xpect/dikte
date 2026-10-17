@@ -31,7 +31,7 @@ It is tuned for English software terms inside Turkish sentences (branch, commit,
 
 Prefer Enter for new lines? **Text delivery › Send with** swaps the two: Shift+Enter sends, Enter adds a new line.
 
-By default the text is **sent automatically** after a short countdown shown in the panel (30 s by default; 3 s, 30 s, 1, 3 or 5 min; turn it off or change the wait with ⏱ in the panel or in **Text delivery › Send automatically**). Any key or click stops the countdown, Esc too; Enter sends right away.
+By default the text is **sent automatically** after a short countdown shown in the panel (30 s by default; right away, 3 s, 30 s, 1, 3 or 5 min — right away sends without showing the text; turn it off or change the wait with ⏱ in the panel or in **Text delivery › Send automatically**). Any key or click stops the countdown, Esc too; Enter sends right away.
 
 Recording stops by itself after the silence duration or at the longest recording length (2 min by default, up to 20 min); the panel shows the time as `00:42 / 02:00`.
 

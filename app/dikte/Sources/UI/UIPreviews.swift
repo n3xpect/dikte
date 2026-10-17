@@ -345,6 +345,13 @@ enum UIPreviewRenderer {
         render(statusMenuMock, "status-menu", 320, 380, dir)
         renderFitting(AutoSendPopover(controller: .preview(.autoSendCounting)), "auto-send-popover", dir)
         renderFitting(AutoSendPopover(controller: .preview(.autoSendCounting)), "auto-send-popover-dark", dir, dark: true)
+        let rightAway = DictationController.preview(.autoSendCounting)
+        rightAway.setAutoSendSeconds(0)
+        renderFitting(AutoSendPopover(controller: rightAway), "auto-send-popover-now", dir)
+        var nowSettings = PreviewData.deliverySettings()
+        nowSettings.autoSendSeconds = 0
+        render(PreviewData.window(.delivery) { PreviewData.deliverySection(nowSettings) }, "delivery-auto-send-now",
+               900, 900, dir)
     }
 
     /// Menu bar menu titles for each status line (NSMenu can't be drawn offscreen).
@@ -412,7 +419,7 @@ enum UIPreviewRenderer {
         check(Fmt.seconds(3.5) == "3,5\u{00A0}sn", "seconds: 3,5 sn, got \(Fmt.seconds(3.5))")
         check(Fmt.int(1234) == "1.234", "int: 1.234, got \(Fmt.int(1234))")
         check(Fmt.countdown(272) == "4:32", "countdown: 4:32")
-        check(Fmt.autoSendWait(3) == "3\u{00A0}sn" && Fmt.autoSendWait(30) == "30\u{00A0}sn"
+        check(Fmt.autoSendWait(0) == "Hemen" && Fmt.autoSendWait(3) == "3\u{00A0}sn" && Fmt.autoSendWait(30) == "30\u{00A0}sn"
               && Fmt.autoSendWait(60) == "1\u{00A0}dk" && Fmt.autoSendWait(300) == "5\u{00A0}dk",
               "auto-send wait labels: \(AppSettings.autoSendChoices.map(Fmt.autoSendWait))")
         check(Fmt.countdownLabel(17.2) == "18" && Fmt.countdownLabel(59.5) == "1:00"

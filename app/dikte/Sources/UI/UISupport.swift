@@ -42,9 +42,10 @@ enum Fmt {
     static let nbsp = "\u{00A0}"
 
     /// "4:05"
-    /// Auto-send wait: "3 sn", "30 sn", "1 dk", "5 dk".
+    /// Auto-send wait: "Hemen", "3 sn", "30 sn", "1 dk", "5 dk".
     static func autoSendWait(_ seconds: Double) -> String {
-        seconds >= 60 && seconds.truncatingRemainder(dividingBy: 60) == 0
+        if seconds <= 0 { return L("Hemen") }
+        return seconds >= 60 && seconds.truncatingRemainder(dividingBy: 60) == 0
             ? L("%@ dk", int(Int(seconds / 60))).replacingOccurrences(of: " ", with: nbsp)
             : self.seconds(seconds)
     }

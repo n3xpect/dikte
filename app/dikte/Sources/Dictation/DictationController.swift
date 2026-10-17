@@ -651,12 +651,17 @@ final class DictationController {
 
     // MARK: - Auto-send
 
-    /// When the result appears: count down, then send to the default target.
+    /// When the result appears: count down, then send to the default target. With a wait of 0
+    /// ("Hemen") it goes right away and the panel closes before the text is ever drawn.
     private func startAutoSend() {
         let settings = deliverySource.settings()
         guard settings.autoSendEnabled, phase == .editing, suggestions.isEmpty, !retranscribing,
               !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
         let total = settings.autoSendSeconds
+        guard total > 0 else {
+            deliverToDefault()
+            return
+        }
         autoSend = .counting(until: Date().addingTimeInterval(total), total: total)
         let gen = generation
         autoSendTask = Task { [weak self] in

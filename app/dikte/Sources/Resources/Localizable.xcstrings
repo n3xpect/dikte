@@ -1281,6 +1281,26 @@
         }
       }
     },
+    "Hemen": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Right away"
+          }
+        }
+      }
+    },
+    "Hemen: metin gösterilmeden gönderilir; durdurma şansı yoktur.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Right away: the text is sent without being shown; there's no chance to stop it."
+          }
+        }
+      }
+    },
     "Henüz dikte yok": {
       "localizations": {
         "en": {

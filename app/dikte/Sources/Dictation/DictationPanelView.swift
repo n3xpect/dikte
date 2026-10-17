@@ -246,7 +246,8 @@ struct AutoSendPopover: View {
             HStack {
                 // Over the choices (3 s … 5 min), not seconds.
                 let choices = AppSettings.autoSendChoices
-                Slider(value: Binding(get: { Double(choices.firstIndex(of: setting.seconds) ?? 1) },
+                Slider(value: Binding(get: { Double(choices.firstIndex(of: setting.seconds)
+                                                    ?? choices.firstIndex(of: AppSettings().autoSendSeconds) ?? 0) },
                                       set: { controller.setAutoSendSeconds(choices[min(max(Int($0.rounded()), 0),
                                                                                        choices.count - 1)]) }),
                        in: 0...Double(choices.count - 1), step: 1)
@@ -255,6 +256,9 @@ struct AutoSendPopover: View {
                     .frame(width: 44, alignment: .trailing)
             }
             .disabled(!setting.enabled)
+            if setting.enabled && setting.seconds == 0 {
+                AutoSendNowWarning()
+            }
             Text(L("Metin geldikten sonra bu kadar beklenir, sonra varsayılan hedefe gönderilir. Ayarlar › Metin aktarımı ile aynı ayar."))
                 .font(.caption)
                 .foregroundStyle(.secondary)

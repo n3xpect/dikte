@@ -147,7 +147,7 @@ enum DeliverySelfCheck {
         check(s.deliveryTargets == ["n.new", "b.b", clip], "Varsayılan yap on an app not in the list")
         check(s.hasTargetApp && !AppSettings().hasTargetApp, "hasTargetApp")
 
-        // Auto-send: on by default (old files too), 30 s; one of 3 s, 30 s, 1, 3, 5 min.
+        // Auto-send: on by default (old files too), 30 s; one of right away, 3 s, 30 s, 1, 3, 5 min.
         check(AppSettings().autoSendEnabled && AppSettings().autoSendSeconds == 30, "auto-send default")
         let older = try? JSONDecoder().decode(AppSettings.self, from: Data(#"{"sendKey": "enter"}"#.utf8))
         check(older?.autoSendEnabled == true && older?.autoSendSeconds == 30, "auto-send on for old files")
@@ -158,8 +158,12 @@ enum DeliverySelfCheck {
         check(short?.autoSendSeconds == 3, "3 s kept")
         check(AppSettings.autoSendChoices.allSatisfy { AppSettings.clampedAutoSend($0) == $0 }, "choices kept")
         check(AppSettings.clampedAutoSend(45) == 30 && AppSettings.clampedAutoSend(100) == 60
-              && AppSettings.clampedAutoSend(1000) == 300 && AppSettings.clampedAutoSend(0) == 3
-              && AppSettings.clampedAutoSend(.nan) == 30, "auto-send nearest choice")
+              && AppSettings.clampedAutoSend(1000) == 300 && AppSettings.clampedAutoSend(0) == 0
+              && AppSettings.clampedAutoSend(1) == 0 && AppSettings.clampedAutoSend(2) == 3
+              && AppSettings.clampedAutoSend(-5) == 0 && AppSettings.clampedAutoSend(.nan) == 30,
+              "auto-send nearest choice")
+        let now = try? JSONDecoder().decode(AppSettings.self, from: Data(#"{"autoSendSeconds": 0}"#.utf8))
+        check(now?.autoSendSeconds == 0, "right away kept")
         return failures
     }
 }

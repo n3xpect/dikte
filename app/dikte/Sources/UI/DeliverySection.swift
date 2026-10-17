@@ -104,6 +104,9 @@ struct DeliverySection: View {
                 }
             }
             .disabled(!settings.autoSendEnabled)
+            if settings.autoSendEnabled && settings.autoSendSeconds == 0 {
+                AutoSendNowWarning()
+            }
         } header: {
             Text(L("Gönderme"))
         } footer: {
@@ -130,7 +133,8 @@ struct DeliverySection: View {
     /// The slider moves over the choices (3 s … 5 min), not seconds.
     private var autoSendChoice: Binding<Double> {
         let choices = AppSettings.autoSendChoices
-        return Binding(get: { Double(choices.firstIndex(of: settings.autoSendSeconds) ?? 1) },
+        return Binding(get: { Double(choices.firstIndex(of: settings.autoSendSeconds)
+                                         ?? choices.firstIndex(of: AppSettings().autoSendSeconds) ?? 0) },
                        set: { settings.autoSendSeconds = choices[min(max(Int($0.rounded()), 0), choices.count - 1)] })
     }
 
@@ -208,6 +212,17 @@ struct DeliverySection: View {
 
     private func refreshRunning() {
         running = options.runningApps()
+    }
+}
+
+/// Under the wait when it is "Hemen": nothing to look at or stop before it goes.
+struct AutoSendNowWarning: View {
+    var body: some View {
+        Label(L("Hemen: metin gösterilmeden gönderilir; durdurma şansı yoktur."),
+              systemImage: "exclamationmark.triangle.fill")
+            .font(.caption)
+            .foregroundStyle(.orange)
+            .fixedSize(horizontal: false, vertical: true)
     }
 }
 
